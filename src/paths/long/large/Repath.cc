@@ -42,31 +42,22 @@ void RepathInMemory( const HyperBasevector& hb, const vecbasevector& edges,
      std::vector< std::vector<int> > places;
      places.reserve( paths.size( ) );
 
-     const int batch = 10000;
-     #pragma omp parallel for
-     for (int64_t m = 0; m < (int64_t) paths.size(); m += batch) {
-          std::vector<std::vector<int> > placesm;
-          placesm.reserve(batch);
-          std::vector<int> x, y;
-          int64_t n = Min(m + batch, (int64_t) paths.size());
-          for (int64_t i = m; i < n; i++) {
-               x.clear(), y.clear();
-               for (int64_t j = 0; j < (int64_t) paths[i].size(); j++)
-                    x.push_back(paths[i][j]);
-               int nkmers = 0;
-               for (int j = 0; j < x.size(); j++)
-                    nkmers += edges[x[j]].size() - ((int) K - 1);
-               if (nkmers + ((int) K - 1) < K2) continue;
-               for (int j = x.size() - 1; j >= 0; j--)
-                    y.push_back(inv[x[j]]);
-               placesm.push_back(x < y ? x : y);
-          }
-          #pragma omp critical
-          { places.insert(places.end(),placesm.begin(),placesm.end()); }
+     std::vector<int> x, y;
+     for (int64_t i = 0; i < paths.size(); ++i) {
+          x.clear(), y.clear();
+          for (int64_t j = 0; j < (int64_t) paths[i].size(); j++)
+               x.push_back(paths[i][j]);
+          int nkmers = 0;
+          for (int j = 0; j < x.size(); j++)
+               nkmers += edges[x[j]].size() - ((int) K - 1);
+          if (nkmers + ((int) K - 1) < K2) continue;
+          for (int j = x.size() - 1; j >= 0; j--)
+               y.push_back(inv[x[j]]);
+          places.push_back(x < y ? x : y);
      }
      std::cout << Date() << ": sorting "<<places.size()<<" places" << std::endl;
-     sortInPlaceParallel(places.begin(), places.end());
-     places.erase(std::unique(places.begin(),places.end()),places.end());
+     __gnu_parallel::sort(places.begin(), places.end());
+     places.resize(std::unique(places.begin(),places.end())-places.begin());
      places.shrink_to_fit();
      std::cout << Date() << ": "<<places.size()<<" unique places" << std::endl;
      // Add extended places.
