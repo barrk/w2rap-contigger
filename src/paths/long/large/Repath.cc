@@ -42,19 +42,18 @@ void RepathInMemory( const HyperBasevector& hb, const vecbasevector& edges,
      std::vector< std::vector<int> > places;
      places.reserve( paths.size( ) );
 
-     std::vector<int> x, y;
+
      for (int64_t i = 0; i < paths.size(); ++i) {
-          x.clear(), y.clear();
-          for (int64_t j = 0; j < (int64_t) paths[i].size(); j++)
-               x.push_back(paths[i][j]);
+          std::vector<int> x, y;
+          x=paths[i];
           int nkmers = 0;
-          for (int j = 0; j < x.size(); j++)
-               nkmers += edges[x[j]].size() - ((int) K - 1);
+          for (auto &e:x) nkmers=edges[e].size() + 1 - K ;
           if (nkmers + ((int) K - 1) < K2) continue;
           for (int j = x.size() - 1; j >= 0; j--)
                y.push_back(inv[x[j]]);
           places.push_back(x < y ? x : y);
      }
+
      std::cout << Date() << ": sorting "<<places.size()<<" places" << std::endl;
      __gnu_parallel::sort(places.begin(), places.end());
      places.resize(std::unique(places.begin(),places.end())-places.begin());
@@ -204,39 +203,39 @@ void RepathInMemory( const HyperBasevector& hb, const vecbasevector& edges,
           // Parallelizing this loop does not speed it up.  Perhaps to speed it up
           // we have to do something smarter, so as to eliminate the binary search
           // inside the loop.
-          for ( int64_t id = 0; id < (int64_t) paths.size( ); id++ )
-          {    if ( paths[id].empty( ) ) continue;
+          #pragma omp parallel for firstprivate(places)
+          for (int64_t id = 0; id < (int64_t) paths.size(); id++) {
+               if (paths[id].empty()) continue;
 
                // Note that we have more info here: paths[id].getOffset( )
                // is the start position of the read on the original path.
 
-               vec<int> x, y;
-               for ( int64_t j = 0; j < (int64_t) paths[id].size( ); j++ )
-                    x.push_back( paths[id][j] );
+               std::vector<int> x, y;
+               x=paths[id];
                int nkmers = 0;
-               for ( int j = 0; j < x.isize( ); j++ )
-                    nkmers += edges[x[j]].isize( ) - ( (int) K - 1 );
-               if ( nkmers + ( (int) K - 1 ) < K2 ) continue;
-               for ( int j = x.isize( ) - 1; j >= 0; j-- )
-                    y.push_back( inv[ x[j] ] );
-               Bool rc = ( y < x );
-               x = Min( x, y );
-               long pos = BinPosition( places, x );
-               long n = ipaths2[pos].size( );
+               for (auto &e:x) nkmers=edges[e].size() + 1 - K ;
+               if (nkmers + ((int) K - 1) < K2) continue;
+               for (int j = x.size() - 1; j >= 0; j--)
+                    y.push_back(inv[x[j]]);
 
+               Bool rc = (y < x);
+               x = Min(x, y);
+               long pos = BinPosition(places, x);
+               long n = ipaths2[pos].size();
                paths2[id].resize(n);
-
                int offset;
-               if ( !rc )
-                    offset = paths[id].getOffset( ) + starts[pos] - left_trunc[pos];
-               else offset = paths[id].getOffset( ) + stops[pos] - right_trunc[pos];
+               if (!rc) offset = paths[id].getOffset() + starts[pos] - left_trunc[pos];
+               else offset = paths[id].getOffset() + stops[pos] - right_trunc[pos];
                paths2[id].setOffset(offset);
 
-               if ( !rc )
-               {    for ( int j = 0; j < n; j++ )
-                         paths2[id][j] = ipaths2[pos][j];    }
-               else
-               {    for ( int j = 0; j < n; j++ )
-                         paths2[id][j] = inv2[ ipaths2[pos][n-j-1] ];    }    }
+               if (!rc) {
+                    for (int j = 0; j < n; j++)
+                         paths2[id][j] = ipaths2[pos][j];
+               } else {
+                    for (int j = 0; j < n; j++)
+                         paths2[id][j] = inv2[ipaths2[pos][n - j - 1]];
+               }
+          }
+          std::cout << Date( ) << ": path translation done" << std::endl;
      }
 }
