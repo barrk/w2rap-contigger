@@ -42,12 +42,11 @@ void RepathInMemory( const HyperBasevector& hb, const vecbasevector& edges,
      std::vector< std::vector<int> > places;
      places.reserve( paths.size( ) );
 
-
      for (int64_t i = 0; i < paths.size(); ++i) {
           std::vector<int> x, y;
           x=paths[i];
           int nkmers = 0;
-          for (auto &e:x) nkmers=edges[e].size() + 1 - K ;
+          for (auto &e:x) nkmers+=edges[e].size() + 1 - K ;
           if (nkmers + ((int) K - 1) < K2) continue;
           for (int j = x.size() - 1; j >= 0; j--)
                y.push_back(inv[x[j]]);
@@ -213,7 +212,7 @@ void RepathInMemory( const HyperBasevector& hb, const vecbasevector& edges,
                std::vector<int> x, y;
                x=paths[id];
                int nkmers = 0;
-               for (auto &e:x) nkmers=edges[e].size() + 1 - K ;
+               for (auto &e:x) nkmers+=edges[e].size() + 1 - K ;
                if (nkmers + ((int) K - 1) < K2) continue;
                for (int j = x.size() - 1; j >= 0; j--)
                     y.push_back(inv[x[j]]);
