@@ -532,11 +532,12 @@ int PacBioData::write_binary(std::string out_dir, std::string prefix){
 }
 
 // -------------- To read the data from the configuration file
+/*
 InputDataMag::InputDataMag(std::string config_file_path){
      // Open and read the configuration file
      std::ifstream cf(config_file_path);
 
-     std::string line;
+     std::string lin
      while(getline(cf, line)){
           std::cout << line << std::endl;
           std::vector<std::string> sline = tokenize(line.c_str(), ' ');
@@ -558,4 +559,4 @@ InputDataMag::InputDataMag(std::string config_file_path){
                mag.insert(std::pair<std::string, InputFileReader>(sline[0], ped));
           }
      }
-}
+}*/

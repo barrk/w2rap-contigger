@@ -76,10 +76,10 @@ private:
 void ExtractReads( String reads,
                    const String& work_dir, vecbvec* pReads, VecPQVec* quals );
 
-
+/*
 class InputDataMag{
 public:
     InputDataMag(std::string config_file_path);
     std::map<std::string, InputFileReader> mag;
-};
+};*/
 #endif

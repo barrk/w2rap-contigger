@@ -14,6 +14,7 @@
 #include "feudal/PQVec.h"
 #include "paths/HyperBasevector.h"
 #include "paths/RemodelGapTools.h"
+#include "kmers/BigKPather.h"
 #include "paths/long/BuildReadQGraph.h"
 //#include "paths/long/PlaceReads0.h"
 #include "paths/long/SupportedHyperBasevector.h"
@@ -59,81 +60,95 @@ int main(const int argc, const char * argv[]) {
     unsigned int minFreq;
     unsigned int minQual;
     int max_mem;
-    unsigned int small_K, large_K, min_size,from_step,to_step, pair_sample;
+    unsigned int small_K, large_K, min_size, from_step, to_step, pair_sample;
     std::vector<unsigned int> allowed_k = {60, 64, 72, 80, 84, 88, 96, 100, 108, 116, 128, 136, 144, 152, 160, 168, 172,
                                            180, 188, 192, 196, 200, 208, 216, 224, 232, 240, 260, 280, 300, 320, 368,
                                            400, 440, 460, 500, 544, 640};
-    std::vector<unsigned int> allowed_steps = {1,2,3,4,5,6,7};
-    bool extend_paths,run_pathfinder,dump_all,dump_perf,dump_pf;
+    std::vector<unsigned int> allowed_steps = {1, 2, 3, 4, 5, 6, 7};
+    bool extend_paths, run_pathfinder, dump_all, dump_perf, dump_pf, lmp;
 
     //========== Command Line Option Parsing ==========
-    for (auto i=0;i<argc;i++) std::cout<<argv[i]<<" ";
-    std::cout<<std::endl<<std::endl;
+    for (auto i = 0; i < argc; i++) std::cout << argv[i] << " ";
+    std::cout << std::endl << std::endl;
     std::cout << "Welcome to w2rap-contigger" << std::endl;
 
     try {
         TCLAP::CmdLine cmd("", ' ', "0.1");
         TCLAP::ValueArg<unsigned int> threadsArg("t", "threads",
-             "Number of threads on parallel sections (default: 4)", false, 4, "int", cmd);
+                                                 "Number of threads on parallel sections (default: 4)", false, 4, "int",
+                                                 cmd);
         TCLAP::ValueArg<unsigned int> max_memArg("m", "max_mem",
-             "Maximum memory in GB (soft limit, impacts performance, default 10000)", false, 10000, "int", cmd);
+                                                 "Maximum memory in GB (soft limit, impacts performance, default 10000)",
+                                                 false, 10000, "int", cmd);
 
         // Read input types
         TCLAP::ValueArg<std::string> config_file_pathArg("C", "config_file_path",
-                                                      "Input sequences (pe reads) files ", true, "", "file1.fastq,file2.fastq", cmd);
+                                                         "Input sequences (pe reads) files ", false, "",
+                                                         "file1.fastq,file2.fastq", cmd);
 
         TCLAP::ValueArg<std::string> pe_read_filesArg("P", "pe_read_files",
-                                                      "Input sequences (pe reads) files ", true, "", "file1.fastq,file2.fastq", cmd);
+                                                      "Input sequences (pe reads) files ", true, "",
+                                                      "file1.fastq,file2.fastq", cmd);
 
         TCLAP::ValueArg<std::string> mp_read_filesArg("M", "mp_read_files",
-                                                      "Input sequences (reads) files ", false, "", "file1.fastq,file2.fastq", cmd);
+                                                      "Input sequences (reads) files ", false, "",
+                                                      "file1.fastq,file2.fastq", cmd);
 
         TCLAP::ValueArg<std::string> tenx_read_filesArg("X", "tenx_read_files",
-                                                      "Input sequences (reads) files ", false, "", "file1.fastq,file2.fastq", cmd);
+                                                        "Input sequences (reads) files ", false, "",
+                                                        "file1.fastq,file2.fastq", cmd);
 
         TCLAP::ValueArg<std::string> pb_read_filesArg("B", "pb_read_files",
-                                                      "Input sequences (reads) files ", false, "", "file1.fastq,file2.fastq", cmd);
+                                                      "Input sequences (reads) files ", false, "",
+                                                      "file1.fastq,file2.fastq", cmd);
 
 
         TCLAP::ValueArg<std::string> out_dirArg("o", "out_dir", "Output dir path", true, "", "string", cmd);
         TCLAP::ValueArg<std::string> out_prefixArg("p", "prefix",
-             "Prefix for the output files", true, "", "string", cmd);
+                                                   "Prefix for the output files", true, "", "string", cmd);
 
         TCLAP::ValuesConstraint<unsigned int> largeKconst(allowed_k);
         TCLAP::ValueArg<unsigned int> large_KArg("K", "large_k",
-             "Large k (default: 200)", false, 200, &largeKconst, cmd);
+                                                 "Large k (default: 200)", false, 200, &largeKconst, cmd);
         //TCLAP::ValueArg<unsigned int> small_KArg("k", "small_k",
         //                                         "Small k (default: 60)", false, 60, &largeKconst, cmd);
 
         TCLAP::ValuesConstraint<unsigned int> steps(allowed_steps);
         TCLAP::ValueArg<unsigned int> fromStep_Arg("", "from_step",
-                                                 "Start on step (default: 1)", false, 1, &steps, cmd);
+                                                   "Start on step (default: 1)", false, 1, &steps, cmd);
 
         TCLAP::ValueArg<unsigned int> toStep_Arg("", "to_step",
-                                                   "Stop after step (default: 7)", false, 7, &steps, cmd);
+                                                 "Stop after step (default: 7)", false, 7, &steps, cmd);
+        TCLAP::ValueArg<bool> lmp_Arg("", "lmps",
+                                      "Use lmp data to resolve paths", false, false, "bool", cmd);
 
 
         TCLAP::ValueArg<unsigned int> minSizeArg("s", "min_size",
-             "Min size of disconnected elements on large_k graph (in kmers, default: 0=no min)", false, 0, "int", cmd);
+                                                 "Min size of disconnected elements on large_k graph (in kmers, default: 0=no min)",
+                                                 false, 0, "int", cmd);
         TCLAP::ValueArg<unsigned int> minFreqArg("", "min_freq",
-                                                 "minimum frequency for small k-mers on step 2 (default: 4)", false, 4, "int", cmd);
+                                                 "minimum frequency for small k-mers on step 2 (default: 4)", false, 4,
+                                                 "int", cmd);
         TCLAP::ValueArg<unsigned int> minQualArg("", "min_qual",
-                                                 "minimum quality for small k-mers on step 2 (default: 7)", false, 7, "int", cmd);
+                                                 "minimum quality for small k-mers on step 2 (default: 7)", false, 7,
+                                                 "int", cmd);
         TCLAP::ValueArg<unsigned int> pairSampleArg("", "pair_sample",
-                                                    "max number of read pairs to use in local assemblies on step 5(default: 200)", false, 200, "int", cmd);
-        TCLAP::ValueArg<bool>         pathExtensionArg        ("","extend_paths",
-                                                               "Enable extend paths on repath (experimental)", false,false,"bool",cmd);
-        TCLAP::ValueArg<bool>         pathFinderArg        ("","path_finder",
-                                                               "Run PathFinder (experimental)", false,false,"bool",cmd);
-        TCLAP::ValueArg<bool>         dumpAllArg        ("","dump_all",
-                                                               "Dump all intermediate files", false,false,"bool",cmd);
-        TCLAP::ValueArg<bool>         dumpPerfArg        ("","dump_perf",
-                                                         "Dump performance info (devel)", false,false,"bool",cmd);
-        TCLAP::ValueArg<bool>         dumpPFArg        ("","dump_pf",
-                                                          "Dump pathfinder info (devel)", false,false,"bool",cmd);
+                                                    "max number of read pairs to use in local assemblies on step 5(default: 200)",
+                                                    false, 200, "int", cmd);
+        TCLAP::ValueArg<bool> pathExtensionArg("", "extend_paths",
+                                               "Enable extend paths on repath (experimental)", false, false, "bool",
+                                               cmd);
+        TCLAP::ValueArg<bool> pathFinderArg("", "path_finder",
+                                            "Run PathFinder (experimental)", false, false, "bool", cmd);
+        TCLAP::ValueArg<bool> dumpAllArg("", "dump_all",
+                                         "Dump all intermediate files", false, false, "bool", cmd);
+        TCLAP::ValueArg<bool> dumpPerfArg("", "dump_perf",
+                                          "Dump performance info (devel)", false, false, "bool", cmd);
+        TCLAP::ValueArg<bool> dumpPFArg("", "dump_pf",
+                                        "Dump pathfinder info (devel)", false, false, "bool", cmd);
 
         TCLAP::ValueArg<std::string> dev_runArg("", "dev_run_test",
-                                                   "runs development tests", false, "", "devel only", cmd);
+                                                "runs development tests", false, "", "devel only", cmd);
 
         cmd.parse(argc, argv);
         // Get the value parsed by each arg.
@@ -145,23 +160,28 @@ int main(const int argc, const char * argv[]) {
         mp_read_files = mp_read_filesArg.getValue();
         tenx_read_files = tenx_read_filesArg.getValue();
         pb_read_files = pb_read_filesArg.getValue();
+        lmp = lmp_Arg.getValue();
+        if (lmp && mp_read_files==""){
+            std::cout << "Asked for LMP processing, but no lmp files specified" << std::endl;
+            Scram(1);
+        }
 
         threads = threadsArg.getValue();
         max_mem = max_memArg.getValue();
         large_K = large_KArg.getValue();
         small_K = 60;//small_KArg.getValue();
         min_size = minSizeArg.getValue();
-        extend_paths=pathExtensionArg.getValue();
-        run_pathfinder=pathFinderArg.getValue();
-        dump_all=dumpAllArg.getValue();
-        dump_perf=dumpPerfArg.getValue();
-        from_step=fromStep_Arg.getValue();
-        to_step=toStep_Arg.getValue();
-        dev_run=dev_runArg.getValue();
-        dump_pf=dumpPFArg.getValue();
-        pair_sample=pairSampleArg.getValue();
-        minFreq=minFreqArg.getValue();
-        minQual=minQualArg.getValue();
+        extend_paths = pathExtensionArg.getValue();
+        run_pathfinder = pathFinderArg.getValue();
+        dump_all = dumpAllArg.getValue();
+        dump_perf = dumpPerfArg.getValue();
+        from_step = fromStep_Arg.getValue();
+        to_step = toStep_Arg.getValue();
+        dev_run = dev_runArg.getValue();
+        dump_pf = dumpPFArg.getValue();
+        pair_sample = pairSampleArg.getValue();
+        minFreq = minFreqArg.getValue();
+        minQual = minQualArg.getValue();
 
     } catch (TCLAP::ArgException &e)  // catch any exceptions
     {
@@ -203,13 +223,13 @@ int main(const int argc, const char * argv[]) {
 
     //== Handle "special cases" to test on development==
 
-    if (dev_run!=""){
-        std::cout<<"=== w2rap contigger: development test run ==="<<std::endl;
-        if (dev_run=="pathfinder" or dev_run=="pathfinder2"){
+    if (dev_run != "") {
+        std::cout << "=== w2rap contigger: development test run ===" << std::endl;
+        if (dev_run == "pathfinder" or dev_run == "pathfinder2") {
             //Pathfinder test, runs from Pathfinder to the end of step 6
             VecULongVec invPaths;
             std::cout << Date() << ": loading HVB and paths" << std::endl;
-            if (dev_run=="pathfinder") {
+            if (dev_run == "pathfinder") {
                 BinaryReader::readFile(out_dir + "/pf_start.hbv", &hbvr);
                 pathsr.ReadAll(out_dir + "/pf_start.paths");
                 inv.clear();
@@ -233,13 +253,13 @@ int main(const int argc, const char * argv[]) {
             }
             std::cout << Date() << ": making paths index for PathFinder" << std::endl;
             invPaths.clear();
-            invert( pathsr, invPaths, hbvr.EdgeObjectCount( ) );
+            invert(pathsr, invPaths, hbvr.EdgeObjectCount());
 
             std::cout << Date() << ": PathFinder: Separating solved single-flow repeats" << std::endl;
-            PathFinder(hbvr,inv,pathsr,invPaths).untangle_complex_in_out_choices(700, true);
-            std::cout<<"Removing Unneeded Vertices & Cleanup"<<std::endl;
-            RemoveUnneededVertices2(hbvr,inv,pathsr);
-            Cleanup( hbvr, inv, pathsr );
+            PathFinder(hbvr, inv, pathsr, invPaths).untangle_complex_in_out_choices(700, true);
+            std::cout << "Removing Unneeded Vertices & Cleanup" << std::endl;
+            RemoveUnneededVertices2(hbvr, inv, pathsr);
+            Cleanup(hbvr, inv, pathsr);
 
             std::cout << "Loading reads in fastb/qualp format..." << std::endl;
             pe_data.read_binary(out_dir, "");
@@ -250,42 +270,42 @@ int main(const int argc, const char * argv[]) {
             std::cout << "   DONE!" << std::endl;
 
             path_improver pimp;
-                vec<int64_t> ids;
-                ImprovePaths( pathsr, hbvr, inv, pe_data.bases, pe_data.quals, ids, pimp,
-                              False, False );
-            vec<int> to_left,to_right;
+            vec<int64_t> ids;
+            ImprovePaths(pathsr, hbvr, inv, pe_data.bases, pe_data.quals, ids, pimp,
+                         False, False);
+            vec<int> to_left, to_right;
             hbvr.ToLeft(to_left), hbvr.ToRight(to_right);
             int ext = 0;
             auto qvItr = pe_data.quals.begin();
-            for ( int64_t id = 0; id < (int64_t) pathsr.size( ); id++,++qvItr )
-                {    Bool verbose = False;
-                    const int min_gain = 20;
-                    ReadPath p = pathsr[id];
-                    ExtendPath2( pathsr[id], id, hbvr, to_left, to_right, pe_data.bases[id], *qvItr,
-                                 min_gain, verbose, 1 );
-                    if ( p != pathsr[id] ) ext++;    }
-                std::cout << ext << " paths extended" << std::endl;
+            for (int64_t id = 0; id < (int64_t) pathsr.size(); id++, ++qvItr) {
+                Bool verbose = False;
+                const int min_gain = 20;
+                ReadPath p = pathsr[id];
+                ExtendPath2(pathsr[id], id, hbvr, to_left, to_right, pe_data.bases[id], *qvItr,
+                            min_gain, verbose, 1);
+                if (p != pathsr[id]) ext++;
+            }
+            std::cout << ext << " paths extended" << std::endl;
 
             // Degloop.
 
-            Degloop( 1, hbvr, inv, pathsr, pe_data.bases, pe_data.quals, 2.5 );
-            std::cout << Date( ) << ": removing Hangs" << std::endl;
-            RemoveHangs( hbvr, inv, pathsr, 700 );
-            std::cout << Date( ) << ": cleanup" << std::endl;
-            Cleanup( hbvr, inv, pathsr );
-            std::cout << Date( ) << ": cleanup finished" << std::endl;
+            Degloop(1, hbvr, inv, pathsr, pe_data.bases, pe_data.quals, 2.5);
+            std::cout << Date() << ": removing Hangs" << std::endl;
+            RemoveHangs(hbvr, inv, pathsr, 700);
+            std::cout << Date() << ": cleanup" << std::endl;
+            Cleanup(hbvr, inv, pathsr);
+            std::cout << Date() << ": cleanup finished" << std::endl;
 
 
-
-            UnwindThreeEdgePlasmids( hbvr, inv, pathsr );
+            UnwindThreeEdgePlasmids(hbvr, inv, pathsr);
 
             // Remove tiny stuff.
 
-            std::cout << Date( ) << ": removing small components" << std::endl;
-            RemoveSmallComponents3( hbvr, True );
-            Cleanup( hbvr, inv, pathsr );
-            CleanupLoops( hbvr, inv, pathsr );
-            RemoveUnneededVerticesGeneralizedLoops( hbvr, inv, pathsr );
+            std::cout << Date() << ": removing small components" << std::endl;
+            RemoveSmallComponents3(hbvr, True);
+            Cleanup(hbvr, inv, pathsr);
+            CleanupLoops(hbvr, inv, pathsr);
+            RemoveUnneededVerticesGeneralizedLoops(hbvr, inv, pathsr);
 
             vec<vec<vec<vec<int>>>> lines;
 
@@ -310,7 +330,7 @@ int main(const int argc, const char * argv[]) {
             BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".contig.hbv", hbvr);
             pathsr.WriteAll(out_dir + "/" + out_prefix + ".contig.paths");
             std::cout << "   DONE!" << std::endl;
-            GFADump(out_dir +"/"+ out_prefix + "_contigs", hbvr, inv, pathsr, MAX_CELL_PATHS, MAX_DEPTH, true);
+            GFADump(out_dir + "/" + out_prefix + "_contigs", hbvr, inv, pathsr, MAX_CELL_PATHS, MAX_DEPTH, true);
 
         }
     }
@@ -318,21 +338,20 @@ int main(const int argc, const char * argv[]) {
     //== Load reads (and saves in binary format) ======
 
     if (dump_perf) {
-        perf_file.open(out_dir+"/"+out_prefix+".perf",std::ofstream::out | std::ofstream::app);
+        perf_file.open(out_dir + "/" + out_prefix + ".perf", std::ofstream::out | std::ofstream::app);
     }
     if (dump_perf) checkpoint_perf_time(""); //initialisation!
 
-    if (from_step==1)
-    {
+    if (from_step == 1) {
         std::cout << "--== Step 1: Reading input files ==--" << std::endl;
 
         // Read all data form the configuration file
-        InputDataMag dataMag(config_file_path);
+        //InputDataMag dataMag(config_file_path);
 
         std::cout << "Reading input files DONE!" << std::endl << std::endl << std::endl;
         if (dump_perf) perf_file << checkpoint_perf_time("ExtractReads") << std::endl;
         //TODO: add an option to dump the reads
-        if (dump_all || to_step<6) {
+        if (dump_all || to_step < 6) {
             std::cout << "Dumping reads in fastb/qualp format..." << std::endl;
 
             pe_data.write_binary(out_dir, "pe_");
@@ -346,7 +365,7 @@ int main(const int argc, const char * argv[]) {
 
     //== Read QGraph, and repath (k=60, k=200 (and saves in binary format) ======
 
-    if (from_step>1 && from_step<7 and not (from_step==3 and to_step==3)){
+    if (from_step > 1 && from_step < 7 and not(from_step == 3 and to_step == 3)) {
         std::cout << "Loading reads in fastb/qualp format..." << std::endl;
 
         pe_data.read_binary(out_dir, "");
@@ -360,15 +379,16 @@ int main(const int argc, const char * argv[]) {
 
         HyperBasevector hbv;
         ReadPathVec paths;
-        if (from_step<=2 and to_step>=2) {
+        if (from_step <= 2 and to_step >= 2) {
             bool FILL_JOIN = False;
             std::cout << "--== Step 2: Building first (small K) graph ==--" << std::endl;
-            buildReadQGraph(pe_data.bases, pe_data.quals, FILL_JOIN, FILL_JOIN, minQual, minFreq, .75, 0, &hbv, &paths, small_K, out_dir);
+            buildReadQGraph(pe_data.bases, pe_data.quals, FILL_JOIN, FILL_JOIN, minQual, minFreq, .75, 0, &hbv, &paths,
+                            small_K, out_dir);
             if (dump_perf) perf_file << checkpoint_perf_time("buildReadQGraph") << std::endl;
             FixPaths(hbv, paths); //TODO: is this even needed?
             if (dump_perf) perf_file << checkpoint_perf_time("FixPaths") << std::endl;
             std::cout << "Building first graph DONE!" << std::endl << std::endl << std::endl;
-            if (dump_all || to_step ==2){
+            if (dump_all || to_step == 2) {
                 std::cout << "Dumping small_K graph and paths..." << std::endl;
                 BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".small_K.hbv", hbv);
                 paths.WriteAll(out_dir + "/" + out_prefix + ".small_K.paths");
@@ -377,14 +397,14 @@ int main(const int argc, const char * argv[]) {
             }
         }
 
-        if (from_step==3){
+        if (from_step == 3) {
             std::cout << "Reading small_K graph and paths..." << std::endl;
             BinaryReader::readFile(out_dir + "/" + out_prefix + ".small_K.hbv", &hbv);
             paths.ReadAll(out_dir + "/" + out_prefix + ".small_K.paths");
             std::cout << "   DONE!" << std::endl;
             if (dump_perf) perf_file << std::endl << checkpoint_perf_time("SmallKLoad") << std::endl;
         }
-        if (from_step<=3 and to_step>=3) {
+        if (from_step <= 3 and to_step >= 3) {
             std::cout << "--== Step 3: Repathing to second (large K) graph ==--" << std::endl;
             vecbvec edges(hbv.Edges().begin(), hbv.Edges().end());
             inv.clear();
@@ -399,7 +419,7 @@ int main(const int argc, const char * argv[]) {
             RepathInMemory(hbv, edges, inv, paths, hbv.K(), large_K, hbvr, pathsr, True, True, extend_paths);
             if (dump_perf) perf_file << checkpoint_perf_time("Repath") << std::endl;
             std::cout << "Repathing to second graph DONE!" << std::endl << std::endl << std::endl;
-            if (dump_all || to_step ==3){
+            if (dump_all || to_step == 3) {
                 std::cout << "Dumping large_K graph and paths..." << std::endl;
                 BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".large_K.hbv", hbvr);
                 pathsr.WriteAll(out_dir + "/" + out_prefix + ".large_K.paths");
@@ -411,14 +431,14 @@ int main(const int argc, const char * argv[]) {
     }
 
     //== Clean ======
-    if (from_step==4){
+    if (from_step == 4) {
         std::cout << "Reading large_K graph and paths..." << std::endl;
         BinaryReader::readFile(out_dir + "/" + out_prefix + ".large_K.hbv", &hbvr);
         pathsr.ReadAll(out_dir + "/" + out_prefix + ".large_K.paths");
         std::cout << "   DONE!" << std::endl;
         if (dump_perf) perf_file << std::endl << checkpoint_perf_time("LargeKLoad") << std::endl;
     }
-    if (from_step<=4 and to_step>=4) {
+    if (from_step <= 4 and to_step >= 4) {
         std::cout << "--== Step 4: Cleaning graph ==--" << std::endl;
         inv.clear();
         hbvr.Involution(inv);
@@ -426,14 +446,25 @@ int main(const int argc, const char * argv[]) {
         int CLEAN_200V = 3;
         Clean200x(hbvr, inv, pathsr, pe_data.bases, pe_data.quals, CLEAN_200_VERBOSITY, CLEAN_200V, min_size);
         if (dump_perf) perf_file << checkpoint_perf_time("Clean200x") << std::endl;
-        std::cout << "Cleaning graph DONE!" << std::endl<< std::endl<< std::endl;
-        if (dump_all || to_step ==4){
+        std::cout << "Cleaning graph DONE!" << std::endl << std::endl << std::endl;
+        if (dump_all || to_step == 4) {
             std::cout << "Dumping large_K clean graph and paths..." << std::endl;
             BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".large_K.clean.hbv", hbvr);
             pathsr.WriteAll(out_dir + "/" + out_prefix + ".large_K.clean.paths");
             std::cout << "   DONE!" << std::endl;
             if (dump_perf) perf_file << checkpoint_perf_time("LargeKCleanDump") << std::endl;
         }
+    }
+
+    // need to clarify exactly where this should go, think its here though
+    if (lmp) {
+        HyperBasevector hb_lmp;
+        ReadPathVec pHBV_lmp;
+        HyperKmerPath pHKP_lmp;
+        vecKmerPath path_lmps;
+        MpData mp_data(mp_read_files);
+        // covrage is currently hard coded to value from ecolie LMPs
+        buildBigKHBVFromReads(200, mp_data.bases, 70, &hb_lmp, &pHBV_lmp, &pHKP_lmp, &path_lmps);
     }
 
     //== Patching ======
@@ -485,8 +516,6 @@ int main(const int argc, const char * argv[]) {
         }
 
     }
-
-
 
     if (from_step==6){
         std::cout << "Reading large_K final graph and paths..." << std::endl;
@@ -582,7 +611,6 @@ int main(const int argc, const char * argv[]) {
         //FinalFiles(hbvr, inv, pathsr, subsam_names, subsam_starts, out_dir, out_prefix + "_contigs", MAX_CELL_PATHS, MAX_DEPTH, G);
         GFADump(out_dir +"/"+ out_prefix + "_contigs", hbvr, inv, pathsr, MAX_CELL_PATHS, MAX_DEPTH, true);
         PathFinder(hbvr,inv,pathsr,paths_inv).classify_forks();
-
     }
     if (from_step==7){
         std::cout << "Reading contig graph and paths..." << std::endl;
