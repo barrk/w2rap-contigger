@@ -56,11 +56,12 @@ int main(const int argc, const char * argv[]) {
     std::string pb_read_files;
     std::string out_dir;
     std::string dev_run;
+    std::string tmp_dir;
     unsigned int threads;
     unsigned int minFreq;
     unsigned int minQual;
     int max_mem;
-    unsigned int small_K, large_K, min_size, from_step, to_step, pair_sample;
+    unsigned int small_K, large_K, min_size,from_step,to_step, pair_sample, disk_batches;
     std::vector<unsigned int> allowed_k = {60, 64, 72, 80, 84, 88, 96, 100, 108, 116, 128, 136, 144, 152, 160, 168, 172,
                                            180, 188, 192, 196, 200, 208, 216, 224, 232, 240, 260, 280, 300, 320, 368,
                                            400, 440, 460, 500, 544, 640};
@@ -122,7 +123,10 @@ int main(const int argc, const char * argv[]) {
         TCLAP::ValueArg<bool> lmp_Arg("", "lmps",
                                       "Use lmp data to resolve paths", false, false, "bool", cmd);
 
-
+        TCLAP::ValueArg<unsigned int> disk_batchesArg("d", "disk_batches",
+                                                 "number of disk batches for step2 (default: 0, 0->in memory)", false, 0, "int", cmd);
+        TCLAP::ValueArg<unsigned int> tmp_dirArg("", "tmp_dir",
+                                                      "tmp dir for step2 disk batches (default: workdir)", false, 4, "int", cmd);
         TCLAP::ValueArg<unsigned int> minSizeArg("s", "min_size",
                                                  "Min size of disconnected elements on large_k graph (in kmers, default: 0=no min)",
                                                  false, 0, "int", cmd);
@@ -171,17 +175,19 @@ int main(const int argc, const char * argv[]) {
         large_K = large_KArg.getValue();
         small_K = 60;//small_KArg.getValue();
         min_size = minSizeArg.getValue();
-        extend_paths = pathExtensionArg.getValue();
-        run_pathfinder = pathFinderArg.getValue();
-        dump_all = dumpAllArg.getValue();
-        dump_perf = dumpPerfArg.getValue();
-        from_step = fromStep_Arg.getValue();
-        to_step = toStep_Arg.getValue();
-        dev_run = dev_runArg.getValue();
-        dump_pf = dumpPFArg.getValue();
-        pair_sample = pairSampleArg.getValue();
-        minFreq = minFreqArg.getValue();
-        minQual = minQualArg.getValue();
+        extend_paths=pathExtensionArg.getValue();
+        run_pathfinder=pathFinderArg.getValue();
+        dump_all=dumpAllArg.getValue();
+        dump_perf=dumpPerfArg.getValue();
+        from_step=fromStep_Arg.getValue();
+        to_step=toStep_Arg.getValue();
+        dev_run=dev_runArg.getValue();
+        dump_pf=dumpPFArg.getValue();
+        pair_sample=pairSampleArg.getValue();
+        minFreq=minFreqArg.getValue();
+        minQual=minQualArg.getValue();
+        disk_batches=disk_batchesArg.getValue();
+        tmp_dir=tmp_dirArg.getValue();
 
     } catch (TCLAP::ArgException &e)  // catch any exceptions
     {
@@ -198,6 +204,9 @@ int main(const int argc, const char * argv[]) {
         std::cout << "Output directory doesn't exist, or is not a directory: " << out_dir << std::endl;
         return 1;
     }
+
+    if (omp_get_proc_bind()==omp_proc_bind_false) std::cout<< "WARNING: you are running the code with omp_proc_bind_false, parallel performance may suffer"<<std::endl;
+    if (omp_get_proc_bind()==omp_proc_bind_master) std::cout<< "WARNING: you are running the code with omp_proc_bind_master, parallel performance may suffer"<<std::endl;
 
     //========== Main Program Begins ======
     // This has to be according to the input
@@ -231,7 +240,7 @@ int main(const int argc, const char * argv[]) {
             std::cout << Date() << ": loading HVB and paths" << std::endl;
             if (dev_run == "pathfinder") {
                 BinaryReader::readFile(out_dir + "/pf_start.hbv", &hbvr);
-                pathsr.ReadAll(out_dir + "/pf_start.paths");
+                LoadReadPathVec(pathsr,(out_dir + "/pf_start.paths").c_str());
                 inv.clear();
                 hbvr.Involution(inv);
                 std::cout << Date() << ": making paths index for PathFinder" << std::endl;
@@ -244,10 +253,10 @@ int main(const int argc, const char * argv[]) {
                 Cleanup(hbvr, inv, pathsr);
                 std::cout << "Dumping" << std::endl;
                 BinaryWriter::writeFile(out_dir + "/pf_after_loops.hbv", hbvr);
-                pathsr.WriteAll(out_dir + "/pf_after_loops.paths");
+                WriteReadPathVec(pathsr,(out_dir + "/pf_after_loops.paths").c_str());
             } else {
                 BinaryReader::readFile(out_dir + "/pf_after_loops.hbv", &hbvr);
-                pathsr.ReadAll(out_dir + "/pf_after_loops.paths");
+                LoadReadPathVec(pathsr,(out_dir + "/pf_after_loops.paths").c_str());
                 inv.clear();
                 hbvr.Involution(inv);
             }
@@ -328,7 +337,7 @@ int main(const int argc, const char * argv[]) {
             //TODO: add contig fasta dump.
             std::cout << "Dumping contig graph and paths..." << std::endl;
             BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".contig.hbv", hbvr);
-            pathsr.WriteAll(out_dir + "/" + out_prefix + ".contig.paths");
+            WriteReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".contig.paths").c_str());
             std::cout << "   DONE!" << std::endl;
             GFADump(out_dir + "/" + out_prefix + "_contigs", hbvr, inv, pathsr, MAX_CELL_PATHS, MAX_DEPTH, true);
 
@@ -382,8 +391,7 @@ int main(const int argc, const char * argv[]) {
         if (from_step <= 2 and to_step >= 2) {
             bool FILL_JOIN = False;
             std::cout << "--== Step 2: Building first (small K) graph ==--" << std::endl;
-            buildReadQGraph(pe_data.bases, pe_data.quals, FILL_JOIN, FILL_JOIN, minQual, minFreq, .75, 0, &hbv, &paths,
-                            small_K, out_dir);
+            buildReadQGraph(bases, quals, FILL_JOIN, FILL_JOIN, minQual, minFreq, .75, 0, &hbv, &paths, small_K, out_dir,tmp_dir,disk_batches);
             if (dump_perf) perf_file << checkpoint_perf_time("buildReadQGraph") << std::endl;
             FixPaths(hbv, paths); //TODO: is this even needed?
             if (dump_perf) perf_file << checkpoint_perf_time("FixPaths") << std::endl;
@@ -391,7 +399,7 @@ int main(const int argc, const char * argv[]) {
             if (dump_all || to_step == 2) {
                 std::cout << "Dumping small_K graph and paths..." << std::endl;
                 BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".small_K.hbv", hbv);
-                paths.WriteAll(out_dir + "/" + out_prefix + ".small_K.paths");
+                WriteReadPathVec(paths,(out_dir + "/" + out_prefix + ".small_K.paths").c_str());
                 std::cout << "   DONE!" << std::endl;
                 if (dump_perf) perf_file << checkpoint_perf_time("SmallKDump") << std::endl;
             }
@@ -400,7 +408,7 @@ int main(const int argc, const char * argv[]) {
         if (from_step == 3) {
             std::cout << "Reading small_K graph and paths..." << std::endl;
             BinaryReader::readFile(out_dir + "/" + out_prefix + ".small_K.hbv", &hbv);
-            paths.ReadAll(out_dir + "/" + out_prefix + ".small_K.paths");
+            LoadReadPathVec(paths,(out_dir + "/" + out_prefix + ".small_K.paths").c_str());
             std::cout << "   DONE!" << std::endl;
             if (dump_perf) perf_file << std::endl << checkpoint_perf_time("SmallKLoad") << std::endl;
         }
@@ -421,8 +429,8 @@ int main(const int argc, const char * argv[]) {
             std::cout << "Repathing to second graph DONE!" << std::endl << std::endl << std::endl;
             if (dump_all || to_step == 3) {
                 std::cout << "Dumping large_K graph and paths..." << std::endl;
-                BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".large_K.hbv", hbvr);
-                pathsr.WriteAll(out_dir + "/" + out_prefix + ".large_K.paths");
+                BinaryWriter::writeFile(out_dir + "/" + out_prefixgit  + ".large_K.hbv", hbvr);
+                WriteReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".large_K.paths").c_str());
                 std::cout << "   DONE!" << std::endl;
                 if (dump_perf) perf_file << checkpoint_perf_time("LargeKDump") << std::endl;
             }
@@ -434,7 +442,7 @@ int main(const int argc, const char * argv[]) {
     if (from_step == 4) {
         std::cout << "Reading large_K graph and paths..." << std::endl;
         BinaryReader::readFile(out_dir + "/" + out_prefix + ".large_K.hbv", &hbvr);
-        pathsr.ReadAll(out_dir + "/" + out_prefix + ".large_K.paths");
+        LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".large_K.paths").c_str());
         std::cout << "   DONE!" << std::endl;
         if (dump_perf) perf_file << std::endl << checkpoint_perf_time("LargeKLoad") << std::endl;
     }
@@ -450,7 +458,7 @@ int main(const int argc, const char * argv[]) {
         if (dump_all || to_step == 4) {
             std::cout << "Dumping large_K clean graph and paths..." << std::endl;
             BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".large_K.clean.hbv", hbvr);
-            pathsr.WriteAll(out_dir + "/" + out_prefix + ".large_K.clean.paths");
+            WriteReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".large_K.clean.paths").c_str());
             std::cout << "   DONE!" << std::endl;
             if (dump_perf) perf_file << checkpoint_perf_time("LargeKCleanDump") << std::endl;
         }
@@ -474,7 +482,7 @@ int main(const int argc, const char * argv[]) {
     if (from_step==5){
         std::cout << "Reading large_K clean graph and paths..." << std::endl;
         BinaryReader::readFile(out_dir + "/" + out_prefix + ".large_K.clean.hbv", &hbvr);
-        pathsr.ReadAll(out_dir + "/" + out_prefix + ".large_K.clean.paths");
+        LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".large_K.clean.paths").c_str());
         inv.clear();
         hbvr.Involution(inv);
         std::cout << "   DONE!" << std::endl;
@@ -510,7 +518,7 @@ int main(const int argc, const char * argv[]) {
         if (dump_all || to_step ==5){
             std::cout << "Dumping large_K final graph and paths..." << std::endl;
             BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".large_K.final.hbv", hbvr);
-            pathsr.WriteAll(out_dir + "/" + out_prefix + ".large_K.final.paths");
+            WriteReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".large_K.final.paths").c_str());
             std::cout << "   DONE!" << std::endl;
             if (dump_perf) perf_file << checkpoint_perf_time("LargeKFinalDump") << std::endl;
         }
@@ -520,7 +528,7 @@ int main(const int argc, const char * argv[]) {
     if (from_step==6){
         std::cout << "Reading large_K final graph and paths..." << std::endl;
         BinaryReader::readFile(out_dir + "/" + out_prefix + ".large_K.final.hbv", &hbvr);
-        pathsr.ReadAll(out_dir + "/" + out_prefix + ".large_K.final.paths");
+        LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".large_K.final.paths").c_str());
         inv.clear();
         hbvr.Involution(inv);
         std::cout << "   DONE!" << std::endl;
@@ -603,7 +611,7 @@ int main(const int argc, const char * argv[]) {
         if (dump_all || to_step == 6){
             std::cout << "Dumping contig graph and paths..." << std::endl;
             BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".contig.hbv", hbvr);
-            pathsr.WriteAll(out_dir + "/" + out_prefix + ".contig.paths");
+            WriteReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".contig.paths").c_str());
             std::cout << "   DONE!" << std::endl;
             if (dump_perf) perf_file << checkpoint_perf_time("ContigGraphDump") << std::endl;
         }
@@ -615,7 +623,7 @@ int main(const int argc, const char * argv[]) {
     if (from_step==7){
         std::cout << "Reading contig graph and paths..." << std::endl;
         BinaryReader::readFile(out_dir + "/" + out_prefix + ".contig.hbv", &hbvr);
-        pathsr.ReadAll(out_dir + "/" + out_prefix + ".contig.paths");
+        LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".contig.paths").c_str());
         inv.clear();
         hbvr.Involution(inv);
         paths_inv.clear();
