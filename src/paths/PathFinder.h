@@ -12,6 +12,7 @@
 #include "Vec.h"
 
 
+
 class PathFinder {
 public:
     PathFinder( HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, int min_reads = 5 ) :
@@ -26,6 +27,8 @@ public:
 
 
     }
+
+
 
     //Graph-related methods
     std::vector<std::vector<uint64_t>> AllPathsFromTo(std::vector<uint64_t> in_edges, std::vector<uint64_t> out_edges, uint64_t max_length);

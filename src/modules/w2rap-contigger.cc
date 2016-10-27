@@ -120,8 +120,8 @@ int main(const int argc, const char * argv[]) {
 
         TCLAP::ValueArg<unsigned int> toStep_Arg("", "to_step",
                                                  "Stop after step (default: 7)", false, 7, &steps, cmd);
-        TCLAP::ValueArg<bool> lmp_Arg("", "lmps",
-                                      "Use lmp data to resolve paths", false, false, "bool", cmd);
+        //TCLAP::ValueArg<bool> lmp_Arg("", "lmps",
+        //                             "Use lmp data to resolve paths", false, false, "bool", cmd);
 
         TCLAP::ValueArg<unsigned int> disk_batchesArg("d", "disk_batches",
                                                  "number of disk batches for step2 (default: 0, 0->in memory)", false, 0, "int", cmd);
@@ -164,11 +164,11 @@ int main(const int argc, const char * argv[]) {
         mp_read_files = mp_read_filesArg.getValue();
         tenx_read_files = tenx_read_filesArg.getValue();
         pb_read_files = pb_read_filesArg.getValue();
-        lmp = lmp_Arg.getValue();
-        if (lmp && mp_read_files==""){
-            std::cout << "Asked for LMP processing, but no lmp files specified" << std::endl;
-            Scram(1);
-        }
+        //lmp = lmp_Arg.getValue();
+        //if (lmp && mp_read_files==""){
+        //    std::cout << "Asked for LMP processing, but no lmp files specified" << std::endl;
+        //    Scram(1);
+        //} Just assume if LMP data is supplied, its because we want to use it
 
         threads = threadsArg.getValue();
         max_mem = max_memArg.getValue();
@@ -200,6 +200,7 @@ int main(const int argc, const char * argv[]) {
 
     struct stat info;
 
+    std::cout << "Running contigger from step:" << from_step << " to step " << to_step << std::endl;
     if (stat(out_dir.c_str(), &info) != 0 || !(info.st_mode & S_IFDIR)) {
         std::cout << "Output directory doesn't exist, or is not a directory: " << out_dir << std::endl;
         return 1;
@@ -391,7 +392,7 @@ int main(const int argc, const char * argv[]) {
         if (from_step <= 2 and to_step >= 2) {
             bool FILL_JOIN = False;
             std::cout << "--== Step 2: Building first (small K) graph ==--" << std::endl;
-            buildReadQGraph(bases, quals, FILL_JOIN, FILL_JOIN, minQual, minFreq, .75, 0, &hbv, &paths, small_K, out_dir,tmp_dir,disk_batches);
+            buildReadQGraph(pe_data.bases, pe_data.quals, FILL_JOIN, FILL_JOIN, minQual, minFreq, .75, 0, &hbv, &paths, small_K, out_dir,tmp_dir,disk_batches);
             if (dump_perf) perf_file << checkpoint_perf_time("buildReadQGraph") << std::endl;
             FixPaths(hbv, paths); //TODO: is this even needed?
             if (dump_perf) perf_file << checkpoint_perf_time("FixPaths") << std::endl;
@@ -429,7 +430,7 @@ int main(const int argc, const char * argv[]) {
             std::cout << "Repathing to second graph DONE!" << std::endl << std::endl << std::endl;
             if (dump_all || to_step == 3) {
                 std::cout << "Dumping large_K graph and paths..." << std::endl;
-                BinaryWriter::writeFile(out_dir + "/" + out_prefixgit  + ".large_K.hbv", hbvr);
+                BinaryWriter::writeFile(out_dir + "/" + out_prefix  + ".large_K.hbv", hbvr);
                 WriteReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".large_K.paths").c_str());
                 std::cout << "   DONE!" << std::endl;
                 if (dump_perf) perf_file << checkpoint_perf_time("LargeKDump") << std::endl;
@@ -464,16 +465,6 @@ int main(const int argc, const char * argv[]) {
         }
     }
 
-    // need to clarify exactly where this should go, think its here though
-    if (lmp) {
-        HyperBasevector hb_lmp;
-        ReadPathVec pHBV_lmp;
-        HyperKmerPath pHKP_lmp;
-        vecKmerPath path_lmps;
-        MpData mp_data(mp_read_files);
-        // covrage is currently hard coded to value from ecolie LMPs
-        buildBigKHBVFromReads(200, mp_data.bases, 70, &hb_lmp, &pHBV_lmp, &pHKP_lmp, &path_lmps);
-    }
 
     //== Patching ======
 
@@ -557,6 +548,20 @@ int main(const int argc, const char * argv[]) {
         bool IMPROVE_PATHS_LARGE = False;
         bool FINAL_TINY = True;
         bool UNWIND3 = True;
+
+        // need to clarify exactly where this should go, think its here though
+        if (mp_read_files != "") {
+            std::cout << "Reading mate pair files" << std::endl;
+            MpData mp_data(mp_read_files);
+            std::cout << "Mate pair files read" << std::endl;
+            HyperBasevector hb_lmp;
+            ReadPathVec pHBV_lmp;
+            HyperKmerPath pHKP_lmp;
+            vecKmerPath path_lmps;
+            // covrage is currently hard coded to value from ecolie LMPs
+            buildBigKHBVFromReads(200, mp_data.bases, 70, &hb_lmp, &pHBV_lmp, &pHKP_lmp, &path_lmps);
+            std::cout << "Built MP paths" << std::endl;
+        }
 
         Simplify(out_dir, hbvr, inv, pathsr, pe_data.bases, pe_data.quals, MAX_SUPP_DEL, TAMP_EARLY_MIN, MIN_RATIO2, MAX_DEL2,
                  ANALYZE_BRANCHES_VERBOSE2, TRACE_SEQ, DEGLOOP, EXT_FINAL, EXT_FINAL_MODE,
