@@ -20,7 +20,7 @@ public:
         mInv(inv),
         mPaths(paths),
         mEdgeToPathIds(invPaths),
-        mMinReads(min_reads),
+        mMinReads(min_reads)
     {
         hbv.ToLeft(mToLeft);
         hbv.ToRight(mToRight);
