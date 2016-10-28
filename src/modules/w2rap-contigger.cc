@@ -556,17 +556,25 @@ int main(const int argc, const char * argv[]) {
             std::cout << "Mate pair files read" << std::endl;
             HyperBasevector hb_lmp;
             ReadPathVec pHBV_lmp;
-            HyperKmerPath pHKP_lmp;
-            vecKmerPath path_lmps;
+            HyperKmerPath pHKP_lmp; // a graph in which each edge is a kmer path
+            vecKmerPath path_lmps;// similar to an HBV but for kmers rather than bases
             // covrage is currently hard coded to value from ecolie LMPs
-            buildBigKHBVFromReads(200, mp_data.bases, 70, &hb_lmp, &pHBV_lmp, &pHKP_lmp, &path_lmps);
+            buildBigKHBVFromReads(200, mp_data.bases, 70, &hb_lmp, &pHBV_lmp, &pHKP_lmp, &path_lmps); // as it looks like you need to build the HBV to build the paths, think this is ok
             std::cout << "Built MP paths" << std::endl;
-        }
+            //Simplify(out_dir, hbvr, inv, pathsr, pe_data.bases, pe_data.quals, MAX_SUPP_DEL, TAMP_EARLY_MIN, MIN_RATIO2,
+            //        MAX_DEL2,
+            //        ANALYZE_BRANCHES_VERBOSE2, TRACE_SEQ, DEGLOOP, EXT_FINAL, EXT_FINAL_MODE,
+            //        PULL_APART_VERBOSE, PULL_APART_TRACE, DEGLOOP_MODE, DEGLOOP_MIN_DIST, IMPROVE_PATHS,
+            //        IMPROVE_PATHS_LARGE, FINAL_TINY, UNWIND3, run_pathfinder, dump_pf);
+        } else {
 
-        Simplify(out_dir, hbvr, inv, pathsr, pe_data.bases, pe_data.quals, MAX_SUPP_DEL, TAMP_EARLY_MIN, MIN_RATIO2, MAX_DEL2,
-                 ANALYZE_BRANCHES_VERBOSE2, TRACE_SEQ, DEGLOOP, EXT_FINAL, EXT_FINAL_MODE,
-                 PULL_APART_VERBOSE, PULL_APART_TRACE, DEGLOOP_MODE, DEGLOOP_MIN_DIST, IMPROVE_PATHS,
-                 IMPROVE_PATHS_LARGE, FINAL_TINY, UNWIND3, run_pathfinder, dump_pf);
+            Simplify(out_dir, hbvr, inv, pathsr, pe_data.bases, pe_data.quals, MAX_SUPP_DEL, TAMP_EARLY_MIN, MIN_RATIO2,
+                     MAX_DEL2,
+                     ANALYZE_BRANCHES_VERBOSE2, TRACE_SEQ, DEGLOOP, EXT_FINAL, EXT_FINAL_MODE,
+                     PULL_APART_VERBOSE, PULL_APART_TRACE, DEGLOOP_MODE, DEGLOOP_MIN_DIST, IMPROVE_PATHS,
+                     IMPROVE_PATHS_LARGE, FINAL_TINY, UNWIND3, run_pathfinder, dump_pf);
+
+        }
 
         if (dump_perf) perf_file << checkpoint_perf_time("Simplify") << std::endl;
         // For now, fix paths and write the and their inverse

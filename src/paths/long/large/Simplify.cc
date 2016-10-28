@@ -28,7 +28,7 @@ void Simplify(const String &fin_dir, HyperBasevector &hb, vec<int> &inv,
               const Bool PULL_APART_VERBOSE, const vec<int> &PULL_APART_TRACE,
               const int DEGLOOP_MODE, const double DEGLOOP_MIN_DIST,
               const Bool IMPROVE_PATHS, const Bool IMPROVE_PATHS_LARGE,
-              const Bool FINAL_TINY, const Bool UNWIND3, const bool RUN_PATHFINDER, const bool dump_pf_files) {
+              const Bool FINAL_TINY, const Bool UNWIND3, const bool RUN_PATHFINDER, const bool dump_pf_files, HyperKmerPath lmp_paths=NULL) {// passing by reference, which i need to eventually, doesn't like NULL default
     // Improve read placements and delete funky pairs.
     std::cout << "Edge count: " << hb.EdgeObjectCount() << " Path count:" << paths.size() << std::endl;
     std::cout << "Simplify: rerouting paths" << std::endl;
@@ -174,7 +174,13 @@ void Simplify(const String &fin_dir, HyperBasevector &hb, vec<int> &inv,
         invPaths.clear();
         invert( paths, invPaths, hb.EdgeObjectCount( ) );
         std::cout << Date() << ": PathFinder: analysing single-direction repeats" << std::endl;
-        PathFinder(hb, inv, paths, invPaths).untangle_complex_in_out_choices(700);
+        PathFinder pf;
+        if (lmp_paths != NULL){
+             pf(hb, inv, paths, invPaths, lmp_paths)
+        } else {
+             pf(hb, inv, paths, invPaths)
+        }
+        pf.untangle_complex_in_out_choices(700);
         std::cout << "Removing Unneded Vertices" << std::endl;
         RemoveUnneededVertices2(hb, inv, paths);
         Cleanup(hb, inv, paths);

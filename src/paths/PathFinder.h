@@ -15,12 +15,12 @@
 
 class PathFinder {
 public:
-    PathFinder( HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, int min_reads = 5 ) :
-    mHBV(hbv),
-    mInv(inv),
-    mPaths(paths),
-    mEdgeToPathIds(invPaths),
-    mMinReads(min_reads)
+    PathFinder( HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, int min_reads = 5) :
+        mHBV(hbv),
+        mInv(inv),
+        mPaths(paths),
+        mEdgeToPathIds(invPaths),
+        mMinReads(min_reads),
     {
         hbv.ToLeft(mToLeft);
         hbv.ToRight(mToRight);
@@ -28,7 +28,19 @@ public:
 
     }
 
+    PathFinder( HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, HyperKmerPath& lmp_data, int min_reads = 5) :
+            mHBV(hbv),
+            mInv(inv),
+            mPaths(paths),
+            mEdgeToPathIds(invPaths),
+            mMinReads(min_reads),
+            lmp_data(lmp_data)
+    {
+        hbv.ToLeft(mToLeft);
+        hbv.ToRight(mToRight);
 
+
+    }
 
     //Graph-related methods
     std::vector<std::vector<uint64_t>> AllPathsFromTo(std::vector<uint64_t> in_edges, std::vector<uint64_t> out_edges, uint64_t max_length);
@@ -61,6 +73,7 @@ public:
 
 private:
     HyperBasevector& mHBV;
+    HyperKmerPath lmp_data;
     vec<int>& mInv;
     ReadPathVec& mPaths;
     VecULongVec& mEdgeToPathIds;
