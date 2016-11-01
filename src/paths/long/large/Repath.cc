@@ -202,7 +202,7 @@ void RepathInMemory( const HyperBasevector& hb, const vecbasevector& edges,
           // Parallelizing this loop does not speed it up.  Perhaps to speed it up
           // we have to do something smarter, so as to eliminate the binary search
           // inside the loop.
-          #pragma omp parallel for firstprivate(places)
+          //#pragma omp parallel for
           for (int64_t id = 0; id < (int64_t) paths.size(); id++) {
                if (paths[id].empty()) continue;
 
