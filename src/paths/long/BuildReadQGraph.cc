@@ -505,29 +505,29 @@ namespace
                 return mPathParts;
             } // EARLY RETURN!
 
-            auto itr = read.begin();
-            auto end = read.end() - K + 1;
+            auto itr = read.begin(); //start at beginning of read
+            auto end = read.end() - K + 1; // finish k from end of read (because we're working with kmers, not reads)
             while (itr != end) {
-                BRQ_Kmer kmer(itr);
-                BRQ_Entry const *pEnt = mDict.findEntry(kmer);
-                if (!pEnt) {
+                BRQ_Kmer kmer(itr);// presumably this finds the first kmer in the reads
+                BRQ_Entry const *pEnt = mDict.findEntry(kmer); // then this finds that kmer in the dictionary
+                if (!pEnt) { // if that kmer is not present
                     unsigned gapLen = 1u;
-                    auto itr2 = itr + K;
+                    auto itr2 = itr + K; // look for kmer k from beginning of read (why not +1?)
                     ++itr;
-                    auto end2 = read.end();
-                    while (itr2 != end2) {
-                        kmer.toSuccessor(*itr2);
+                    auto end2 = read.end(); // ah, is this effectively looking in the dict for the reverse complement?
+                    while (itr2 != end2) { // while we're not at end
+                        kmer.toSuccessor(*itr2); // find the next kmer
                         ++itr2;
-                        if ((pEnt = mDict.findEntry(kmer)))
+                        if ((pEnt = mDict.findEntry(kmer))) // if this kmer is in the dictionary, this is the pEnt (pDict entry?)
                             break;
                         ++gapLen;
                         ++itr;
                     }
                     mPathParts.emplace_back(gapLen);
                 }
-                if (pEnt) {
+                if (pEnt) { // if we found the appropriate kmer
                     KDef const &kDef = pEnt->getKDef();
-                    bvec const &edge = mEdges[kDef.getEdgeID().val()];
+                    bvec const &edge = mEdges[kDef.getEdgeID().val()]; //find the edge corresponding to that kmer + some more info about it
                     int offset = kDef.getEdgeOffset();
                     auto eBeg(edge.begin(offset));
                     size_t len = 1u;
@@ -843,21 +843,22 @@ namespace
 
             #pragma omp for
             for (auto readId=0;readId<reads.size();++readId){
+                // are parts kmers?
                 std::vector<PathPart> parts = mPather.path(reads[readId]);     // needs to become a forward_list
 
                 // convert any seeds on hanging edges to gaps
                 std::vector<PathPart> new_parts;
                 for ( auto part : parts ) {
-                    if ( !part.isGap() ) {
-                        size_t edge_id = pathPartToEdgeID(part,fwdEdgeXlat,revEdgeXlat);
-                        size_t vleft  = toLeft[edge_id];
+                    if ( !part.isGap() ) { // if its not a gap
+                        size_t edge_id = pathPartToEdgeID(part,fwdEdgeXlat,revEdgeXlat); // find the edge it corresponds to
+                        size_t vleft  = toLeft[edge_id]; // find left and right edges
                         size_t vright = toRight[edge_id];
-                        if ( hbv.ToSize(vleft) == 0
-                             && hbv.ToSize(vright) > 1
+                        if ( hbv.ToSize(vleft) == 0 // if nothing to the left
+                             && hbv.ToSize(vright) > 1 // and something to the right
                              && hbv.FromSize(vright) > 0
-                             && part.getEdgeLen() <= 100 ) {
+                             && part.getEdgeLen() <= 100 ) { // and sequence of this part is short - guess from other comments this makes it a hanging edge
                             // delete a seed on a hanging edge
-                            part = PathPart(part.getLength() );
+                            part = PathPart(part.getLength() ); // sets edge length to zero which i guess is the same as deleting it
                         }
                     }
 

@@ -40,6 +40,6 @@ void Simplify(const String& fin_dir, HyperBasevector& hb, vec<int>& inv,
               const int DEGLOOP_MODE, const double DEGLOOP_MIN_DIST,
               const Bool IMPROVE_PATHS, const Bool IMPROVE_PATHS_LARGE,
               const Bool FINAL_TINY, const Bool UNWIND3, const bool RUN_PATHFINDER, const bool dump_pf_files,
-              HyperKmerPath& lmp_paths);
+              HyperBasevector& lmp_paths);
 
 #endif

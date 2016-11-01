@@ -381,7 +381,8 @@ add_library(specific_w2rap-contigger OBJECT
         src/paths/long/large/ImprovePath.cc
         src/GFADump.cc
         src/paths/PathFinder.cc
-        src/paths/PathFinder.h)
+        src/paths/PathFinder.h
+        src/paths/PathFinder_kb.cpp)
 
 ## add executables and respective sources
 add_executable(w2rap-contigger src/modules/w2rap-contigger.cc

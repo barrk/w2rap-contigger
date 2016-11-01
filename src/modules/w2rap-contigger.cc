@@ -14,8 +14,10 @@
 #include "feudal/PQVec.h"
 #include "paths/HyperBasevector.h"
 #include "paths/RemodelGapTools.h"
-#include "kmers/BigKPather.h"
+//#include "kmers/BigKPather.h"
 #include "paths/long/BuildReadQGraph.h"
+#include "paths/PathFinder_kb.h"
+//#include "paths/PathFinder.h"
 //#include "paths/long/PlaceReads0.h"
 #include "paths/long/SupportedHyperBasevector.h"
 #include "paths/long/large/AssembleGaps.h"
@@ -66,7 +68,7 @@ int main(const int argc, const char * argv[]) {
                                            180, 188, 192, 196, 200, 208, 216, 224, 232, 240, 260, 280, 300, 320, 368,
                                            400, 440, 460, 500, 544, 640};
     std::vector<unsigned int> allowed_steps = {1, 2, 3, 4, 5, 6, 7};
-    bool extend_paths, run_pathfinder, dump_all, dump_perf, dump_pf, lmp;
+    bool extend_paths, run_pathfinder, dump_all, dump_perf, dump_pf, lmp, katie_test;
 
     //========== Command Line Option Parsing ==========
     for (auto i = 0; i < argc; i++) std::cout << argv[i] << " ";
@@ -150,8 +152,10 @@ int main(const int argc, const char * argv[]) {
                                           "Dump performance info (devel)", false, false, "bool", cmd);
         TCLAP::ValueArg<bool> dumpPFArg("", "dump_pf",
                                         "Dump pathfinder info (devel)", false, false, "bool", cmd);
+        TCLAP::ValueArg<bool> katie_testArg("", "katie_test",
+                                        "Test code, don't run whole thing!!", false, false, "bool", cmd);
 
-        TCLAP::ValueArg<std::string> dev_runArg("", "dev_run_test",
+        TCLAP::ValueArg<bool> dev_runArg("", "dev_run_test",
                                                 "runs development tests", false, "", "devel only", cmd);
 
         cmd.parse(argc, argv);
@@ -188,6 +192,7 @@ int main(const int argc, const char * argv[]) {
         minQual=minQualArg.getValue();
         disk_batches=disk_batchesArg.getValue();
         tmp_dir=tmp_dirArg.getValue();
+        katie_test = katie_testArg.getValue();
 
     } catch (TCLAP::ArgException &e)  // catch any exceptions
     {
@@ -231,6 +236,31 @@ int main(const int argc, const char * argv[]) {
     SetMaxMemory(int64_t(round(max_mem * 1024.0 * 1024.0 * 1024.0)));
     //TODO: try to find out max memory on the system to default to.
 
+    if (katie_test){
+            std::cout << "Reading input files DONE!" << std::endl << std::endl << std::endl;
+            std::cout << "Dumping reads in fastb/qualp format..." << std::endl;
+
+            pe_data.write_binary(out_dir, "pe_");
+            std::cout << "Reading mate pair files" << std::endl;
+            MpData mp_data(mp_read_files);
+            std::cout << "Mate pair files read" << std::endl;
+            HyperBasevector hb_lmp;
+            ReadPathVec pRPV_lmp;
+            HyperKmerPath pHKP_lmp; // a graph in which each edge is a kmer path
+            vecKmerPath path_lmps;// similar to base vec  but for kmers rather than bases
+            // covrage is currently hard coded to value from ecolie LMPs
+
+            readsToHBV<200>(mp_data.bases, 70, &hb_lmp, &pRPV_lmp, &pHKP_lmp, &path_lmps); // as it looks like you need to build the HBV to build the paths, think this is ok
+            std::cout << "Built MP paths" << std::endl;
+            HyperBasevector hbv;
+            ReadPathVec paths;
+            buildReadQGraph(pe_data.bases, pe_data.quals, false, false, minQual, minFreq, .75, 0, &hbv, &paths, small_K, out_dir,tmp_dir,disk_batches);
+            VecULongVec invPaths;
+            invert(paths, invPaths, hbv.EdgeObjectCount());
+            // HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, HyperBasevector& lmp_data, int min_reads = 5
+            PathFinderkb pf(hbv, inv, paths, invPaths, hb_lmp, 1);
+            Scram(1);
+    }
     //== Handle "special cases" to test on development==
 
     if (dev_run != "") {
@@ -248,7 +278,7 @@ int main(const int argc, const char * argv[]) {
 
                 invert(pathsr, invPaths, hbvr.EdgeObjectCount());
                 std::cout << Date() << ": PathFinder: unrolling loops" << std::endl;
-                PathFinder(hbvr, inv, pathsr, invPaths).unroll_loops(800);
+                //PathFinder(hbvr, inv, pathsr, invPaths).unroll_loops(800);
                 std::cout << "Removing Unneeded Vertices & Cleanup" << std::endl;
                 RemoveUnneededVertices2(hbvr, inv, pathsr);
                 Cleanup(hbvr, inv, pathsr);
@@ -266,7 +296,7 @@ int main(const int argc, const char * argv[]) {
             invert(pathsr, invPaths, hbvr.EdgeObjectCount());
 
             std::cout << Date() << ": PathFinder: Separating solved single-flow repeats" << std::endl;
-            PathFinder(hbvr, inv, pathsr, invPaths).untangle_complex_in_out_choices(700, true);
+            //PathFinder(hbvr, inv, pathsr, invPaths).untangle_complex_in_out_choices(700, true);
             std::cout << "Removing Unneeded Vertices & Cleanup" << std::endl;
             RemoveUnneededVertices2(hbvr, inv, pathsr);
             Cleanup(hbvr, inv, pathsr);
@@ -552,29 +582,35 @@ int main(const int argc, const char * argv[]) {
         // need to clarify exactly where this should go, think its here though
         if (mp_read_files != "") {
             std::cout << "Reading mate pair files" << std::endl;
-            MpData mp_data(mp_read_files);
+            /*MpData mp_data(mp_read_files);
             std::cout << "Mate pair files read" << std::endl;
             HyperBasevector hb_lmp;
             ReadPathVec pHBV_lmp;
             HyperKmerPath pHKP_lmp; // a graph in which each edge is a kmer path
-            vecKmerPath path_lmps;// similar to an HBV but for kmers rather than bases
+            vecKmerPath path_lmps;// similar to base vec  but for kmers rather than bases
             // covrage is currently hard coded to value from ecolie LMPs
+
             buildBigKHBVFromReads(200, mp_data.bases, 70, &hb_lmp, &pHBV_lmp, &pHKP_lmp, &path_lmps); // as it looks like you need to build the HBV to build the paths, think this is ok
             std::cout << "Built MP paths" << std::endl;
+            // path_lmps is the Kmer paths, with read id being the key and the path being the value- read id is just index, so this is how we get pairs
+            // the kmer paths are lists of kmer numbers
+            //path_lmps[1].GetKmer()- this gets the kmer id, but don't think the kmer id will be the same as the pe kmers
+            //pHKP_lmp.EdgeObject(1).
+
             Simplify(out_dir, hbvr, inv, pathsr, pe_data.bases, pe_data.quals, MAX_SUPP_DEL, TAMP_EARLY_MIN, MIN_RATIO2,
                      MAX_DEL2,
                      ANALYZE_BRANCHES_VERBOSE2, TRACE_SEQ, DEGLOOP, EXT_FINAL, EXT_FINAL_MODE, PULL_APART_VERBOSE,
                      PULL_APART_TRACE, DEGLOOP_MODE, DEGLOOP_MIN_DIST, IMPROVE_PATHS, IMPROVE_PATHS_LARGE, FINAL_TINY,
                      UNWIND3, run_pathfinder, dump_pf,
-                     pHKP_lmp);
+                     hb_lmp);*/
         } else {
-            HyperKmerPath pHKP_lmp; // add this so we can pass abov one by reference
+            HyperBasevector hb_lmp; // add this so we can pass abov one by reference
             Simplify(out_dir, hbvr, inv, pathsr, pe_data.bases, pe_data.quals, MAX_SUPP_DEL, TAMP_EARLY_MIN, MIN_RATIO2,
                      MAX_DEL2,
                      ANALYZE_BRANCHES_VERBOSE2, TRACE_SEQ, DEGLOOP, EXT_FINAL, EXT_FINAL_MODE, PULL_APART_VERBOSE,
                      PULL_APART_TRACE, DEGLOOP_MODE, DEGLOOP_MIN_DIST, IMPROVE_PATHS, IMPROVE_PATHS_LARGE, FINAL_TINY,
                      UNWIND3, run_pathfinder, dump_pf,
-                     pHKP_lmp);
+                     hb_lmp);
 
         }
 
@@ -633,7 +669,7 @@ int main(const int argc, const char * argv[]) {
         //vecbasevector G;
         //FinalFiles(hbvr, inv, pathsr, subsam_names, subsam_starts, out_dir, out_prefix + "_contigs", MAX_CELL_PATHS, MAX_DEPTH, G);
         GFADump(out_dir +"/"+ out_prefix + "_contigs", hbvr, inv, pathsr, MAX_CELL_PATHS, MAX_DEPTH, true);
-        PathFinder(hbvr,inv,pathsr,paths_inv).classify_forks();
+        //PathFinder(hbvr,inv,pathsr,paths_inv).classify_forks();
     }
     if (from_step==7){
         std::cout << "Reading contig graph and paths..." << std::endl;

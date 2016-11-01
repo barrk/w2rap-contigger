@@ -15,32 +15,19 @@
 
 class PathFinder {
 public:
-    PathFinder( HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, int min_reads = 5) :
-        mHBV(hbv),
-        mInv(inv),
-        mPaths(paths),
-        mEdgeToPathIds(invPaths),
-        mMinReads(min_reads)
-    {
-        hbv.ToLeft(mToLeft);
-        hbv.ToRight(mToRight);
-
-
-    }
-
-    PathFinder( HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, HyperKmerPath& lmp_data, int min_reads = 5) :
+    PathFinder( HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, int min_reads = 5 ) :
             mHBV(hbv),
             mInv(inv),
             mPaths(paths),
             mEdgeToPathIds(invPaths),
-            mMinReads(min_reads),
-            lmp_data(lmp_data)
+            mMinReads(min_reads)
     {
         hbv.ToLeft(mToLeft);
         hbv.ToRight(mToRight);
 
 
     }
+
 
     //Graph-related methods
     std::vector<std::vector<uint64_t>> AllPathsFromTo(std::vector<uint64_t> in_edges, std::vector<uint64_t> out_edges, uint64_t max_length);
@@ -69,11 +56,10 @@ public:
     std::array<std::vector<uint64_t>,2>  get_all_long_frontiers(uint64_t e,uint64_t large_frontier_size);
     void migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> edgemap);
 
-
+    // read hbv and convert into pdict hbv.readall
 
 private:
     HyperBasevector& mHBV;
-    HyperKmerPath lmp_data;
     vec<int>& mInv;
     ReadPathVec& mPaths;
     VecULongVec& mEdgeToPathIds;

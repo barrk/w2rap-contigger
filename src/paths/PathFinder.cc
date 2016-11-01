@@ -469,21 +469,24 @@ void PathFinder::untangle_complex_in_out_choices(uint64_t large_frontier_size, b
     //find a complex path
     uint64_t qsf=0,qsf_paths=0;
     uint64_t msf=0,msf_paths=0;
-    init_prev_next_vectors();
+    init_prev_next_vectors();// need to clarify what mToLeft and mToRight are, guessing they're just into/out of each node
     std::cout<<"vectors initialised"<<std::endl;
     std::set<std::array<std::vector<uint64_t>,2>> seen_frontiers,solved_frontiers;
     std::vector<std::vector<uint64_t>> paths_to_separate;
     for (int e = 0; e < mHBV.EdgeObjectCount(); ++e) {
         if (e < mInv[e] && mHBV.EdgeObject(e).size() < large_frontier_size) {
-            auto f=get_all_long_frontiers(e, large_frontier_size);
-            if (f[0].size()>1 and f[1].size()>1 and seen_frontiers.count(f)==0){
+            auto f=get_all_long_frontiers(e, large_frontier_size);// return edges in and out of this edge which represent long sequences of bases
+            // think f[0] is vec of edge ids going into this edge, and f[1] is vec of edge ids going out
+            if (f[0].size()>1 and f[1].size()>1 and seen_frontiers.count(f)==0){ // this determines whether it s acomplex edge
+                // if theres more than 1 edge in, and more than 1 edge out, and we haven't already dealt with this in/out combination
                 seen_frontiers.insert(f);
                 bool single_dir=true;
+                // not sure about this, seems to be determining whether same edge is both going into and out of current edge
                 for (auto in_e:f[0]) for (auto out_e:f[1]) if (in_e==out_e) {single_dir=false;break;}
                 if (single_dir) {
                     std::cout<<" Single direction frontiers for complex region on edge "<<e<<" IN:"<<path_str(f[0])<<" OUT: "<<path_str(f[1])<<std::endl;
-                    std::vector<int> in_used(f[0].size(),0);
-                    std::vector<int> out_used(f[1].size(),0);
+                    std::vector<int> in_used(f[0].size(),0);// initialise vec for each in edge
+                    std::vector<int> out_used(f[1].size(),0); //  ditto out edge
                     std::vector<std::vector<uint64_t>> first_full_paths;
                     bool reversed=false;
                     for (auto in_i=0;in_i<f[0].size();++in_i) {
@@ -492,19 +495,19 @@ void PathFinder::untangle_complex_in_out_choices(uint64_t large_frontier_size, b
                             auto out_e=f[1][out_i];
                             auto shared_paths = 0;
 
-                            for (auto inp:mEdgeToPathIds[in_e])
-                                for (auto outp:mEdgeToPathIds[out_e])
-                                    if (inp == outp) {
+                            for (auto inp:mEdgeToPathIds[in_e]) // find paths associated with in_e
+                                for (auto outp:mEdgeToPathIds[out_e]) // ditto out edge
+                                    if (inp == outp) {// if they're on the same path
 
                                         shared_paths++;
                                         if (shared_paths==1){//not the best solution, but should work-ish
                                             std::vector<uint64_t > pv;
-                                            for (auto e:mPaths[inp]) pv.push_back(e);
+                                            for (auto e:mPaths[inp]) pv.push_back(e); // create vector of edges on theshared pat
                                             std::cout<<"found first path from "<<in_e<<" to "<< out_e << path_str(pv)<< std::endl;
                                             first_full_paths.push_back({});
                                             int16_t ei=0;
-                                            while (mPaths[inp][ei]!=in_e) ei++;
-
+                                            while (mPaths[inp][ei]!=in_e) ei++; // find which edge on the path is the in edge
+                                            // add all edges on the path until the out edge
                                             while (mPaths[inp][ei]!=out_e && ei<mPaths[inp].size()) first_full_paths.back().push_back(mPaths[inp][ei++]);
                                             if (ei>=mPaths[inp].size()) {
                                                 std::cout<<"reversed path detected!"<<std::endl;
@@ -514,7 +517,7 @@ void PathFinder::untangle_complex_in_out_choices(uint64_t large_frontier_size, b
                                             //std::cout<<"added!"<<std::endl;
                                         }
                                     }
-                            //check for reverse paths too
+                            //check for reverse paths too- same but on inovlution
                             for (auto inp:mEdgeToPathIds[mInv[out_e]])
                                 for (auto outp:mEdgeToPathIds[mInv[in_e]])
                                     if (inp == outp) {
@@ -634,6 +637,11 @@ std::vector<std::vector<uint64_t>> PathFinder::AllPathsFromTo(std::vector<uint64
     return paths;
 
 }
+
+// to imcorporate lmp data, need to find paths which overlap with lmp paths, then paths which overlap with lmp's mate paths, then path between
+// need a dictionary where key is kmer/kmer id/ whatever, value is a pair- one entry containg info about which pe entries contaii=n this kmer, other is which lmp entries contain this kmew
+// or just use existing dicts, need to expose them first, but then need to know kmers are same in both
+// path is just list of edges, and ech edge is a kmer
 
 std::array<std::vector<uint64_t>,2> PathFinder::get_all_long_frontiers(uint64_t e, uint64_t large_frontier_size){
     //TODO: return all components in the region

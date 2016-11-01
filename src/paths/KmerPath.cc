@@ -1033,7 +1033,7 @@ MarkReadsWithNovelKmers2( const vecKmerPath & reads, const vec<TAG>& reference, 
 longlong KmerPath::GetKmer( int n ) const
 {    int seg = 0;
      while(1)
-     {    if ( n < Length(seg) ) return Start(seg) + n;
+     {    if ( n < Length(seg) ) return Start(seg) + n; //
           n -= Length(seg);
           ++seg;
           ForceAssertLt( seg, NSegments( ) );    }    }

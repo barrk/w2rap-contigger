@@ -83,7 +83,7 @@ public:
     reserve(size()+(kmerStop-kmerStart+MAXDIFF-1)/MAXDIFF);
     while ( kmerStop-kmerStart > MAXDIFF )
     { kmer_id_t stop = kmerStart + MAXDIFF;
-      AddSegmentNoConcatenate(KmerPathInterval(kmerStart,stop));
+      AddSegmentNoConcatenate(KmerPathInterval(kmerStart,stop));// this just pushes back the interval onto the path
       kmerStart = stop+1; }
     AddSegmentNoConcatenate(KmerPathInterval(kmerStart,kmerStop));
     return *this; }
