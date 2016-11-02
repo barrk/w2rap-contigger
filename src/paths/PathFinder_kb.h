@@ -21,31 +21,22 @@ class PathFinderkb {
 public:
 
 
-    PathFinderkb( HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, HyperBasevector& lmp_data, int min_reads = 5) :
+    PathFinderkb( HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths,vecbvec& lmp_data, int min_reads = 5) :
             mHBV(hbv),
             mInv(inv),
             mPaths(paths),
             mEdgeToPathIds(invPaths),
             mMinReads(min_reads),
-            lmp_data(lmp_data),
-            lmpDict(100000000)
+            lmp_data(lmp_data)
     {
+        // need to run big kmer pather with lmp reads and pe hbv
+        // so actually do just map the reads, the
         hbv.ToLeft(mToLeft);
         hbv.ToRight(mToRight);
         //auto peEdges = hbv.Edges();
         //vecbvec peEdgesbvec; // really should not have to do this like this
         //for (auto edge: peEdges) {peEdgesbvec.push_back(edge)};
         //BigKEdgeBuilder<200>::buildEdges(peDict,&peEdgesbvec);
-        auto lmpReads = lmp_data.Edges(); // think, as long as we don't update dict, this is reads, not edges
-        vecbvec lmpEdgesbvec; // really should not have to do this like this
-        BigKMerizer<200> tkmerizer(&lmpDict);
-        // one way to keep ends together after hashing would be to loop over 2 at a time and cat them, with some known sequence in the middle
-        // but, can we have known sequence not from ATCG? maybe ns? - would have to know how the hash function works for this to work
-        for (auto read: lmpReads) {tkmerizer.kmerize(read);};
-        //BigKEdgeBuilder<200>::buildEdges(lmpDict,&lmpEdgesbvec);
-
-        lmpDict = lmpDict;
-        lmpReads = lmpReads;
 
     }
 
@@ -76,12 +67,12 @@ public:
     //bool join_edges_in_path(std::vector<uint64_t> p);
     std::array<std::vector<uint64_t>,2>  get_all_long_frontiers(uint64_t e,uint64_t large_frontier_size);
     //void migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> edgemap);
-    int mapEdgeToLMPKmers(int e);
+    void mapEdgeToLMPKmers();
 
 
 private:
     HyperBasevector& mHBV;
-    HyperBasevector& lmp_data;
+    vecbvec& lmp_data;
     vec<int>& mInv;
     ReadPathVec& mPaths;
     VecULongVec& mEdgeToPathIds;
@@ -89,9 +80,6 @@ private:
     vec<int> mToRight;
     std::vector<std::vector<uint64_t>> next_edges,prev_edges;
     int mMinReads;
-    //BigDict<200> peDict;
-    BigDict<200> lmpDict;
-    const vec<basevector> lmpReads;
 
 
 };

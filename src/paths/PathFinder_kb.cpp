@@ -8,7 +8,7 @@
 
 
 #include "PathFinder_kb.h"
-
+using namespace PatherKB;
 
 void PathFinderkb::init_prev_next_vectors(){
     //TODO: this is stupid duplication of the digraph class, but it's so weird!!!
@@ -34,26 +34,83 @@ void PathFinderkb::init_prev_next_vectors(){
 
 }
 
-int PathFinderkb::mapEdgeToLMPKmers(int e){
-    // basically copied from gonza but with edge object instead of read
-    KMerHasher<200> hasher;
-    auto itr = mHBV.EdgeObject(e).begin();
-    auto end = mHBV.EdgeObject(e).end() - 200;
-    size_t hash = hasher.hash(itr);
-    BigKMer<200> kmer(mHBV.EdgeObject(e), hasher(itr));
-    std::set< std::pair<unsigned long, unsigned long> > mapped_lmp_reads;
-    while (++itr != end) {
-        hash = hasher.stepF(itr);
-        kmer.successor(hash);
-        auto fkmer = lmpDict.lookup(kmer);
-        // roughly, want to repeat this for each, find where this is in the lmp hbv, and where the next/previous is (this will be pair, next/prev depends on odd/even)
-        // the diciotnary is based on the graph, so you'd hope there's enough info in there not to need to go back to the graph
-        // for next edge to be the right one, need to make sure hbv is from reads, not edges.
-        auto read_id = &fkmer->getBV() - &lmpReads[0];
-        unsigned long pair_id;
-        pair_id = read_id % 2 == 0 ? read_id + 1 : read_id - 1; // need to check about reverse complement stuff here
-        mapped_lmp_reads.insert(std::make_pair(read_id, pair_id));
+void PathFinderkb::mapEdgeToLMPKmers(){
+    ReadPathVec pRPV_lmp;
+    vecKmerPath pKP_lmp;
+    auto edges = mHBV.Edges();
+    vecbvec edges_vec;
+    BigDict<28> bigDict(3000000);
+    BigKMerizer<28> tkmerizer(&bigDict);
+    for (auto edge: edges) { tkmerizer.kmerize(edge); edges_vec.push_back(edge);};
+    std::vector<int> fwdXlat, revXlat;
+    // if order of edges doesn't change i think this should work
+    // i think previous/next vectors, should work, or next at least, not sure about previous
+    // Pather( vecbvec const& reads, BigKDict const& dict, vecbvec const& edge, std::vector<int> const& fwdXlat, std::vector<int> const& revXlat, ReadPathVec* pReadPaths, vecKmerPath* pKmerPaths )
+    for (uint64_t i=0;i<edges.size();++i){
+        auto fwEdgeId = i;
+        bvec edge = edges[i];
+        fwdXlat[i]=fwEdgeId;
+        if ( edge.getCanonicalForm() == CanonicalForm::PALINDROME ) {
+            revXlat[i] = fwEdgeId;
+        }
+        else {
+            auto bwEdgeId = i;
+            revXlat[i] = bwEdgeId;
+        }
     }
+    // fwd/bward xlat are how it determines which the next edges are
+    Pather<28> pather( lmp_data, bigDict, edges_vec,
+                    fwdXlat, revXlat,
+                    &pRPV_lmp, &pKP_lmp );
+    for (auto i=0ul;i<lmp_data.size();++i) pather(i);
+    // basically copied from gonza but with edge object instead of read
+    /*KMerHasher<200> hasher;
+    std::cout << "pe edge object count" << mHBV.EdgeObjectCount() << std::endl;
+    std::cout << "pe edge object count" << lmp_data.EdgeObjectCount() << std::endl;
+    auto edge =  mHBV.EdgeObject(e);
+    auto itr = edge.begin();
+    auto end = edge.end() - 200;
+    size_t hash = hasher.hash(itr);
+    BigKMer<200> kmer(edge, hash);
+    std::set< std::pair<unsigned long, unsigned long> > mapped_lmp_reads;
+    int not_found = 0;
+    int found = 0;
+    while (++itr < end) {
+        std::cout << "inside loop, kmer: " << kmer.getBV() << std::endl;
+        hash = hasher.stepF(itr);
+        std::cout << "called heasher step through successfully" << std::endl;
+        kmer.successor(hash);
+        std::cout << "got kmer successor" << kmer.getBV() << "reverse complemented" << kmer.isRC() <<  std::endl;
+        // this is hwere it gets the bad access
+        //auto fkmer = lmpDict.lookup((kmer.isRC())?(kmer.rc()) : (kmer));
+        auto fkmer = lmpDict.lookup(kmer);
+        if (fkmer == 0){
+            not_found += 1;
+            std::cout << "not found:" << not_found << std::endl;
+        } else {
+            //std::cout << "found kmer:" << fkmer->getBV() << std::endl;
+            // roughly, want to repeat this for each, find where this is in the lmp hbv, and where the next/previous is (this will be pair, next/prev depends on odd/even)
+            // the diciotnary is based on the graph, so you'd hope there's enough info in there not to need to go back to the graph
+            // for next edge to be the right one, need to make sure hbv is from reads, not edges.
+            std::cout << "found: " << found << std::endl;
+            auto read_id = &fkmer->getBV() - &lmpReads[0];
+            unsigned long pair_id;
+            pair_id = read_id % 2 == 0 ? read_id + 1 : read_id - 1; // need to check about reverse complement stuff here
+            mapped_lmp_reads.insert(std::make_pair(read_id, pair_id));
+            int cont = 0;
+                std::cout << "Contig: " << cont
+                          << " Kmer: " << (fkmer->isRC() ? kmer.rc().getBV() : kmer.getBV())
+                          << " Offset: " << fkmer->getOffset()
+                          << " Is RC: " << fkmer->isRC()
+                          << " Context: " << fkmer->getContext()
+                          << " BV size: " << fkmer->getBV().size()
+                          << " BV # : " << &fkmer->getBV() - &lmpReads[0]
+                          << std::endl << std::endl
+                          << " " << mHBV.EdgeObject(&fkmer->getBV() - &lmpReads[0])
+                          << std::endl;
+
+        }
+    }*/
 }
 
 std::string PathFinderkb::path_str(std::vector<uint64_t> path) {
@@ -75,6 +132,7 @@ void PathFinderkb::untangle_complex_in_out_choices(uint64_t large_frontier_size,
     std::set<std::array<std::vector<uint64_t>,2>> seen_frontiers,solved_frontiers;
     std::vector<std::vector<uint64_t>> paths_to_separate;
     for (int e = 0; e < mHBV.EdgeObjectCount(); ++e) {
+        mapEdgeToLMPKmers();
         if (e < mInv[e] && mHBV.EdgeObject(e).size() < large_frontier_size) {
             auto f=get_all_long_frontiers(e, large_frontier_size);// return edges in and out of this edge which represent long sequences of bases
             // think f[0] is vec of edge ids going into this edge, and f[1] is vec of edge ids going out

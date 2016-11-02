@@ -24,7 +24,7 @@
     void buildBigKHBVFromReads(unsigned K, vecbvec const &reads, unsigned coverage,
                                HyperBasevector *pHBV, ReadPathVec *pReadPaths,
                                HyperKmerPath *pHKP, vecKmerPath *pKmerPaths) {
-        BigK::dispatch<SillyFunctor>(K, reads, coverage,
+        BigK::dispatch<PatherKB::SillyFunctor>(K, reads, coverage,
                                      pHBV, pReadPaths, pHKP, pKmerPaths);
     }
 

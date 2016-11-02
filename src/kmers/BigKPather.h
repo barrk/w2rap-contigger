@@ -37,7 +37,7 @@ void buildBigKHBVFromReads( unsigned K, vecbvec const& reads, unsigned coverage,
                                 vecKmerPath* pKmerPaths=nullptr );
 
 
-namespace {
+namespace PatherKB{
 template <unsigned BIGK>
 using BigDict = HashSet<BigKMer<BIGK>,typename BigKMer<BIGK>::hasher>;
 
@@ -337,7 +337,7 @@ public:
               mFwdXlat(fwdXlat), mRevXlat(revXlat), mpReadPaths(pReadPaths),
               mpHKP(pHKP), mpKmerPaths(pKmerPaths) {}
 
-
+    // reads:lmp, dict: pe, edges:pe, paths are both mp
     Pather( vecbvec const& reads, BigKDict const& dict, vecbvec const& edges,
             std::vector<int> const& fwdXlat, std::vector<int> const& revXlat,
             ReadPathVec* pReadPaths, vecKmerPath* pKmerPaths )
@@ -355,7 +355,7 @@ public:
         mTmpReadPath.setFirstSkip(entry.getOffset());
         size_t idx = &entry.getBV() - &mEdges[0];
         size_t edgeId = entry.isRC() ? mRevXlat[idx] : mFwdXlat[idx];
-        mTmpReadPath.push_back(edgeId);
+        mTmpReadPath.push_back(edgeId);// read path for lmps will be edges on pe graph
         size_t readLenRemaining = read.size();
         size_t edgeLenRemaining = entry.getBV().size() - entry.getOffset();
         while (readLenRemaining > edgeLenRemaining) {

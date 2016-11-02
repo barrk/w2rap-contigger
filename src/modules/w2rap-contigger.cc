@@ -244,21 +244,20 @@ int main(const int argc, const char * argv[]) {
             std::cout << "Reading mate pair files" << std::endl;
             MpData mp_data(mp_read_files);
             std::cout << "Mate pair files read" << std::endl;
-            HyperBasevector hb_lmp;
-            ReadPathVec pRPV_lmp;
-            HyperKmerPath pHKP_lmp; // a graph in which each edge is a kmer path
+             // a graph in which each edge is a kmer path
             vecKmerPath path_lmps;// similar to base vec  but for kmers rather than bases
             // covrage is currently hard coded to value from ecolie LMPs
 
-            readsToHBV<200>(mp_data.bases, 70, &hb_lmp, &pRPV_lmp, &pHKP_lmp, &path_lmps); // as it looks like you need to build the HBV to build the paths, think this is ok
+            //buildReadQGraph(mp_data.bases, mp_data.quals, false, false, minQual, 1, .75, 0, &hb_lmp, &pRPV_lmp, 200, out_dir,tmp_dir,disk_batches); // as it looks like you need to build the HBV to build the paths, think this is ok
             std::cout << "Built MP paths" << std::endl;
             HyperBasevector hbv;
             ReadPathVec paths;
-            buildReadQGraph(pe_data.bases, pe_data.quals, false, false, minQual, minFreq, .75, 0, &hbv, &paths, small_K, out_dir,tmp_dir,disk_batches);
+            buildReadQGraph(pe_data.bases, pe_data.quals, false, false, minQual, 1, .75, 0, &hbv, &paths, 200, out_dir,tmp_dir,disk_batches);
             VecULongVec invPaths;
             invert(paths, invPaths, hbv.EdgeObjectCount());
             // HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, HyperBasevector& lmp_data, int min_reads = 5
-            PathFinderkb pf(hbv, inv, paths, invPaths, hb_lmp, 1);
+            PathFinderkb pf(hbv, inv, paths, invPaths, mp_data.bases, 1);
+            pf.untangle_complex_in_out_choices(2, 2);
             Scram(1);
     }
     //== Handle "special cases" to test on development==
@@ -583,19 +582,6 @@ int main(const int argc, const char * argv[]) {
         if (mp_read_files != "") {
             std::cout << "Reading mate pair files" << std::endl;
             /*MpData mp_data(mp_read_files);
-            std::cout << "Mate pair files read" << std::endl;
-            HyperBasevector hb_lmp;
-            ReadPathVec pHBV_lmp;
-            HyperKmerPath pHKP_lmp; // a graph in which each edge is a kmer path
-            vecKmerPath path_lmps;// similar to base vec  but for kmers rather than bases
-            // covrage is currently hard coded to value from ecolie LMPs
-
-            buildBigKHBVFromReads(200, mp_data.bases, 70, &hb_lmp, &pHBV_lmp, &pHKP_lmp, &path_lmps); // as it looks like you need to build the HBV to build the paths, think this is ok
-            std::cout << "Built MP paths" << std::endl;
-            // path_lmps is the Kmer paths, with read id being the key and the path being the value- read id is just index, so this is how we get pairs
-            // the kmer paths are lists of kmer numbers
-            //path_lmps[1].GetKmer()- this gets the kmer id, but don't think the kmer id will be the same as the pe kmers
-            //pHKP_lmp.EdgeObject(1).
 
             Simplify(out_dir, hbvr, inv, pathsr, pe_data.bases, pe_data.quals, MAX_SUPP_DEL, TAMP_EARLY_MIN, MIN_RATIO2,
                      MAX_DEL2,
