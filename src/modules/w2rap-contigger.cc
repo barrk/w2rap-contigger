@@ -255,9 +255,13 @@ int main(const int argc, const char * argv[]) {
             buildReadQGraph(pe_data.bases, pe_data.quals, false, false, minQual, 1, .75, 0, &hbv, &paths, 200, out_dir,tmp_dir,disk_batches);
             VecULongVec invPaths;
             invert(paths, invPaths, hbv.EdgeObjectCount());
+            vecbvec edges(hbv.Edges().begin(), hbv.Edges().end());
+            inv.clear();
+            hbv.Involution(inv);
             // HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, HyperBasevector& lmp_data, int min_reads = 5
             PathFinderkb pf(hbv, inv, paths, invPaths, mp_data.bases, 1);
-            pf.untangle_complex_in_out_choices(2, 2);
+            // rhis segfaults when doing the dictionary lookup, again!
+            pf.mapEdgesToLMPReads();;
             Scram(1);
     }
     //== Handle "special cases" to test on development==

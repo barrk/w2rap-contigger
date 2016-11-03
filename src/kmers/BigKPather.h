@@ -52,6 +52,7 @@ public:
     void kmerize( bvec const& bv )
     { if ( bv.size() < BIGK ) return;
         KMerHasher<BIGK> hasher;
+        std::cout << "kmerizing: " << bv.ToString() << "bigk" << BIGK << std::endl;
         auto itr = bv.begin();
         size_t hash = hasher.hash(itr);
         if ( bv.size() == BIGK ) { add(BigKMer<BIGK>(bv,hash)); return; }
@@ -60,6 +61,8 @@ public:
         auto end = bv.end()-BIGK;
         while ( ++itr != end )
         { hash = hasher.stepF(itr);
+            // i think thekmer base vector represents the entire read, that's why we just have the offset- would explain why it looks like same kmer is added multiple times
+            //std::cout << "kmer " << kmer.getBV() << " added" << std::endl;
             kmer.successor(hash,KMerContext(itr[-1],itr[BIGK]));
             add(kmer); }
         hash = hasher.stepF(itr);
@@ -115,7 +118,7 @@ private:
     void canonicalAdd( BigKMer<BIGK> const& kmer ) const
     { mDict.apply(kmer,
                   [&kmer]( BigKMer<BIGK> const& entry )
-                  { const_cast<BigKMer<BIGK>&>(entry).addContext(kmer.getContext()); }); }
+                  { const_cast<BigKMer<BIGK>&>(entry).addContext(kmer.getContext()); });  }
 
     BigKDict& mDict;
 };
@@ -348,9 +351,11 @@ public:
     // this is how we map the reads!!!! this could do with improvement
     void operator()( size_t readId ) {
         bvec const &read = mReads[readId]; //get the read string
+        std::cout << "looking up read:" << read.ToString() << std::endl;
         if (read.size() < BIGK) return; // if we can't convert read into kmers, stop
         KMerHasher<BIGK> hasher;
         BigKMer<BIGK> kmer(read, hasher(read.begin()));
+        std::cout << "looking up kmer:" << kmer.getBV() << std::endl;
         BigKMer<BIGK> entry = lookup(kmer);
         mTmpReadPath.setFirstSkip(entry.getOffset());
         size_t idx = &entry.getBV() - &mEdges[0];
@@ -365,7 +370,7 @@ public:
                                    KMerContext(), readOffset);
             BigKMer<BIGK> nextEntry = lookup(nextKmer);
             ForceAssertEq(nextEntry.getOffset(), 0u);
-            idx = &nextEntry.getBV() - &mEdges[0];
+            idx = &nextEntry.getBV() - &mEdges[0];// TODO: ask what the difference is between this and below? both look like edge ids to me....
             edgeId = nextEntry.isRC() ? mRevXlat[idx] : mFwdXlat[idx];
             mTmpReadPath.push_back(edgeId);
             edgeLenRemaining = nextEntry.getBV().size();

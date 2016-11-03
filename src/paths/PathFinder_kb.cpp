@@ -34,35 +34,50 @@ void PathFinderkb::init_prev_next_vectors(){
 
 }
 
-void PathFinderkb::mapEdgeToLMPKmers(){
+void PathFinderkb::mapEdgesToLMPReads(){
+    std::cout << "edge mapping begun" << std::endl;
     ReadPathVec pRPV_lmp;
     vecKmerPath pKP_lmp;
     auto edges = mHBV.Edges();
     vecbvec edges_vec;
-    BigDict<28> bigDict(3000000);
+    BigDict<28> bigDict(300);
     BigKMerizer<28> tkmerizer(&bigDict);
+    std::cout << "dict created" << std::endl;
     for (auto edge: edges) { tkmerizer.kmerize(edge); edges_vec.push_back(edge);};
+    std::cout << "dict entries populated" << std::endl;
     std::vector<int> fwdXlat, revXlat;
+    fwdXlat.resize(edges.size(), -1);
+    revXlat.resize(edges.size(), -1);
     // if order of edges doesn't change i think this should work
     // i think previous/next vectors, should work, or next at least, not sure about previous
     // Pather( vecbvec const& reads, BigKDict const& dict, vecbvec const& edge, std::vector<int> const& fwdXlat, std::vector<int> const& revXlat, ReadPathVec* pReadPaths, vecKmerPath* pKmerPaths )
+    int edge_count = 0; // if we incrememnt this each time an edge would have been added in the original making of the fwd/revXlats, these should be the same?
     for (uint64_t i=0;i<edges.size();++i){
-        auto fwEdgeId = i;
+        //auto fwEdgeId = pHBV->EdgeObjectCount();
+        auto fwEdgeId = edge_count;
         bvec edge = edges[i];
         fwdXlat[i]=fwEdgeId;
+        edge_count += 1;
         if ( edge.getCanonicalForm() == CanonicalForm::PALINDROME ) {
             revXlat[i] = fwEdgeId;
         }
         else {
-            auto bwEdgeId = i;
+            auto bwEdgeId = edge_count;
             revXlat[i] = bwEdgeId;
+            edge_count += 1;
         }
+        // as vectors are created with size edges.size, incrementing edge count will cause it to go over
+        std::cout << "edge count:" << edge_count << std::endl;
+        std::cout << "i: " << i << std::endl;
     }
+    std::cout << "fwd/backward lists created" << std::endl;
     // fwd/bward xlat are how it determines which the next edges are
     Pather<28> pather( lmp_data, bigDict, edges_vec,
                     fwdXlat, revXlat,
                     &pRPV_lmp, &pKP_lmp );
+    std::cout << "pather created" << std::endl;
     for (auto i=0ul;i<lmp_data.size();++i) pather(i);
+    std::cout << "mapping complete" << std::endl;
     // basically copied from gonza but with edge object instead of read
     /*KMerHasher<200> hasher;
     std::cout << "pe edge object count" << mHBV.EdgeObjectCount() << std::endl;
@@ -132,7 +147,6 @@ void PathFinderkb::untangle_complex_in_out_choices(uint64_t large_frontier_size,
     std::set<std::array<std::vector<uint64_t>,2>> seen_frontiers,solved_frontiers;
     std::vector<std::vector<uint64_t>> paths_to_separate;
     for (int e = 0; e < mHBV.EdgeObjectCount(); ++e) {
-        mapEdgeToLMPKmers();
         if (e < mInv[e] && mHBV.EdgeObject(e).size() < large_frontier_size) {
             auto f=get_all_long_frontiers(e, large_frontier_size);// return edges in and out of this edge which represent long sequences of bases
             // think f[0] is vec of edge ids going into this edge, and f[1] is vec of edge ids going out

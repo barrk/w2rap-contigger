@@ -134,8 +134,8 @@ void buildHBVFromEdges( vecbvec const& edges, unsigned K, HyperBasevector* pHBV,
     pRevEdgeXlat.resize(edges.size(),-1);
 
     //Now add the edges, and their rcs to the graph, this probably shouldn't be parallel neither (data corruption)
-    for (uint64_t i=0;i<edges.size();++i){
-        auto fwEdgeId = pHBV->EdgeObjectCount();
+    for (uint64_t i=0;i<edges.size();++i){ // what is the difference between edges.size and edge object count? -if the edge isn't a palibdrome, 2 get added per iteration of this loop
+        auto fwEdgeId = pHBV->EdgeObjectCount(); // this is the same as the size of the private edges vector, add edge pushes an edge onto this vector, so this willbe increased when add edge is called
         bvec edge = edges[i];
         pHBV->AddEdge(edge_vertices[i].fw_v1,edge_vertices[i].fw_v2,edge);
         pFwdEdgeXlat[i]=fwEdgeId;
