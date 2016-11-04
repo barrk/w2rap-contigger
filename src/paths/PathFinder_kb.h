@@ -13,6 +13,7 @@
 #include "paths/long/large/GapToyTools.h"
 #include "kmers/BigKMer.h"
 #include "Vec.h"
+#include <lmp/lmp_mapper.h>
 
 
 

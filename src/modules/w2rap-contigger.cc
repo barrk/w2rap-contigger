@@ -6,7 +6,6 @@
 #include <paths/long/large/Simplify.h>
 #include <paths/long/large/MakeGaps.h>
 #include <paths/long/large/FinalFiles.h>
-#include <lmp/lmp_mapper.h>
 #include "FastIfstream.h"
 #include "FetchReads.h"
 #include "MainTools.h"
@@ -261,10 +260,6 @@ int main(const int argc, const char * argv[]) {
             //vecbvec edges(hbv.Edges().begin(), hbv.Edges().end());
             inv.clear();
             hbv.Involution(inv);
-            KMatch kmatch(31);
-            LMPMapper lmp_mapper(mp_data.bases, hbv, kmatch);
-            // the kmatch lookup reads method returns a vector of edges and edge offsets, one of these vectors per read is placed in the lmp_read_edge_maps vector
-            std::vector<std::vector<edgeKmerPosition> > lmp_read_edge_maps = lmp_mapper.mapReads();
             // HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, HyperBasevector& lmp_data, int min_reads = 5
             //PathFinderkb pf(hbv, inv, paths, invPaths, mp_data.bases, 1);
             // rhis segfaults when doing the dictionary lookup, again!

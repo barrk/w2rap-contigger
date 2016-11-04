@@ -12,11 +12,14 @@ class LMPMapper{
     public:
         LMPMapper(vecbvec lmp_reads, HyperBasevector& hbv, KMatch kmatch);
         vecbvec lmp_reads;
-        std::vector<std::vector<edgeKmerPosition> > LMPMapper::mapReads();
-
+        void LMPMapper::mapReads();
+        void LMPMapper::findFullyMappedEdges();
 
     private:
         KMatch kMatch;
         HyperBasevector hbv;
+        std::vector<std::vector<edgeKmerPosition> > read_edge_maps;
+        std::vector<std::vector<edgeKmerPosition> > initalise_read_edge_map(){std::vector<std::vector<edgeKmerPosition> > res; return res};
+        std::vector<int> LMPMapper::getFullyMappedEdges(std::vector<edgeKmerPosition> read_mapping)
 };
 #endif //W2RAP_CONTIGGER_LMP_MAPPER_H

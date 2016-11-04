@@ -36,18 +36,9 @@ void PathFinderkb::init_prev_next_vectors(){
 
 void PathFinderkb::mapEdgesToLMPReads(){
     KMatch kmatch(31);
-    //HyperBasevector hbv2 = mHBV;
-    kmatch.Hbv2Map(&mHBV);
-    std::cout << kmatch.edgeMap.size() << std::endl;
-    std::vector<std::vector<edgeKmerPosition> > read_mappings;
-    //std::vector<edgeKmerPosition> res = kmatch.lookupRead(lmp_data[0].ToString());
-    for (int i=0; i < lmp_data.size(); i++){
-        read_mappings.push_back(kmatch.lookupRead(lmp_data[i].ToString()));
-    }
-    std::cout << "success!!" << std::endl;
-    //kmatch.MapReads(lmp_data);
-    //KMatch::Hbv2Map(hbv);
-    //std::vector<int> KMatch::MapReads(lmp_data);
+    LMPMapper lmp_mapper(lmp_data, mHBV, kmatch);
+    // the kmatch lookup reads method returns a vector of edges and edge offsets, one of these vectors per read is placed in the lmp_read_edge_maps vector
+    lmp_mapper.mapReads();
 }
 
 std::string PathFinderkb::path_str(std::vector<uint64_t> path) {
