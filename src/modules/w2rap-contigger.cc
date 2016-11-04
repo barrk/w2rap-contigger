@@ -6,6 +6,7 @@
 #include <paths/long/large/Simplify.h>
 #include <paths/long/large/MakeGaps.h>
 #include <paths/long/large/FinalFiles.h>
+#include <lmp/lmp_mapper.h>
 #include "FastIfstream.h"
 #include "FetchReads.h"
 #include "MainTools.h"
@@ -237,31 +238,37 @@ int main(const int argc, const char * argv[]) {
     //TODO: try to find out max memory on the system to default to.
 
     if (katie_test){
-            std::cout << "Reading input files DONE!" << std::endl << std::endl << std::endl;
-            std::cout << "Dumping reads in fastb/qualp format..." << std::endl;
+            //std::cout << "Reading input files DONE!" << std::endl << std::endl << std::endl;
 
-            pe_data.write_binary(out_dir, "pe_");
+            //pe_data.write_binary(out_dir, "pe_");
+
             std::cout << "Reading mate pair files" << std::endl;
             MpData mp_data(mp_read_files);
+            mp_data.read_binary("/Users/barrk/Documents/ecoli_dataset/", "");
             std::cout << "Mate pair files read" << std::endl;
              // a graph in which each edge is a kmer path
-            vecKmerPath path_lmps;// similar to base vec  but for kmers rather than bases
+            //vecKmerPath path_lmps;// similar to base vec  but for kmers rather than bases
             // covrage is currently hard coded to value from ecolie LMPs
 
             //buildReadQGraph(mp_data.bases, mp_data.quals, false, false, minQual, 1, .75, 0, &hb_lmp, &pRPV_lmp, 200, out_dir,tmp_dir,disk_batches); // as it looks like you need to build the HBV to build the paths, think this is ok
             std::cout << "Built MP paths" << std::endl;
             HyperBasevector hbv;
+            BinaryReader::readFile("/Users/barrk/Documents/ecoli_dataset/testrun.large_K.final.hbv", &hbv);
             ReadPathVec paths;
-            buildReadQGraph(pe_data.bases, pe_data.quals, false, false, minQual, 1, .75, 0, &hbv, &paths, 200, out_dir,tmp_dir,disk_batches);
+            //buildReadQGraph(pe_data.bases, pe_data.quals, false, false, minQual, 1, .75, 0, &hbv, &paths, 200, out_dir,tmp_dir,disk_batches);
             VecULongVec invPaths;
-            invert(paths, invPaths, hbv.EdgeObjectCount());
-            vecbvec edges(hbv.Edges().begin(), hbv.Edges().end());
+            //invert(paths, invPaths, hbv.EdgeObjectCount());
+            //vecbvec edges(hbv.Edges().begin(), hbv.Edges().end());
             inv.clear();
             hbv.Involution(inv);
+            KMatch kmatch(31);
+            LMPMapper lmp_mapper(mp_data.bases, hbv, kmatch);
+            // the kmatch lookup reads method returns a vector of edges and edge offsets, one of these vectors per read is placed in the lmp_read_edge_maps vector
+            std::vector<std::vector<edgeKmerPosition> > lmp_read_edge_maps = lmp_mapper.mapReads();
             // HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, HyperBasevector& lmp_data, int min_reads = 5
-            PathFinderkb pf(hbv, inv, paths, invPaths, mp_data.bases, 1);
+            //PathFinderkb pf(hbv, inv, paths, invPaths, mp_data.bases, 1);
             // rhis segfaults when doing the dictionary lookup, again!
-            pf.mapEdgesToLMPReads();;
+            //pf.mapEdgesToLMPReads();
             Scram(1);
     }
     //== Handle "special cases" to test on development==

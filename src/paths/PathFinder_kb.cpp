@@ -35,97 +35,19 @@ void PathFinderkb::init_prev_next_vectors(){
 }
 
 void PathFinderkb::mapEdgesToLMPReads(){
-    std::cout << "edge mapping begun" << std::endl;
-    ReadPathVec pRPV_lmp;
-    vecKmerPath pKP_lmp;
-    auto edges = mHBV.Edges();
-    vecbvec edges_vec;
-    BigDict<28> bigDict(300);
-    BigKMerizer<28> tkmerizer(&bigDict);
-    std::cout << "dict created" << std::endl;
-    for (auto edge: edges) { tkmerizer.kmerize(edge); edges_vec.push_back(edge);};
-    std::cout << "dict entries populated" << std::endl;
-    std::vector<int> fwdXlat, revXlat;
-    fwdXlat.resize(edges.size(), -1);
-    revXlat.resize(edges.size(), -1);
-    // if order of edges doesn't change i think this should work
-    // i think previous/next vectors, should work, or next at least, not sure about previous
-    // Pather( vecbvec const& reads, BigKDict const& dict, vecbvec const& edge, std::vector<int> const& fwdXlat, std::vector<int> const& revXlat, ReadPathVec* pReadPaths, vecKmerPath* pKmerPaths )
-    int edge_count = 0; // if we incrememnt this each time an edge would have been added in the original making of the fwd/revXlats, these should be the same?
-    for (uint64_t i=0;i<edges.size();++i){
-        //auto fwEdgeId = pHBV->EdgeObjectCount();
-        auto fwEdgeId = edge_count;
-        bvec edge = edges[i];
-        fwdXlat[i]=fwEdgeId;
-        edge_count += 1;
-        if ( edge.getCanonicalForm() == CanonicalForm::PALINDROME ) {
-            revXlat[i] = fwEdgeId;
-        }
-        else {
-            auto bwEdgeId = edge_count;
-            revXlat[i] = bwEdgeId;
-            edge_count += 1;
-        }
-        // as vectors are created with size edges.size, incrementing edge count will cause it to go over
-        std::cout << "edge count:" << edge_count << std::endl;
-        std::cout << "i: " << i << std::endl;
+    KMatch kmatch(31);
+    //HyperBasevector hbv2 = mHBV;
+    kmatch.Hbv2Map(&mHBV);
+    std::cout << kmatch.edgeMap.size() << std::endl;
+    std::vector<std::vector<edgeKmerPosition> > read_mappings;
+    //std::vector<edgeKmerPosition> res = kmatch.lookupRead(lmp_data[0].ToString());
+    for (int i=0; i < lmp_data.size(); i++){
+        read_mappings.push_back(kmatch.lookupRead(lmp_data[i].ToString()));
     }
-    std::cout << "fwd/backward lists created" << std::endl;
-    // fwd/bward xlat are how it determines which the next edges are
-    Pather<28> pather( lmp_data, bigDict, edges_vec,
-                    fwdXlat, revXlat,
-                    &pRPV_lmp, &pKP_lmp );
-    std::cout << "pather created" << std::endl;
-    for (auto i=0ul;i<lmp_data.size();++i) pather(i);
-    std::cout << "mapping complete" << std::endl;
-    // basically copied from gonza but with edge object instead of read
-    /*KMerHasher<200> hasher;
-    std::cout << "pe edge object count" << mHBV.EdgeObjectCount() << std::endl;
-    std::cout << "pe edge object count" << lmp_data.EdgeObjectCount() << std::endl;
-    auto edge =  mHBV.EdgeObject(e);
-    auto itr = edge.begin();
-    auto end = edge.end() - 200;
-    size_t hash = hasher.hash(itr);
-    BigKMer<200> kmer(edge, hash);
-    std::set< std::pair<unsigned long, unsigned long> > mapped_lmp_reads;
-    int not_found = 0;
-    int found = 0;
-    while (++itr < end) {
-        std::cout << "inside loop, kmer: " << kmer.getBV() << std::endl;
-        hash = hasher.stepF(itr);
-        std::cout << "called heasher step through successfully" << std::endl;
-        kmer.successor(hash);
-        std::cout << "got kmer successor" << kmer.getBV() << "reverse complemented" << kmer.isRC() <<  std::endl;
-        // this is hwere it gets the bad access
-        //auto fkmer = lmpDict.lookup((kmer.isRC())?(kmer.rc()) : (kmer));
-        auto fkmer = lmpDict.lookup(kmer);
-        if (fkmer == 0){
-            not_found += 1;
-            std::cout << "not found:" << not_found << std::endl;
-        } else {
-            //std::cout << "found kmer:" << fkmer->getBV() << std::endl;
-            // roughly, want to repeat this for each, find where this is in the lmp hbv, and where the next/previous is (this will be pair, next/prev depends on odd/even)
-            // the diciotnary is based on the graph, so you'd hope there's enough info in there not to need to go back to the graph
-            // for next edge to be the right one, need to make sure hbv is from reads, not edges.
-            std::cout << "found: " << found << std::endl;
-            auto read_id = &fkmer->getBV() - &lmpReads[0];
-            unsigned long pair_id;
-            pair_id = read_id % 2 == 0 ? read_id + 1 : read_id - 1; // need to check about reverse complement stuff here
-            mapped_lmp_reads.insert(std::make_pair(read_id, pair_id));
-            int cont = 0;
-                std::cout << "Contig: " << cont
-                          << " Kmer: " << (fkmer->isRC() ? kmer.rc().getBV() : kmer.getBV())
-                          << " Offset: " << fkmer->getOffset()
-                          << " Is RC: " << fkmer->isRC()
-                          << " Context: " << fkmer->getContext()
-                          << " BV size: " << fkmer->getBV().size()
-                          << " BV # : " << &fkmer->getBV() - &lmpReads[0]
-                          << std::endl << std::endl
-                          << " " << mHBV.EdgeObject(&fkmer->getBV() - &lmpReads[0])
-                          << std::endl;
-
-        }
-    }*/
+    std::cout << "success!!" << std::endl;
+    //kmatch.MapReads(lmp_data);
+    //KMatch::Hbv2Map(hbv);
+    //std::vector<int> KMatch::MapReads(lmp_data);
 }
 
 std::string PathFinderkb::path_str(std::vector<uint64_t> path) {

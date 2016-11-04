@@ -75,7 +75,6 @@ void KMatch::Hbv2Map(HyperBasevector* hbv){
 
   std::map<uint64_t, std::vector<edgeKmerPosition>> edgeDict;
   uint32_t seq_index=0;
-
   auto edges = hbv->Edges();
 
   for (auto seqN=0; seqN<edges.size(); ++seqN) {
@@ -125,13 +124,16 @@ std::vector<int> KMatch::MapReads(vecbvec seqVector){
   // get the reads and map them to the graph using the dictionary
   // returns a vector of paths
   int cont = 0;
-//  for (auto v=0; v<seqVector.size(); ++v){
-  for (auto v=0; v<20; ++v){
+  for (auto v=0; v<seqVector.size(); ++v){
     auto g = this->lookupRead(seqVector[v].ToString());
     if (g.size()>0){
       for (auto a=0; a<g.size(); ++a){
-//        std::cout << "Read: " << cont << " mapped "<< this->lookupRead(seqVector[v].ToString()).size() << " places*kmers"  << std::endl;
-        std::cout << " " << g[a].edge_id << " " << g[a].offset;
+        //std::cout << "Read: " << cont << " mapped "<< this->lookupRead(seqVector[v].ToString()).size() << " places*kmers"  << std::endl;
+        //std::cout << " " << g[a].edge_id << " " << g[a].offset;
+        if (g[a].edge_id == 1 && g[a].offset == 41){
+          //std::cout << "edge failure info here" << std::endl;
+          // its probably in next lookup
+        }
       }
       std::cout<<std::endl;
       cont ++;

@@ -9,6 +9,7 @@
 #include "paths/long/ReadPath.h"
 #include "feudal/HashSet.h"
 #include "kmers/BigKPather.h"
+#include "kmers/kmatch/KMatch.h"
 #include "paths/long/large/GapToyTools.h"
 #include "kmers/BigKMer.h"
 #include "Vec.h"

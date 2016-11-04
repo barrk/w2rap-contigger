@@ -39,10 +39,11 @@ class KMatch {
     std::vector<pKmer> KMatch::ProduceKmers(std::string seq);
 
     std::map<uint64_t, std::vector<edgeKmerPosition>> edgeMap;
+    std::vector<edgeKmerPosition> KMatch::lookupRead(std::string read);
 
   private:
     uint8_t K;
-    std::vector<edgeKmerPosition> KMatch::lookupRead(std::string read);
+
 
 
 };

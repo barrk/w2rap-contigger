@@ -202,7 +202,8 @@ add_library(base_libs OBJECT
         src/random/NormalDistribution.cc
         src/util/TextTable.cc
         src/util/w2rap_timers.h
-        src/paths/long/ReadPath.cc)
+        src/paths/long/ReadPath.cc
+        src/lmp/lmp_mapper.cpp)
 
 add_library(hb_base_libs OBJECT
         src/Alignment.cc
@@ -382,7 +383,8 @@ add_library(specific_w2rap-contigger OBJECT
         src/GFADump.cc
         src/paths/PathFinder.cc
         src/paths/PathFinder.h
-        src/paths/PathFinder_kb.cpp)
+        src/paths/PathFinder_kb.cpp
+        src/kmers/kmatch/KMatch.cc)
 
 ## add executables and respective sources
 add_executable(w2rap-contigger src/modules/w2rap-contigger.cc
