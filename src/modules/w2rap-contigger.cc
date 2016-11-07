@@ -90,7 +90,8 @@ int main(const int argc, const char * argv[]) {
                                                          "file1.fastq,file2.fastq", cmd);
 
         TCLAP::ValueArg<std::string> pe_read_filesArg("P", "pe_read_files",
-                                                      "Input sequences (pe reads) files ", false, "", "file1.fastq,file2.fastq", cmd);
+                                                      "Input sequences (pe reads) files ", true, "",
+                                                      "file1.fastq,file2.fastq", cmd);
 
         TCLAP::ValueArg<std::string> mp_read_filesArg("M", "mp_read_files",
                                                       "Input sequences (reads) files ", false, "",
@@ -215,12 +216,8 @@ int main(const int argc, const char * argv[]) {
 
     //========== Main Program Begins ======
     // This has to be according to the input
+    PeData pe_data(pe_read_files);
 
-    // Read all data form the configuration file
-    InputDataMag dataMag(config_file_path, out_dir);
-    // [GONZA] this might be copying stuff, check out.
-    auto bases = dataMag.mag["PE1"]->bases;
-    auto quals = dataMag.mag["PE1"]->quals;
 
     vec<String> subsam_names = {"C"};
     vec<int64_t> subsam_starts = {0};
@@ -239,14 +236,13 @@ int main(const int argc, const char * argv[]) {
     SetMaxMemory(int64_t(round(max_mem * 1024.0 * 1024.0 * 1024.0)));
     //TODO: try to find out max memory on the system to default to.
 
-    vecbvec mp_data_dummy;
     if (katie_test){
             //std::cout << "Reading input files DONE!" << std::endl << std::endl << std::endl;
 
             //pe_data.write_binary(out_dir, "pe_");
 
             std::cout << "Reading mate pair files" << std::endl;
-            MpData mp_data(out_dir, mp_read_files, "");
+            MpData mp_data(mp_read_files);
             mp_data.read_binary("/Users/barrk/Documents/ecoli_dataset/", "");
             std::cout << "Mate pair files read" << std::endl;
              // a graph in which each edge is a kmer path
@@ -311,38 +307,39 @@ int main(const int argc, const char * argv[]) {
             Cleanup(hbvr, inv, pathsr);
 
             std::cout << "Loading reads in fastb/qualp format..." << std::endl;
-//            pe_data.read_binary(out_dir, "");
+            pe_data.read_binary(out_dir, "");
+
 //            bases.ReadAll(out_dir + "/frag_reads_orig.fastb");
 //            pe_quals.ReadAll(out_dir + "/frag_reads_orig.qualp");
 
             std::cout << "   DONE!" << std::endl;
 
             path_improver pimp;
-                vec<int64_t> ids;
-                ImprovePaths( pathsr, hbvr, inv, bases, quals, ids, pimp,
-                              False, False );
-            vec<int> to_left,to_right;
+            vec<int64_t> ids;
+            ImprovePaths(pathsr, hbvr, inv, pe_data.bases, pe_data.quals, ids, pimp,
+                         False, False);
+            vec<int> to_left, to_right;
             hbvr.ToLeft(to_left), hbvr.ToRight(to_right);
             int ext = 0;
-            auto qvItr = quals.begin();
-            for ( int64_t id = 0; id < (int64_t) pathsr.size( ); id++,++qvItr )
-                {    Bool verbose = False;
-                    const int min_gain = 20;
-                    ReadPath p = pathsr[id];
-                    ExtendPath2( pathsr[id], id, hbvr, to_left, to_right, bases[id], *qvItr,
-                                 min_gain, verbose, 1 );
-                    if ( p != pathsr[id] ) ext++;    }
-                std::cout << ext << " paths extended" << std::endl;
+            auto qvItr = pe_data.quals.begin();
+            for (int64_t id = 0; id < (int64_t) pathsr.size(); id++, ++qvItr) {
+                Bool verbose = False;
+                const int min_gain = 20;
+                ReadPath p = pathsr[id];
+                ExtendPath2(pathsr[id], id, hbvr, to_left, to_right, pe_data.bases[id], *qvItr,
+                            min_gain, verbose, 1);
+                if (p != pathsr[id]) ext++;
+            }
+            std::cout << ext << " paths extended" << std::endl;
 
             // Degloop.
 
-            Degloop( 1, hbvr, inv, pathsr, bases, quals, 2.5 );
-            std::cout << Date( ) << ": removing Hangs" << std::endl;
-            RemoveHangs( hbvr, inv, pathsr, 700 );
-            std::cout << Date( ) << ": cleanup" << std::endl;
-            Cleanup( hbvr, inv, pathsr );
-            std::cout << Date( ) << ": cleanup finished" << std::endl;
-
+            Degloop(1, hbvr, inv, pathsr, pe_data.bases, pe_data.quals, 2.5);
+            std::cout << Date() << ": removing Hangs" << std::endl;
+            RemoveHangs(hbvr, inv, pathsr, 700);
+            std::cout << Date() << ": cleanup" << std::endl;
+            Cleanup(hbvr, inv, pathsr);
+            std::cout << Date() << ": cleanup finished" << std::endl;
 
 
             UnwindThreeEdgePlasmids(hbvr, inv, pathsr);
@@ -394,6 +391,7 @@ int main(const int argc, const char * argv[]) {
         std::cout << "--== Step 1: Reading input files ==--" << std::endl;
 
         // Read all data form the configuration file
+        //InputDataMag dataMag(config_file_path);
 
         std::cout << "Reading input files DONE!" << std::endl << std::endl << std::endl;
         if (dump_perf) perf_file << checkpoint_perf_time("ExtractReads") << std::endl;
@@ -401,10 +399,9 @@ int main(const int argc, const char * argv[]) {
         if (dump_all || to_step < 6) {
             std::cout << "Dumping reads in fastb/qualp format..." << std::endl;
 
-            for (const auto& a: dataMag.mag){
-                std::cout << "Writing to disk: " << a.first << std::endl;
-                a.second->write_binary(out_dir, a.first);
-            }
+            pe_data.write_binary(out_dir, "pe_");
+//            bases.WriteAll(out_dir + "/frag_reads_orig.fastb");
+//            quals.WriteAll(out_dir + "/frag_reads_orig.qualp");
 
             std::cout << "   DONE!" << std::endl;
             if (dump_perf) perf_file << checkpoint_perf_time("DumpReads") << std::endl;
@@ -416,6 +413,10 @@ int main(const int argc, const char * argv[]) {
     if (from_step > 1 && from_step < 7 and not(from_step == 3 and to_step == 3)) {
         std::cout << "Loading reads in fastb/qualp format..." << std::endl;
 
+        pe_data.read_binary(out_dir, "");
+//        bases.ReadAll(out_dir + "/frag_reads_orig.fastb");
+//        quals.ReadAll(out_dir + "/frag_reads_orig.qualp");
+
         std::cout << "   DONE!" << std::endl;
         if (dump_perf) perf_file << checkpoint_perf_time("LoadReads") << std::endl;
     }
@@ -426,7 +427,7 @@ int main(const int argc, const char * argv[]) {
         if (from_step <= 2 and to_step >= 2) {
             bool FILL_JOIN = False;
             std::cout << "--== Step 2: Building first (small K) graph ==--" << std::endl;
-            buildReadQGraph(bases, quals, FILL_JOIN, FILL_JOIN, minQual, minFreq, .75, 0, &hbv, &paths, small_K, out_dir,tmp_dir,disk_batches);
+            buildReadQGraph(pe_data.bases, pe_data.quals, FILL_JOIN, FILL_JOIN, minQual, minFreq, .75, 0, &hbv, &paths, small_K, out_dir,tmp_dir,disk_batches);
             if (dump_perf) perf_file << checkpoint_perf_time("buildReadQGraph") << std::endl;
             FixPaths(hbv, paths); //TODO: is this even needed?
             if (dump_perf) perf_file << checkpoint_perf_time("FixPaths") << std::endl;
@@ -487,7 +488,7 @@ int main(const int argc, const char * argv[]) {
         hbvr.Involution(inv);
         int CLEAN_200_VERBOSITY = 0;
         int CLEAN_200V = 3;
-        Clean200x(hbvr, inv, pathsr, bases, quals, CLEAN_200_VERBOSITY, CLEAN_200V, min_size);
+        Clean200x(hbvr, inv, pathsr, pe_data.bases, pe_data.quals, CLEAN_200_VERBOSITY, CLEAN_200V, min_size);
         if (dump_perf) perf_file << checkpoint_perf_time("Clean200x") << std::endl;
         std::cout << "Cleaning graph DONE!" << std::endl << std::endl << std::endl;
         if (dump_all || to_step == 4) {
@@ -528,7 +529,7 @@ int main(const int argc, const char * argv[]) {
         int MAX_BPATHS = 100000;
         std::vector<int> k2floor_sequence={0, 100, 128, 144, 172, 200};
 
-        AssembleGaps2(hbvr, inv, pathsr, paths_inv, bases, quals, out_dir, k2floor_sequence,
+        AssembleGaps2(hbvr, inv, pathsr, paths_inv, pe_data.bases, pe_data.quals, out_dir, k2floor_sequence,
                       new_stuff, CYCLIC_SAVE, A2V, MAX_PROX_LEFT, MAX_PROX_RIGHT, MAX_BPATHS, pair_sample);
         if (dump_perf) perf_file << checkpoint_perf_time("AssembleGaps2") << std::endl;
         int MIN_GAIN = 5;
@@ -536,8 +537,8 @@ int main(const int argc, const char * argv[]) {
         const vec<int> TRACE_PATHS;
         int EXT_MODE = 1;
 
-        AddNewStuff(new_stuff, hbvr, inv, pathsr, bases, quals, MIN_GAIN, TRACE_PATHS, out_dir, EXT_MODE);
-        PartnersToEnds(hbvr, pathsr, bases, quals);
+        AddNewStuff(new_stuff, hbvr, inv, pathsr, pe_data.bases, pe_data.quals, MIN_GAIN, TRACE_PATHS, out_dir, EXT_MODE);
+        PartnersToEnds(hbvr, pathsr, pe_data.bases, pe_data.quals);
         if (dump_perf) perf_file << checkpoint_perf_time("NewStuff&Partners") << std::endl;
         std::cout << "Assembling gaps DONE!" << std::endl << std::endl << std::endl;
         if (dump_all || to_step ==5){
@@ -583,12 +584,27 @@ int main(const int argc, const char * argv[]) {
         bool FINAL_TINY = True;
         bool UNWIND3 = True;
 
+        // need to clarify exactly where this should go, think its here though
+        if (mp_read_files != "") {
+            std::cout << "Reading mate pair files" << std::endl;
+            /*MpData mp_data(mp_read_files);
 
+            Simplify(out_dir, hbvr, inv, pathsr, pe_data.bases, pe_data.quals, MAX_SUPP_DEL, TAMP_EARLY_MIN, MIN_RATIO2,
+                     MAX_DEL2,
+                     ANALYZE_BRANCHES_VERBOSE2, TRACE_SEQ, DEGLOOP, EXT_FINAL, EXT_FINAL_MODE, PULL_APART_VERBOSE,
+                     PULL_APART_TRACE, DEGLOOP_MODE, DEGLOOP_MIN_DIST, IMPROVE_PATHS, IMPROVE_PATHS_LARGE, FINAL_TINY,
+                     UNWIND3, run_pathfinder, dump_pf,
+                     hb_lmp);*/
+        } else {
+            vecbvec mp_dummy; // add this so we can pass abov one by reference
+            Simplify(out_dir, hbvr, inv, pathsr, pe_data.bases, pe_data.quals, MAX_SUPP_DEL, TAMP_EARLY_MIN, MIN_RATIO2,
+                     MAX_DEL2,
+                     ANALYZE_BRANCHES_VERBOSE2, TRACE_SEQ, DEGLOOP, EXT_FINAL, EXT_FINAL_MODE, PULL_APART_VERBOSE,
+                     PULL_APART_TRACE, DEGLOOP_MODE, DEGLOOP_MIN_DIST, IMPROVE_PATHS, IMPROVE_PATHS_LARGE, FINAL_TINY,
+                     UNWIND3, run_pathfinder, dump_pf,
+                     mp_dummy);
 
-        Simplify(out_dir, hbvr, inv, pathsr, bases, quals, MAX_SUPP_DEL, TAMP_EARLY_MIN, MIN_RATIO2, MAX_DEL2,
-                 ANALYZE_BRANCHES_VERBOSE2, TRACE_SEQ, DEGLOOP, EXT_FINAL, EXT_FINAL_MODE,
-                 PULL_APART_VERBOSE, PULL_APART_TRACE, DEGLOOP_MODE, DEGLOOP_MIN_DIST, IMPROVE_PATHS,
-                 IMPROVE_PATHS_LARGE, FINAL_TINY, UNWIND3, run_pathfinder, dump_pf, mp_data_dummy);
+        }
 
         if (dump_perf) perf_file << checkpoint_perf_time("Simplify") << std::endl;
         // For now, fix paths and write the and their inverse
