@@ -6,9 +6,22 @@
 #include <paths/HyperBasevector.h>
 #include <kmers/kmatch/KMatch.h>
 #include "lmp_mapper.h"
-
+#include <algorithm>
 
 LMPMapper::LMPMapper(vecbvec lmp_reads, HyperBasevector& hbv, KMatch kmatch): lmp_reads(lmp_reads), hbv(hbv), kMatch(kmatch), read_edge_maps(initalise_read_edge_map()) {}
+
+bool compareEdgeKmerPositions(const edgeKmerPosition &ekp1, const edgeKmerPosition &ekp2){
+    // sort by edge id first, then offset. so a higher edge id with a lower offset would be the greater one
+    if (ekp1.edge_id < ekp2.edge_id){
+        return true;
+    } else if (ekp1.edge_id == ekp2.edge_id && ekp1.offset < ekp2.offset){
+        // we're on the same edge, so the one with the lowest offset is lower
+        return true;
+    } else {
+        return false;
+    }
+
+}
 
 void LMPMapper::mapReads(){
     kMatch.Hbv2Map(&hbv);
@@ -23,16 +36,19 @@ void LMPMapper::mapReads(){
 
 void LMPMapper::findFullyMappedEdges(){
     //for (std::vector<edgeKmerPosition>::iterator it = read_edge_maps.begin(); it != read_edge_maps.end(); ++it){
+    std::vector<std::vector<int> > read_paths;
     for (auto read_mapping: read_edge_maps){
-        //std::vector<int> getFullyMappedEdges(read_edge_maps[1]);
+        // ensure that full edges will be together, with offsets in increasing order, in read_mapping vector
+        std::sort(read_mapping.begin(), read_mapping.end(), compareEdgeKmerPositions);
         std::vector<int> res = getFullyMappedEdges(read_mapping);
-}
+        read_paths.push_back(res); // check if no fully mapped edges are found, something is still added to the vector, as we need original indices to find pairs
+    }
 }
 
 
 // assume perfect mapping to start with
 std::vector<int> LMPMapper::getFullyMappedEdges(std::vector<edgeKmerPosition> read_mapping, int k=31){
-    int current_edge_id = -1;
+    int current_edge_id = read_mapping[0].edge_id;
     int consecutive_offsets = 0;
     int last_offset = read_mapping[0].offset;
     std::vector<int> paths;
@@ -46,7 +62,8 @@ std::vector<int> LMPMapper::getFullyMappedEdges(std::vector<edgeKmerPosition> re
         }
             // if we're onto a new edge, then check if we completed the previous edge -
         else {
-            if (consecutive_offsets == hbv.EdgeObject(it->edge_id).size() - k + 1) {
+            // if the number of consecutive offsets is equal to the number of kmers on the read, -1 because we count transitions its fully mapped, L - k
+            if (consecutive_offsets == hbv.EdgeObject(current_edge_id).size() - k) {
                 paths.push_back(current_edge_id);
             }
             current_edge_id = it->edge_id;
@@ -54,9 +71,11 @@ std::vector<int> LMPMapper::getFullyMappedEdges(std::vector<edgeKmerPosition> re
         }
         last_offset = it->offset;
         // if the above conditional would miss this because we're at the end of the loop, exit here
-        if (std::next(it) == read_mapping.end() && consecutive_offsets == hbv.EdgeObject(it->edge_id).size() - k + 1){
+        if (std::next(it) == read_mapping.end() && consecutive_offsets == hbv.EdgeObject(current_edge_id).size() - k){
             paths.push_back(current_edge_id);
         }
     }
     return paths;
 }
+
+
