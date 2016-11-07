@@ -22,12 +22,16 @@ void LMPMapper::mapReads(){
 // now need a load of helpers- get consecutive offsts from edge vector
 
 void LMPMapper::findFullyMappedEdges(){
+    //for (std::vector<edgeKmerPosition>::iterator it = read_edge_maps.begin(); it != read_edge_maps.end(); ++it){
     for (auto read_mapping: read_edge_maps){
-        std::vector<int> getFullyMappedEdges(read_mapping);
-    }
+        //std::vector<int> getFullyMappedEdges(read_edge_maps[1]);
+        std::vector<int> res = getFullyMappedEdges(read_mapping);
+}
 }
 
-std::vector<int> LMPMapper::getFullyMappedEdges(std::vector<edgeKmerPosition> read_mapping){
+
+// assume perfect mapping to start with
+std::vector<int> LMPMapper::getFullyMappedEdges(std::vector<edgeKmerPosition> read_mapping, int k=31){
     int current_edge_id = -1;
     int consecutive_offsets = 0;
     int last_offset = read_mapping[0].offset;
@@ -42,7 +46,7 @@ std::vector<int> LMPMapper::getFullyMappedEdges(std::vector<edgeKmerPosition> re
         }
             // if we're onto a new edge, then check if we completed the previous edge -
         else {
-            if (consecutive_offsets == hbv.EdgeObject(it->edge_id).size() - 30) {
+            if (consecutive_offsets == hbv.EdgeObject(it->edge_id).size() - k + 1) {
                 paths.push_back(current_edge_id);
             }
             current_edge_id = it->edge_id;
@@ -50,8 +54,9 @@ std::vector<int> LMPMapper::getFullyMappedEdges(std::vector<edgeKmerPosition> re
         }
         last_offset = it->offset;
         // if the above conditional would miss this because we're at the end of the loop, exit here
-        if (std::next(it) == read_mapping.end() && consecutive_offsets == hbv.EdgeObject(it->edge_id).size() - 30){
+        if (std::next(it) == read_mapping.end() && consecutive_offsets == hbv.EdgeObject(it->edge_id).size() - k + 1){
             paths.push_back(current_edge_id);
         }
     }
+    return paths;
 }
