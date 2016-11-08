@@ -216,7 +216,7 @@ int main(const int argc, const char * argv[]) {
 
     //========== Main Program Begins ======
     // This has to be according to the input
-    PeData pe_data(pe_read_files);
+    PeData pe_data;//(pe_read_files);
 
 
     vec<String> subsam_names = {"C"};
@@ -245,25 +245,16 @@ int main(const int argc, const char * argv[]) {
             MpData mp_data(mp_read_files);
             mp_data.read_binary("/Users/barrk/Documents/ecoli_dataset/", "");
             std::cout << "Mate pair files read" << std::endl;
-             // a graph in which each edge is a kmer path
-            //vecKmerPath path_lmps;// similar to base vec  but for kmers rather than bases
-            // covrage is currently hard coded to value from ecolie LMPs
 
-            //buildReadQGraph(mp_data.bases, mp_data.quals, false, false, minQual, 1, .75, 0, &hb_lmp, &pRPV_lmp, 200, out_dir,tmp_dir,disk_batches); // as it looks like you need to build the HBV to build the paths, think this is ok
-            std::cout << "Built MP paths" << std::endl;
-            HyperBasevector hbv;
-            BinaryReader::readFile("/Users/barrk/Documents/ecoli_dataset/testrun.large_K.final.hbv", &hbv);
-            ReadPathVec paths;
-            //buildReadQGraph(pe_data.bases, pe_data.quals, false, false, minQual, 1, .75, 0, &hbv, &paths, 200, out_dir,tmp_dir,disk_batches);
+            BinaryReader::readFile(out_dir + "/" + out_prefix + ".large_K.final.hbv", &hbvr);
+            LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".large_K.final.paths").c_str());
             VecULongVec invPaths;
-            //invert(paths, invPaths, hbv.EdgeObjectCount());
-            //vecbvec edges(hbv.Edges().begin(), hbv.Edges().end());
-            inv.clear();
-            hbv.Involution(inv);
+            hbvr.Involution(inv);
+            invert(pathsr, invPaths, hbvr.EdgeObjectCount());
             // HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, HyperBasevector& lmp_data, int min_reads = 5
-            PathFinderkb pf(hbv, inv, paths, invPaths, mp_data.bases, 1);
+            PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
             // rhis segfaults when doing the dictionary lookup, again!
-            pf.mapEdgesToLMPReads();
+            pf.resolveComplexRegionsUsingLMPData(50);
             Scram(1);
     }
     //== Handle "special cases" to test on development==

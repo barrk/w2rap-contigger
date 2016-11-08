@@ -31,14 +31,8 @@ public:
             mMinReads(min_reads),
             lmp_data(lmp_data)
     {
-        // need to run big kmer pather with lmp reads and pe hbv
-        // so actually do just map the reads, the
         hbv.ToLeft(mToLeft);
         hbv.ToRight(mToRight);
-        //auto peEdges = hbv.Edges();
-        //vecbvec peEdgesbvec; // really should not have to do this like this
-        //for (auto edge: peEdges) {peEdgesbvec.push_back(edge)};
-        //BigKEdgeBuilder<200>::buildEdges(peDict,&peEdgesbvec);
 
     }
 
@@ -69,8 +63,7 @@ public:
     //bool join_edges_in_path(std::vector<uint64_t> p);
     std::array<std::vector<uint64_t>,2>  get_all_long_frontiers(uint64_t e,uint64_t large_frontier_size);
     //void migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> edgemap);
-    void mapEdgesToLMPReads();
-
+    void PathFinderkb::resolveComplexRegionsUsingLMPData(uint64_t large_frontier_size);
 
 private:
     HyperBasevector& mHBV;
@@ -82,6 +75,7 @@ private:
     vec<int> mToRight;
     std::vector<std::vector<uint64_t>> next_edges,prev_edges;
     int mMinReads;
+    void mapEdgesToLMPReads();
 
 
 };

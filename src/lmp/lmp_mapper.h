@@ -19,19 +19,20 @@ class LMPMapper{
     public:
         LMPMapper(vecbvec lmp_reads, HyperBasevector& hbv, KMatch kmatch);
         vecbvec lmp_reads;
-        void LMPMapper::mapReads();
-        void LMPMapper::findFullyMappedEdges();
+        std::vector<LMPPair > read_paths;
+        void LMPMapper::LMPReads2MappedPairedEdgePaths();
 
     private:
         KMatch kMatch;
         HyperBasevector hbv;
         std::vector<std::vector<edgeKmerPosition> > read_edge_maps;
         std::vector<std::vector<edgeKmerPosition> > initalise_read_edge_map(){std::vector<std::vector<edgeKmerPosition> > res; return res;};
-        std::vector<LMPPair > read_paths;
         std::vector<ReadPath> initalise_read_path(){std::vector<ReadPath> res; return res;};
         ReadPath LMPMapper::getFullyMappedEdges(std::vector<edgeKmerPosition> read_mapping, int k=31);
-        void LMPMapper::convertLMPPairsToReadPaths();
+        void LMPMapper::mapReads();
+        void LMPMapper::readEdgeMap2LMPPairs();
          ReadPath LMPMapper::sortMappingsFindullyMappedEdges(std::vector<edgeKmerPosition>);
+        void LMPMapper::findFullyMappedEdges();
         // same edge wooll occur in multiple paths- hot to determine best choice?
         //ReadPath LMPMapper::getReadMathPair(int edge_id);
         //ReadPath LMPMapper::getReadMathPair(int read_index);

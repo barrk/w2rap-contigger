@@ -146,6 +146,9 @@ bool InputFileReader::ProduceValidPair(std::string filename_string){
      return true;
 }
 
+PeData::PeData(){
+     std::cout << "Pe data not being loaded" << std::endl;
+}
 // -------------- Pe Data -------------
 PeData::PeData(std::string reads_filename){
      //

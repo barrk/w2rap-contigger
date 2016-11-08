@@ -28,7 +28,7 @@ void Simplify(const String &fin_dir, HyperBasevector &hb, vec<int> &inv,
               const Bool PULL_APART_VERBOSE, const vec<int> &PULL_APART_TRACE,
               const int DEGLOOP_MODE, const double DEGLOOP_MIN_DIST,
               const Bool IMPROVE_PATHS, const Bool IMPROVE_PATHS_LARGE,
-              const Bool FINAL_TINY, const Bool UNWIND3, const bool RUN_PATHFINDER, const bool dump_pf_files, vecbvec lmp_data) {// passing by reference, which i need to eventually, doesn't like NULL default
+              const Bool FINAL_TINY, const Bool UNWIND3, const bool RUN_PATHFINDER, const bool dump_pf_files, vecbvec lmp_data) {
     // Improve read placements and delete funky pairs.
     std::cout << "Edge count: " << hb.EdgeObjectCount() << " Path count:" << paths.size() << std::endl;
     std::cout << "Simplify: rerouting paths" << std::endl;

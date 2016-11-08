@@ -39,30 +39,45 @@ void LMPMapper::mapReads(){
     std::cout << kMatch.edgeMap.size() << std::endl;
     //std::vector<edgeKmerPosition> res = kmatch.lookupRead(lmp_data[0].ToString());
     for (int i=0; i < lmp_reads.size(); i++){
-        read_edge_maps.push_back(kMatch.lookupRead(lmp_reads[i].ToString()));
+        std::vector<edgeKmerPosition> mapped_edges = kMatch.lookupRead(lmp_reads[i].ToString());
+        std::cout << "Mapped read:" << i << " string " << lmp_reads[i].ToString() << " to " << mapped_edges.size() << "edges" << std::endl;
+        read_edge_maps.push_back(mapped_edges);
     }
 }
 
+void LMPMapper::LMPReads2MappedPairedEdgePaths(){
+    mapReads();
+    readEdgeMap2LMPPairs();
 
-void LMPMapper::convertLMPPairsToReadPaths(){
+}
+
+void LMPMapper::readEdgeMap2LMPPairs(){
     LMPPair lmp_pair;
     //for (std::vector<edgeKmerPosition>::iterator it = read_edge_maps.begin(); it != read_edge_maps.end(); ++it){
     std::vector<LMPPair > read_paths;
-    for (int i=0; i < read_edge_maps.size(); ++i){
+    std::cout << "Read edge maps size:" << read_edge_maps.size() << std::endl;
+    for (int i=0; i < read_edge_maps.size() - 1; ++i){
         std::vector<edgeKmerPosition> read_mapping_p1 = read_edge_maps[i];
         // ensure that full edges will be together, with offsets in increasing order, in read_mapping vector
         lmp_pair.p1 = sortMappingsFindullyMappedEdges(read_mapping_p1);
         //++read_mapping; got 'no matching function call' error for these when i tried to iterate using type inference
-        //std::next(read_mapping);
-        std::vector<edgeKmerPosition> read_mapping_p2 = read_edge_maps[i+1];
+        i = i + 1;
+        std::vector<edgeKmerPosition> read_mapping_p2 = read_edge_maps[i];
         lmp_pair.p2 = sortMappingsFindullyMappedEdges(read_mapping_p2);
         read_paths.push_back(lmp_pair); // check if no fully mapped edges are found, something is still added to the vector, as we need original indices to find pairs
     }
 }
 
 ReadPath LMPMapper::sortMappingsFindullyMappedEdges(std::vector<edgeKmerPosition>  read_mapping){
-    std::sort(read_mapping.begin(), read_mapping.end(), compareEdgeKmerPositions);
-    return getFullyMappedEdges(read_mapping);
+    if (read_mapping.size() > 0) {
+        std::sort(read_mapping.begin(), read_mapping.end(), compareEdgeKmerPositions);
+        std::cout << "Read mapping edge id:" << read_mapping[0].edge_id << " offset " << read_mapping[0].offset
+                  << std::endl;
+        return getFullyMappedEdges(read_mapping);
+    }
+    // prevent bad access when no reads mapped
+    ReadPath empty_path;
+    return empty_path;
 }
 
 

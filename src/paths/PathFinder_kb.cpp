@@ -37,8 +37,35 @@ void PathFinderkb::init_prev_next_vectors(){
 void PathFinderkb::mapEdgesToLMPReads(){
     KMatch kmatch(31);
     LMPMapper lmp_mapper(lmp_data, mHBV, kmatch);
-    // the kmatch lookup reads method returns a vector of edges and edge offsets, one of these vectors per read is placed in the lmp_read_edge_maps vector
-    lmp_mapper.mapReads();
+    lmp_mapper.LMPReads2MappedPairedEdgePaths();
+}
+
+void PathFinderkb::resolveComplexRegionsUsingLMPData(uint64_t large_frontier_size){
+    mapEdgesToLMPReads();
+    // then find complex regions, for now in same way as original pathfinder
+    init_prev_next_vectors();// need to clarify what mToLeft and mToRight are, guessing they're just into/out of each node
+    std::cout<<"vectors initialised"<<std::endl;
+    std::set<std::array<std::vector<uint64_t>,2>> seen_frontiers,solved_frontiers;
+    std::vector<std::vector<uint64_t>> paths_to_separate;
+    for (int e = 0; e < mHBV.EdgeObjectCount(); ++e) {
+        if (e < mInv[e] && mHBV.EdgeObject(e).size() < large_frontier_size) {
+            auto f = get_all_long_frontiers(e, large_frontier_size);
+            for (auto in_i = 0; in_i < f[0].size(); ++in_i) {
+                auto in_e = f[0][in_i];
+                for (auto out_i = 0; out_i < f[1].size(); ++out_i) {
+                    auto out_e = f[1][out_i];
+                    auto shared_paths = 0;
+                    // find paths these edges are on
+                    for (auto inp:mEdgeToPathIds[in_e]) { // find paths associated with in_e
+                        for (auto outp:mEdgeToPathIds[out_e]) {
+                            // then need to find LMP paths which overlap with these. need to work out the relationship between these and the paths built from LMP pairs
+
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 std::string PathFinderkb::path_str(std::vector<uint64_t> path) {

@@ -38,6 +38,7 @@ class InputFileReader{
 class PeData: public InputFileReader{
   public:
     PeData(std::string reads_filename);
+    PeData();
 
   private:
     int PeData::read_files(std::basic_istream<char>& in1, std::basic_istream<char>& in2, vecbvec *Reads, VecPQVec *Quals);
