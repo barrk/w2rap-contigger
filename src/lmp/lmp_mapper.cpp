@@ -23,6 +23,17 @@ bool compareEdgeKmerPositions(const edgeKmerPosition &ekp1, const edgeKmerPositi
 
 }
 
+
+/*ReadPath LMPMapper::getReadMathPair(int edge_id);{
+
+}
+
+ReadPath LMPMapper::getReadMathPair(int read_index){
+    ReadPath pair = read_index%2 == 0 ? read_paths[read_index + 1] : read_paths[read_index -1 1]
+    return pair;
+}*/
+
+
 void LMPMapper::mapReads(){
     kMatch.Hbv2Map(&hbv);
     std::cout << kMatch.edgeMap.size() << std::endl;
@@ -32,26 +43,35 @@ void LMPMapper::mapReads(){
     }
 }
 
-// now need a load of helpers- get consecutive offsts from edge vector
 
-void LMPMapper::findFullyMappedEdges(){
+void LMPMapper::convertLMPPairsToReadPaths(){
+    LMPPair lmp_pair;
     //for (std::vector<edgeKmerPosition>::iterator it = read_edge_maps.begin(); it != read_edge_maps.end(); ++it){
-    std::vector<std::vector<int> > read_paths;
-    for (auto read_mapping: read_edge_maps){
+    std::vector<LMPPair > read_paths;
+    for (int i=0; i < read_edge_maps.size(); ++i){
+        std::vector<edgeKmerPosition> read_mapping_p1 = read_edge_maps[i];
         // ensure that full edges will be together, with offsets in increasing order, in read_mapping vector
-        std::sort(read_mapping.begin(), read_mapping.end(), compareEdgeKmerPositions);
-        std::vector<int> res = getFullyMappedEdges(read_mapping);
-        read_paths.push_back(res); // check if no fully mapped edges are found, something is still added to the vector, as we need original indices to find pairs
+        lmp_pair.p1 = sortMappingsFindullyMappedEdges(read_mapping_p1);
+        //++read_mapping; got 'no matching function call' error for these when i tried to iterate using type inference
+        //std::next(read_mapping);
+        std::vector<edgeKmerPosition> read_mapping_p2 = read_edge_maps[i+1];
+        lmp_pair.p2 = sortMappingsFindullyMappedEdges(read_mapping_p2);
+        read_paths.push_back(lmp_pair); // check if no fully mapped edges are found, something is still added to the vector, as we need original indices to find pairs
     }
+}
+
+ReadPath LMPMapper::sortMappingsFindullyMappedEdges(std::vector<edgeKmerPosition>  read_mapping){
+    std::sort(read_mapping.begin(), read_mapping.end(), compareEdgeKmerPositions);
+    return getFullyMappedEdges(read_mapping);
 }
 
 
 // assume perfect mapping to start with
-std::vector<int> LMPMapper::getFullyMappedEdges(std::vector<edgeKmerPosition> read_mapping, int k=31){
+ReadPath LMPMapper::getFullyMappedEdges(std::vector<edgeKmerPosition> read_mapping, int k=31){
     int current_edge_id = read_mapping[0].edge_id;
     int consecutive_offsets = 0;
     int last_offset = read_mapping[0].offset;
-    std::vector<int> paths;
+    ReadPath paths;
     for (auto it = read_mapping.begin(); it != read_mapping.end(); ++it) {
         // if we're still on the same edge
         if (it->edge_id == current_edge_id) {

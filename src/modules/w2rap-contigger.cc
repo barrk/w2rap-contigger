@@ -261,9 +261,9 @@ int main(const int argc, const char * argv[]) {
             inv.clear();
             hbv.Involution(inv);
             // HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, HyperBasevector& lmp_data, int min_reads = 5
-            //PathFinderkb pf(hbv, inv, paths, invPaths, mp_data.bases, 1);
+            PathFinderkb pf(hbv, inv, paths, invPaths, mp_data.bases, 1);
             // rhis segfaults when doing the dictionary lookup, again!
-            //pf.mapEdgesToLMPReads();
+            pf.mapEdgesToLMPReads();
             Scram(1);
     }
     //== Handle "special cases" to test on development==
