@@ -216,8 +216,9 @@ int main(const int argc, const char * argv[]) {
 
     //========== Main Program Begins ======
     // This has to be according to the input
-    PeData pe_data;//(pe_read_files);
-
+    PeData pe_data; //(pe_read_files);
+    vecbvec bases;
+    VecPQVec quals;
 
     vec<String> subsam_names = {"C"};
     vec<int64_t> subsam_starts = {0};
@@ -241,9 +242,9 @@ int main(const int argc, const char * argv[]) {
 
             //pe_data.write_binary(out_dir, "pe_");
 
-            std::cout << "Reading mate pair files" << std::endl;
+            std::cout << "Reading mate pair files:" << mp_read_files << std::endl;
             MpData mp_data(mp_read_files);
-            mp_data.read_binary("/Users/barrk/Documents/ecoli_dataset/", "");
+            //mp_data.read_binary("/Users/barrk/Documents/ecoli_dataset/", "");
             std::cout << "Mate pair files read" << std::endl;
 
             BinaryReader::readFile(out_dir + "/" + out_prefix + ".large_K.final.hbv", &hbvr);
@@ -391,8 +392,8 @@ int main(const int argc, const char * argv[]) {
             std::cout << "Dumping reads in fastb/qualp format..." << std::endl;
 
             pe_data.write_binary(out_dir, "pe_");
-//            bases.WriteAll(out_dir + "/frag_reads_orig.fastb");
-//            quals.WriteAll(out_dir + "/frag_reads_orig.qualp");
+            bases.WriteAll(out_dir + "/frag_reads_orig.fastb");
+            quals.WriteAll(out_dir + "/frag_reads_orig.qualp");
 
             std::cout << "   DONE!" << std::endl;
             if (dump_perf) perf_file << checkpoint_perf_time("DumpReads") << std::endl;

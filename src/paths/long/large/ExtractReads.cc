@@ -248,6 +248,7 @@ int PeData::read_files(std::basic_istream<char>& in1, std::basic_istream<char>& 
 // -------------- Mp Data -------------
 MpData::MpData(std::string reads_filename){
 
+     std::cout << "Reading: " << reads_filename << std::endl;
      this->filename_string = reads_filename;
      if (!ProduceValidPair(this->filename_string)) Scram(1);
 
