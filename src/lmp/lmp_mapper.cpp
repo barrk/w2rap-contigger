@@ -33,63 +33,27 @@ ReadPath LMPMapper::getReadMathPair(int read_index){
     return pair;
 }*/
 
+//TODO repeat all this on involution graph
 
 void LMPMapper::mapReads(){
     kMatch.Hbv2Map(&hbv);
     std::cout << kMatch.edgeMap.size() << std::endl;
     //std::vector<edgeKmerPosition> res = kmatch.lookupRead(lmp_data[0].ToString());
-    int counter = 0;
-    int counter_odd = 0;
-    int counter_even = 0;
-    int counter_g10 = 0;
-    int counter_odd_g10 = 0;
-    int counter_even_g10 = 0;
-    int counter_g100 = 0;
-    int counter_odd_g100 = 0;
-    int counter_even_g100 = 0;
     for (int i=0; i < lmp_reads.size(); i++){
         std::vector<edgeKmerPosition> mapped_edges = kMatch.lookupRead(lmp_reads[i].ToString());
         //std::cout << "Mapped read:" << i << " string " << lmp_reads[i].ToString() << " to " << mapped_edges.size() << "edges" << std::endl;
         read_edge_maps.push_back(mapped_edges);
-        if (mapped_edges.size() != 0){
-            counter += 1;
-            if (i%2 == 0){
-                counter_even += 1;
-            } else {
-                counter_odd += 1;
-            }
-        }
-        if (mapped_edges.size() > 10){
-            counter_g10 += 1;
-            if (i%2 == 0){
-                counter_even_g10 += 1;
-            } else {
-                counter_odd_g10 += 1;
-            }
-        }
-        if (mapped_edges.size() > 100){
-            counter_g100 += 1;
-            if (i%2 == 0){
-                counter_even_g100 += 1;
-            } else {
-                counter_odd_g100 += 1;
-            }
-        }
     }
-    std::cout << "total mapped " << counter << " mapped p1: " << counter_even << " mapped_p2: "  << counter_odd << std::endl;
-    std::cout << "total mapped more than 10 times " << counter_g10 << " mapped p1: " << counter_even_g10 << " mapped_p2: "  << counter_odd_g10 << std::endl;
-    std::cout << "total mapped more than 100 times" << counter_g100 << " mapped p1: " << counter_even_g100 << " mapped_p2: "  << counter_odd_g100 << std::endl;
-    std::cout << "read edge map size " << read_edge_maps.size() << std::endl;
 }
 
-void LMPMapper::LMPReads2MappedPairedEdgePaths(){
+void LMPMapper::LMPReads2MappedPairedEdgePaths(std::vector<LMPPair > & lmp_pairs_for_scaffolding){
     mapReads();
-    readEdgeMap2LMPPairs();
+    readEdgeMap2LMPPairs(lmp_pairs_for_scaffolding);
 
 }
 
 // loads just don't map
-std::vector<LMPPair > LMPMapper::readEdgeMap2LMPPairs(){
+void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair > & lmp_pairs_for_scaffolding){
     //for (std::vector<edgeKmerPosition>::iterator it = read_edge_maps.begin(); it != read_edge_maps.end(); ++it){
     std::vector<LMPPair > read_paths;
     //std::cout << "Read edge maps size:" << read_edge_maps.size() << std::endl;
@@ -124,25 +88,23 @@ std::vector<LMPPair > LMPMapper::readEdgeMap2LMPPairs(){
         }
     }
     std::cout << "total both pairs mapped: " << counter << " p1 mapped: " << counter_p1 << "p2 mapped " << counter_p2 << std::endl;
-    std::vector<LMPPair > read_paths_for_scaffolding;
-    removeUselessLMPMappings(read_paths, read_paths_for_scaffolding);
+    removeUselessLMPMappings(read_paths, lmp_pairs_for_scaffolding);
 }
 
 
 void LMPMapper::removeUselessLMPMappings(std::vector<LMPPair > &read_paths, std::vector<LMPPair > &read_paths_for_scaffolding){
     // if mappings are both to the same edge, or there are no mappings, remove these from consideration
-    std::vector<LMPPair > new_read_paths;
     for (auto read_path_pair: read_paths){
         if (read_path_pair.p1.size() != 0 && read_path_pair.p2.size() != 0){
             //std::cout << "read path pair has nonzero mappings:" << read_path_pair.p1[0] << read_path_pair.p2[0] << std::endl;
             if (read_path_pair.p1 != read_path_pair.p2){
-                new_read_paths.push_back(read_path_pair);
+                read_paths_for_scaffolding.push_back(read_path_pair);
             }
 
         }
 
     }
-    std::cout << new_read_paths.size() << " of " << read_paths.size() << "lmp pair paths useable for scaffolding" << std::endl;
+    std::cout << read_paths_for_scaffolding.size() << " of " << read_paths.size() << "lmp pair paths useable for scaffolding" << std::endl;
 
 }
 

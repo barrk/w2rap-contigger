@@ -20,7 +20,7 @@ class LMPMapper{
         LMPMapper(vecbvec lmp_reads, HyperBasevector& hbv, KMatch kmatch);
         vecbvec lmp_reads;
         std::vector<LMPPair > read_paths;
-        void LMPMapper::LMPReads2MappedPairedEdgePaths();
+        void LMPMapper::LMPReads2MappedPairedEdgePaths(std::vector<LMPPair > & lmp_pairs_for_scaffolding);
 
     private:
         KMatch kMatch;
@@ -30,7 +30,7 @@ class LMPMapper{
         std::vector<ReadPath> initalise_read_path(){std::vector<ReadPath> res; return res;};
         ReadPath LMPMapper::getFullyMappedEdges(std::vector<edgeKmerPosition> read_mapping, int read_length, int count,  int k=31);
         void LMPMapper::mapReads();
-        std::vector<LMPPair > LMPMapper::readEdgeMap2LMPPairs();
+        void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair > & lmp_pairs_for_scaffolding);
          ReadPath LMPMapper::sortMappingsFindFullyMappedEdges(std::vector<edgeKmerPosition>  read_mapping, int read_length, int count);
         void LMPMapper::findFullyMappedEdges();
         bool sanityCheck(LMPPair lmp_pair, int i,  int insert_size=8000);

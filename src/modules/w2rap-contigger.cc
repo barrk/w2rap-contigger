@@ -255,7 +255,7 @@ int main(const int argc, const char * argv[]) {
             // HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, HyperBasevector& lmp_data, int min_reads = 5
             PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
             // rhis segfaults when doing the dictionary lookup, again!
-            pf.resolveComplexRegionsUsingLMPData(50);
+            pf.resolveComplexRegionsUsingLMPData();
             Scram(1);
     }
     //== Handle "special cases" to test on development==
