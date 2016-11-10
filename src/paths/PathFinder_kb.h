@@ -63,8 +63,10 @@ public:
     //bool join_edges_in_path(std::vector<uint64_t> p);
     std::array<std::vector<uint64_t>,2>  get_all_long_frontiers(uint64_t e,uint64_t large_frontier_size);
     //void migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> edgemap);
-    void PathFinderkb::mapEdgesToLMPReads(std::vector<LMPPair > lmp_pairs_for_scaffolding);
+    std::vector<LMPPair > PathFinderkb::mapEdgesToLMPReads();//(std::vector<LMPPair > & lmp_pairs_for_scaffolding);
     void PathFinderkb::resolveComplexRegionsUsingLMPData();
+    void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> edgemap);
+    std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector<uint64_t> p, bool verbose_separation);
 
 private:
     HyperBasevector& mHBV;
@@ -76,7 +78,6 @@ private:
     vec<int> mToRight;
     std::vector<std::vector<uint64_t>> next_edges,prev_edges;
     int mMinReads;
-    void mapEdgesToLMPReads();
 
 
 };

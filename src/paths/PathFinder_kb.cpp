@@ -34,20 +34,86 @@ void PathFinderkb::init_prev_next_vectors(){
 
 }
 
-void PathFinderkb::mapEdgesToLMPReads(std::vector<LMPPair > lmp_pairs_for_scaffolding){
+std::vector<LMPPair > PathFinderkb::mapEdgesToLMPReads(){//(std::vector<LMPPair > & lmp_pairs_for_scaffolding){
     KMatch kmatch(31);
     LMPMapper lmp_mapper(lmp_data, mHBV, kmatch);
-    lmp_mapper.LMPReads2MappedPairedEdgePaths(lmp_pairs_for_scaffolding);
+    std::vector<LMPPair > lmp_pairs;
+    lmp_mapper.LMPReads2MappedPairedEdgePaths(lmp_pairs);
+    std::cout << "mapEdgesToLMPReads lmp pairs size: " << lmp_pairs.size() << std::endl;
+    return lmp_pairs;
 }
 
 void PathFinderkb::resolveComplexRegionsUsingLMPData(){
-    std::vector<LMPPair > lmp_pairs;
-    mapEdgesToLMPReads(lmp_pairs);
+    std::vector<LMPPair > lmp_pairs = mapEdgesToLMPReads();
+    std::cout << "lmp pairs size: " << lmp_pairs.size() << std::endl;
     // then find complex regions, for now in same way as original pathfinder
     init_prev_next_vectors();// need to clarify what mToLeft and mToRight are, guessing they're just into/out of each node
     std::cout<<"vectors initialised"<<std::endl;
     std::vector<std::vector<uint64_t>> paths_to_separate;
-    // simplest approach is to separate all paths from LMP pairs;
+    bool reversed = false;
+    // simplest approach is to separate all paths from LMP pairs
+    for (auto pair: lmp_pairs) {
+        auto p1 = pair.p1;
+        auto p2 = pair.p2;
+        for (auto e1: p1) {// these are the edges
+            for (auto e2: p2) {
+                auto shared_paths = 0; // this takes ages, so see if working out whether edge is in complex region makes a difference
+                for (auto inp:mEdgeToPathIds[e1]) {// find paths associated with in_e
+                    //std::cout << "inp" << inp << std::endl;
+                    for (auto outp:mEdgeToPathIds[e2]) {// ditto out edge
+                        //std::cout << "outp" << outp << std::endl;
+                        if (inp == outp) {// if they're on the same path
+
+                            shared_paths++;
+                            if (shared_paths == 1) {//not the best solution, but should work-ish
+                                std::vector<uint64_t> pv;
+                                for (auto e:mPaths[inp]) pv.push_back(e); // create vector of edges on theshared pat
+                                std::cout << "found first path from " << e1 << " to " << e2 << path_str(pv)
+                                          << std::endl;
+                                paths_to_separate.push_back({});
+                                int16_t ei = 0;
+                                while (mPaths[inp][ei] != e1) ei++; // find which edge on the path is the in edge
+                                // add all edges on the path until the out edge
+                                while (mPaths[inp][ei] != e2 && ei < mPaths[inp].size())
+                                    paths_to_separate.back().push_back(mPaths[inp][ei++]);
+                                if (ei >= mPaths[inp].size()) {
+                                    std::cout << "reversed path detected!" << std::endl;
+                                    reversed = true;
+                                }
+                                paths_to_separate.back().push_back(e2);
+                                //std::cout<<"added!"<<std::endl;
+                            }
+                        }
+                    }
+                }
+
+            }
+        }
+    }
+
+        uint64_t sep=0;
+        std::map<uint64_t,std::vector<uint64_t>> old_edges_to_new;
+        for (auto p:paths_to_separate){
+
+            if (old_edges_to_new.count(p.front()) > 0 or old_edges_to_new.count(p.back()) > 0) {
+                std::cout<<"WARNING: path starts or ends in an already modified edge, skipping"<<std::endl;
+                continue;
+            }
+
+            auto oen=separate_path(p, true);
+            if (oen.size()>0) {
+                for (auto et:oen){
+                    if (old_edges_to_new.count(et.first)==0) old_edges_to_new[et.first]={};
+                    for (auto ne:et.second) old_edges_to_new[et.first].push_back(ne);
+                }
+                sep++;
+            }
+        }
+        if (old_edges_to_new.size()>0) {
+            migrate_readpaths(old_edges_to_new);
+        }
+        std::cout<<" "<<sep<<" paths separated!"<<std::endl;
+
 }
 
 std::string PathFinderkb::path_str(std::vector<uint64_t> path) {
@@ -159,7 +225,7 @@ void PathFinderkb::untangle_complex_in_out_choices(uint64_t large_frontier_size,
 
     uint64_t sep=0;
     std::map<uint64_t,std::vector<uint64_t>> old_edges_to_new;
-    /*for (auto p:paths_to_separate){
+    for (auto p:paths_to_separate){
 
         if (old_edges_to_new.count(p.front()) > 0 or old_edges_to_new.count(p.back()) > 0) {
             std::cout<<"WARNING: path starts or ends in an already modified edge, skipping"<<std::endl;
@@ -178,7 +244,7 @@ void PathFinderkb::untangle_complex_in_out_choices(uint64_t large_frontier_size,
     if (old_edges_to_new.size()>0) {
         migrate_readpaths(old_edges_to_new);
     }
-    std::cout<<" "<<sep<<" paths separated!"<<std::endl;*/
+    std::cout<<" "<<sep<<" paths separated!"<<std::endl;
 }
 
 
@@ -269,4 +335,127 @@ std::array<std::vector<uint64_t>,2> PathFinderkb::get_all_long_frontiers(uint64_
 
 
     return frontiers;
+}
+
+
+
+std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector<uint64_t> p, bool verbose_separation){
+
+    //TODO XXX: proposed version 1 (never implemented)
+    //Creates new edges for the "repeaty" parts of the path (either those shared with other edges or those appearing multiple times in this path).
+    //moves paths across to the new reapeat instances as needed
+    //changes neighbourhood (i.e. creates new vertices and moves the to and from for the implicated edges).
+
+    //creates a copy of each node but the first and the last, connects only linearly to the previous copy,
+    //std::cout<<std::endl<<"Separating path"<<std::endl;
+    std::set<uint64_t> edges_fw;
+    std::set<uint64_t> edges_rev;
+    for (auto e:p){//TODO: this is far too astringent...
+        edges_fw.insert(e);
+        edges_rev.insert(mInv[e]);
+
+        if (edges_fw.count(mInv[e]) ||edges_rev.count(e) ){ //std::cout<<"PALINDROME edge detected, aborting!!!!"<<std::endl;
+            return {};}
+    }
+    //create two new vertices (for the FW and BW path)
+    uint64_t current_vertex_fw=mHBV.N(),current_vertex_rev=mHBV.N()+1;
+    mHBV.AddVertices(2);
+    //migrate connections (dangerous!!!)
+    if (verbose_separation) std::cout<<"Migrating edge "<<p[0]<<" To node old: "<<mToRight[p[0]]<<" new: "<<current_vertex_fw<<std::endl;
+    mHBV.GiveEdgeNewToVx(p[0],mToRight[p[0]],current_vertex_fw);
+    if (verbose_separation) std::cout<<"Migrating edge "<<mInv[p[0]]<<" From node old: "<<mToLeft[mInv[p[0]]]<<" new: "<<current_vertex_rev<<std::endl;
+    mHBV.GiveEdgeNewFromVx(mInv[p[0]],mToLeft[mInv[p[0]]],current_vertex_rev);
+    std::map<uint64_t,std::vector<uint64_t>> old_edges_to_new;
+
+    for (auto ei=1;ei<p.size()-1;++ei){
+        //add a new vertex for each of FW and BW paths
+        uint64_t prev_vertex_fw=current_vertex_fw,prev_vertex_rev=current_vertex_rev;
+        //create two new vertices (for the FW and BW path)
+        current_vertex_fw=mHBV.N();
+        current_vertex_rev=mHBV.N()+1;
+        mHBV.AddVertices(2);
+
+        //now, duplicate next edge for the FW and reverse path
+        auto nef=mHBV.AddEdge(prev_vertex_fw,current_vertex_fw,mHBV.EdgeObject(p[ei]));
+        if (verbose_separation)  std::cout<<"Edge "<<nef<<": copy of "<<p[ei]<<": "<<prev_vertex_fw<<" - "<<current_vertex_fw<<std::endl;
+        mToLeft.push_back(prev_vertex_fw);
+        mToRight.push_back(current_vertex_fw);
+        if (! old_edges_to_new.count(p[ei]))  old_edges_to_new[p[ei]]={};
+        old_edges_to_new[p[ei]].push_back(nef);
+
+        auto ner=mHBV.AddEdge(current_vertex_rev,prev_vertex_rev,mHBV.EdgeObject(mInv[p[ei]]));
+        if (verbose_separation) std::cout<<"Edge "<<ner<<": copy of "<<mInv[p[ei]]<<": "<<current_vertex_rev<<" - "<<prev_vertex_rev<<std::endl;
+        mToLeft.push_back(current_vertex_rev);
+        mToRight.push_back(prev_vertex_rev);
+        if (! old_edges_to_new.count(mInv[p[ei]]))  old_edges_to_new[mInv[p[ei]]]={};
+        old_edges_to_new[mInv[p[ei]]].push_back(ner);
+
+        mInv.push_back(ner);
+        mInv.push_back(nef);
+        mEdgeToPathIds.resize(mEdgeToPathIds.size()+2);
+    }
+    if (verbose_separation) std::cout<<"Migrating edge "<<p[p.size()-1]<<" From node old: "<<mToLeft[p[p.size()-1]]<<" new: "<<current_vertex_fw<<std::endl;
+    mHBV.GiveEdgeNewFromVx(p[p.size()-1],mToLeft[p[p.size()-1]],current_vertex_fw);
+    if (verbose_separation) std::cout<<"Migrating edge "<<mInv[p[p.size()-1]]<<" To node old: "<<mToRight[mInv[p[p.size()-1]]]<<" new: "<<current_vertex_rev<<std::endl;
+    mHBV.GiveEdgeNewToVx(mInv[p[p.size()-1]],mToRight[mInv[p[p.size()-1]]],current_vertex_rev);
+
+    //TODO: cleanup new isolated elements and leading-nowhere paths.
+    //for (auto ei=1;ei<p.size()-1;++ei) mHBV.DeleteEdges({p[ei]});
+    return old_edges_to_new;
+
+}
+
+
+void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> edgemap){
+    //Migrate readpaths: this changes the readpaths from old edges to new edges
+    //if an old edge has more than one new edge it tries all combinations until it gets the paths to map
+    //if more than one combination is valid, this chooses at random among them (could be done better? should the path be duplicated?)
+    mHBV.ToLeft(mToLeft);
+    mHBV.ToRight(mToRight);
+    for (auto &p:mPaths){
+        std::vector<std::vector<uint64_t>> possible_new_edges;
+        bool translated=false,ambiguous=false;
+        for (auto i=0;i<p.size();++i){
+            if (edgemap.count(p[i])) {
+                possible_new_edges.push_back(edgemap[p[i]]);
+                if (not translated) translated=true;
+                if (possible_new_edges.back().size()>1) ambiguous=true;
+            }
+            else possible_new_edges.push_back({p[i]});
+        }
+        if (translated){
+            if (not ambiguous){ //just straigh forward translation
+                for (auto i=0;i<p.size();++i) p[i]=possible_new_edges[i][0];
+            }
+            else {
+                //ok, this is the complicated case, we first generate all possible combinations
+                std::vector<std::vector<uint64_t>> possible_paths={{}};
+                for (auto i=0;i<p.size();++i) {//for each position
+                    std::vector<std::vector<uint64_t>> new_possible_paths;
+                    for (auto pp:possible_paths) { //take every possible one
+                        for (auto e:possible_new_edges[i]) {
+                            //if i>0 check there is a real connection to the previous edge
+                            if (i == 0 or (mToRight[pp.back()]==mToLeft[e])) {
+                                new_possible_paths.push_back(pp);
+                                new_possible_paths.back().push_back(e);
+                            }
+                        }
+                    }
+                    possible_paths=new_possible_paths;
+                    if (possible_paths.size()==0) break;
+                }
+                if (possible_paths.size()==0){
+                    std::cout<<"Warning, a path could not be updated, truncating it to its first element!!!!"<<std::endl;
+                    p.resize(1);
+                }
+                else{
+                    std::srand (std::time(NULL));
+                    //randomly choose a path
+                    int r=std::rand()%possible_paths.size();
+                    for (auto i=0;i<p.size();++i) p[i]=possible_paths[r][i];
+                }
+            }
+        }
+    }
+
 }

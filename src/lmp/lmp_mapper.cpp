@@ -49,14 +49,12 @@ void LMPMapper::mapReads(){
 void LMPMapper::LMPReads2MappedPairedEdgePaths(std::vector<LMPPair > & lmp_pairs_for_scaffolding){
     mapReads();
     readEdgeMap2LMPPairs(lmp_pairs_for_scaffolding);
+    std::cout << "LMPReads2MappedPairedEdgePaths lmp pairs size: " << lmp_pairs_for_scaffolding.size() << std::endl;
 
 }
 
-// loads just don't map
 void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair > & lmp_pairs_for_scaffolding){
-    //for (std::vector<edgeKmerPosition>::iterator it = read_edge_maps.begin(); it != read_edge_maps.end(); ++it){
     std::vector<LMPPair > read_paths;
-    //std::cout << "Read edge maps size:" << read_edge_maps.size() << std::endl;
     int counter = 0;
     int counter_p1 = 0;
     int counter_p2 = 0;
@@ -89,6 +87,8 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair > & lmp_pairs_for_scaff
     }
     std::cout << "total both pairs mapped: " << counter << " p1 mapped: " << counter_p1 << "p2 mapped " << counter_p2 << std::endl;
     removeUselessLMPMappings(read_paths, lmp_pairs_for_scaffolding);
+    std::cout << "readEdgeMap2LMPPairs lmp pairs size: " << lmp_pairs_for_scaffolding.size() << std::endl;
+
 }
 
 
@@ -189,7 +189,7 @@ ReadPath LMPMapper::getFullyMappedEdges(std::vector<edgeKmerPosition> read_mappi
             paths.push_back(current_edge_id);
         }
     }
-    std::cout << "length of path returned: " << paths.size() << std::endl;
+    //std::cout << "length of path returned: " << paths.size() << std::endl;
     return paths;
 }
 
