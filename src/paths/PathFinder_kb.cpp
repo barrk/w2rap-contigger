@@ -37,7 +37,8 @@ void PathFinderkb::init_prev_next_vectors(){
 void PathFinderkb::mapEdgesToLMPReads(){
     KMatch kmatch(31);
     LMPMapper lmp_mapper(lmp_data, mHBV, kmatch);
-    lmp_mapper.LMPReads2MappedPairedEdgePaths();
+    std::vector<LMPPair > lmp_maps_paths_for_scaffolding;
+    lmp_paths_for_scaffolding = lmp_mapper.LMPReads2MappedPairedEdgePaths();
 }
 
 void PathFinderkb::resolveComplexRegionsUsingLMPData(uint64_t large_frontier_size){

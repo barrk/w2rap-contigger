@@ -28,12 +28,13 @@ class LMPMapper{
         std::vector<std::vector<edgeKmerPosition> > read_edge_maps;
         std::vector<std::vector<edgeKmerPosition> > initalise_read_edge_map(){std::vector<std::vector<edgeKmerPosition> > res; return res;};
         std::vector<ReadPath> initalise_read_path(){std::vector<ReadPath> res; return res;};
-        ReadPath LMPMapper::getFullyMappedEdges(std::vector<edgeKmerPosition> read_mapping, int read_length , int k=31);
+        ReadPath LMPMapper::getFullyMappedEdges(std::vector<edgeKmerPosition> read_mapping, int read_length, int count,  int k=31);
         void LMPMapper::mapReads();
-        void LMPMapper::readEdgeMap2LMPPairs();
-         ReadPath LMPMapper::sortMappingsFindFullyMappedEdges(std::vector<edgeKmerPosition>  read_mapping, int read_length);
+        std::vector<LMPPair > LMPMapper::readEdgeMap2LMPPairs();
+         ReadPath LMPMapper::sortMappingsFindFullyMappedEdges(std::vector<edgeKmerPosition>  read_mapping, int read_length, int count);
         void LMPMapper::findFullyMappedEdges();
-        bool sanity_check(LMPPair lmp_pair, int i,  int insert_size=8000);
+        bool sanityCheck(LMPPair lmp_pair, int i,  int insert_size=8000);
+        void LMPMapper::removeUselessLMPMappings(std::vector<LMPPair > &read_paths, std::vector<LMPPair > &read_paths_for_scaffolding);
         //bool LMPMapper::compareEdgeKmerPositions(const edgeKmerPosition &ekp1, const edgeKmerPosition &ekp2);
 };
 #endif //W2RAP_CONTIGGER_LMP_MAPPER_H
