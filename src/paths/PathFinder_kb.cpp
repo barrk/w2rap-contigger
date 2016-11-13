@@ -57,32 +57,39 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData(){
         auto p2 = pair.p2;
         for (auto e1: p1) {// these are the edges
             for (auto e2: p2) {
-                auto shared_paths = 0; // this takes ages, so see if working out whether edge is in complex region makes a difference
-                for (auto inp:mEdgeToPathIds[e1]) {// find paths associated with in_e
-                    //std::cout << "inp" << inp << std::endl;
-                    for (auto outp:mEdgeToPathIds[e2]) {// ditto out edge
-                        //std::cout << "outp" << outp << std::endl;
-                        if (inp == outp) {// if they're on the same path
-
-                            shared_paths++;
-                            if (shared_paths == 1) {//not the best solution, but should work-ish
-                                std::vector<uint64_t> pv;
-                                for (auto e:mPaths[inp]) pv.push_back(e); // create vector of edges on theshared pat
-                                std::cout << "found first path from " << e1 << " to " << e2 << path_str(pv)
-                                          << std::endl;
-                                paths_to_separate.push_back({});
-                                int16_t ei = 0;
-                                while (mPaths[inp][ei] != e1) ei++; // find which edge on the path is the in edge
-                                // add all edges on the path until the out edge
-                                while (mPaths[inp][ei] != e2 && ei < mPaths[inp].size())
-                                    paths_to_separate.back().push_back(mPaths[inp][ei++]);
-                                if (ei >= mPaths[inp].size()) {
-                                    std::cout << "reversed path detected!" << std::endl;
-                                    reversed = true;
+                // need to decde how to determine if its in a complex region for now if there's anything not resolvable going out of first edge of into second edge
+                if ( next_edges[e1].size() > 1 || prev_edges[e2].size() > 1 ) {
+                    //std::cout << "pair spans complex region" << std::endl;
+                    auto shared_paths = 0; // this takes ages, so see if working out whether edge is in complex region makes a difference
+                    for (auto inp:mEdgeToPathIds[e1]) {// find paths associated with in_e
+                         //std::cout << "inp" << inp << std::endl;
+                        for (auto outp:mEdgeToPathIds[e2]) {// ditto out edge
+                            //std::cout << "outp" << outp << std::endl;
+                            if (inp == outp) {// if they're on the same path
+                                std::cout << "shared path found" << std::endl;
+                                shared_paths++;
+                                if (shared_paths == 1) {//not the best solution, but should work-ish
+                                    std::vector<uint64_t> pv;
+                                    for (auto e:mPaths[inp]) pv.push_back(e); // create vector of edges on theshared pat
+                                    std::cout << "found first path from " << e1 << " to " << e2 << path_str(pv)
+                                              << std::endl;
+                                    paths_to_separate.push_back({});
+                                    int16_t ei = 0;
+                                    while (mPaths[inp][ei] != e1) ei++; // find which edge on the path is the in edge
+                                    // add all edges on the path until the out edge
+                                    while (mPaths[inp][ei] != e2 && ei < mPaths[inp].size())
+                                        paths_to_separate.back().push_back(mPaths[inp][ei++]);
+                                    if (ei >= mPaths[inp].size()) {
+                                        std::cout << "reversed path detected!" << std::endl;
+                                        reversed = true;
+                                    } else {break;}
+                                    paths_to_separate.back().push_back(e2);
+                                    //std::cout<<"added!"<<std::endl;
                                 }
-                                paths_to_separate.back().push_back(e2);
-                                //std::cout<<"added!"<<std::endl;
                             }
+                        }
+                        if (shared_paths > 1){
+                            break;
                         }
                     }
                 }
@@ -142,7 +149,7 @@ void PathFinderkb::untangle_complex_in_out_choices(uint64_t large_frontier_size,
                 // if theres more than 1 edge in, and more than 1 edge out, and we haven't already dealt with this in/out combination
                 seen_frontiers.insert(f);
                 bool single_dir=true;
-                // not sure about this, seems to be determining whether same edge is both going into and out of current edge
+                // this determines whether the same edge is both going into and out of current edge- i.e. its a palindrome
                 for (auto in_e:f[0]) for (auto out_e:f[1]) if (in_e==out_e) {single_dir=false;break;}
                 if (single_dir) {
                     std::cout<<" Single direction frontiers for complex region on edge "<<e<<" IN:"<<path_str(f[0])<<" OUT: "<<path_str(f[1])<<std::endl;
