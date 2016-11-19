@@ -13,6 +13,7 @@
 typedef struct {
     ReadPath p1;
     ReadPath p2;
+    int read_index;
 } LMPPair;
 
 class LMPMapper{

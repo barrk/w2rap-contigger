@@ -216,7 +216,7 @@ int main(const int argc, const char * argv[]) {
 
     //========== Main Program Begins ======
     // This has to be according to the input
-    PeData pe_data; //(pe_read_files);
+    PeData pe_data;// (pe_read_files);
     vecbvec bases;
     VecPQVec quals;
 
@@ -232,6 +232,7 @@ int main(const int argc, const char * argv[]) {
     int MAX_CELL_PATHS = 50;
     int MAX_DEPTH = 10;
 
+    std::cout << "reading files: " << out_dir << "/" << out_prefix << ".large_K.final.hbv" << std::endl;
     //== Set computational resources ===
     SetThreads(threads, False);
     SetMaxMemory(int64_t(round(max_mem * 1024.0 * 1024.0 * 1024.0)));
@@ -579,22 +580,26 @@ int main(const int argc, const char * argv[]) {
         // need to clarify exactly where this should go, think its here though
         if (mp_read_files != "") {
             std::cout << "Reading mate pair files" << std::endl;
-            /*MpData mp_data(mp_read_files);
+            MpData mp_data(mp_read_files);
+            //mp_data.read_binary("/Users/barrk/Documents/ecoli_dataset/", "");
+            std::cout << "Mate pair files read" << std::endl;
 
-            Simplify(out_dir, hbvr, inv, pathsr, pe_data.bases, pe_data.quals, MAX_SUPP_DEL, TAMP_EARLY_MIN, MIN_RATIO2,
-                     MAX_DEL2,
-                     ANALYZE_BRANCHES_VERBOSE2, TRACE_SEQ, DEGLOOP, EXT_FINAL, EXT_FINAL_MODE, PULL_APART_VERBOSE,
-                     PULL_APART_TRACE, DEGLOOP_MODE, DEGLOOP_MIN_DIST, IMPROVE_PATHS, IMPROVE_PATHS_LARGE, FINAL_TINY,
-                     UNWIND3, run_pathfinder, dump_pf,
-                     hb_lmp);*/
+            BinaryReader::readFile(out_dir + "/" + out_prefix + ".large_K.final.hbv", &hbvr);
+            LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".large_K.final.paths").c_str());
+            VecULongVec invPaths;
+            hbvr.Involution(inv);
+            invert(pathsr, invPaths, hbvr.EdgeObjectCount());
+            // HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, HyperBasevector& lmp_data, int min_reads = 5
+            PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
+            // rhis segfaults when doing the dictionary lookup, again!
+            pf.resolveComplexRegionsUsingLMPData();
         } else {
             vecbvec mp_dummy; // add this so we can pass abov one by reference
             Simplify(out_dir, hbvr, inv, pathsr, pe_data.bases, pe_data.quals, MAX_SUPP_DEL, TAMP_EARLY_MIN, MIN_RATIO2,
                      MAX_DEL2,
                      ANALYZE_BRANCHES_VERBOSE2, TRACE_SEQ, DEGLOOP, EXT_FINAL, EXT_FINAL_MODE, PULL_APART_VERBOSE,
                      PULL_APART_TRACE, DEGLOOP_MODE, DEGLOOP_MIN_DIST, IMPROVE_PATHS, IMPROVE_PATHS_LARGE, FINAL_TINY,
-                     UNWIND3, run_pathfinder, dump_pf,
-                     mp_dummy);
+                     UNWIND3, run_pathfinder, dump_pf);
 
         }
 

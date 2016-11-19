@@ -33,8 +33,6 @@ ReadPath LMPMapper::getReadMathPair(int read_index){
     return pair;
 }*/
 
-//TODO repeat all this on involution graph
-
 void LMPMapper::mapReads(){
     kMatch.Hbv2Map(&hbv);
     std::cout << kMatch.edgeMap.size() << std::endl;
@@ -60,6 +58,7 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair > & lmp_pairs_for_scaff
     int counter_p2 = 0;
     for (int i=0; i < read_edge_maps.size() - 1; ++i){
         LMPPair lmp_pair;
+        lmp_pair.read_index = i/2;
         std::vector<edgeKmerPosition> read_mapping_p1 = read_edge_maps[i];
         int read_len = static_cast<int>(lmp_reads[i].ToString().size());
         // ensure that full edges will be together, with offsets in increasing order, in read_mapping vector

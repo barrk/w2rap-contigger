@@ -43,6 +43,89 @@ std::vector<LMPPair > PathFinderkb::mapEdgesToLMPReads(){//(std::vector<LMPPair 
     return lmp_pairs;
 }
 
+/* logic for standalone graph traversal
+void traverse_graph(map <string, vector<tuple<string, string, string, bool> > > &edge_list, string start_node, int traversals,
+            int total_traversals, ofstream &outfile, vector<pair<string, string>> &traversed_edge_list){
+            traversals += 1;
+            vector<tuple<string, string, string, bool> > adjacent_nodes = edge_list[start_node];
+            cout << adjacent_nodes.size();
+            for (auto node = adjacent_nodes.begin(); node != adjacent_nodes.end(); ++node){ //= adjacent_nodes.begin(); node != adjacent_nodes.end(); ++node){
+                string end_node = get<0>(*node);
+                pair<string, string> edge_set = make_pair(start_node, end_node);
+                if (find(traversed_edge_list.begin(), traversed_edge_list.end(), edge_set) == traversed_edge_list.end()){
+                    //determine whether vertex order must be flipped to ensure sequences concatenated in correct order
+                    bool edge_direction_correct = get<3>(*node);
+                    if (edge_direction_correct){
+                        outfile << "L" << "\t" << start_node << "\t" << get<1>(*node)  << "\t" << end_node << "\t" << get<2>(*node) << "\t" << "0M" << endl;
+                        } else {
+                        outfile << "L" << "\t" << end_node << "\t" << get<2>(*node)  << "\t" << start_node << "\t" << get<1>(*node) << "\t" << "0M" << endl;
+                        }
+                    traversed_edge_list.push_back(edge_set);
+                    if ((traversals+1) <= total_traversals){
+                        traverse_graph(edge_list, get<0>(*node), traversals, total_traversals, outfile, traversed_edge_list);
+                }
+            }
+}*/
+
+
+void PathFinderkb::traverseGraphCreateSubgraph(vector<uint64_t>  edges_to_add, std::map<int, uint64_t> & vertex_subgraph_map, HyperBasevector & subgraph,
+                                      vector<uint64_t > & traversed_edge_list, int edges_to_traverse, int traversals=0) {
+    for (auto edge = edges_to_add.begin();
+         edge != edges_to_add.end(); ++edge) { //= adjacent_nodes.begin(); node != adjacent_nodes.end(); ++node){
+        if (std::find(traversed_edge_list.begin(), traversed_edge_list.end(), *edge) == traversed_edge_list.end()) {
+            basevector bv = mHBV.EdgeObject(*edge);
+            int prev_vertex = subgraph.N();
+            int next_vertex = subgraph.N() + 1;
+            vertex_subgraph_map[prev_vertex] = mToLeft[*edge];
+            vertex_subgraph_map[next_vertex] = mToRight[*edge];
+            subgraph.AddVertices(2);
+            subgraph.AddEdge(prev_vertex, next_vertex, bv);
+            traversed_edge_list.push_back(*edge);
+            if ((traversals + 1) <= edges_to_traverse) {
+                traverseGraphCreateSubgraph(edges_to_add, vertex_subgraph_map, subgraph, traversed_edge_list, edges_to_traverse,
+                                   traversals);
+            }
+        }
+        /*while(counter < edges_to_traverse) {
+            for (auto edge : edges_to_add) {
+                basevector bv = mHBV.EdgeObject(edge_to_add);
+                int prev_vertex = subgraph.N();
+                int next_vertex = subgraph.N() + 1;
+                vertex_subgraph_map[prev_vertex] = mToLeft[edge_to_add];
+                vertex_subgraph_map[next_vertex] =mToRight[edge_to_add];
+                subgraph.AddVertices(2);
+                subgraph.AddEdge(prev_vertex,  next_vertex, bv);
+            }
+            edges_to_add.clear();
+            edges_to_add.reserve(prev_edges[edge_to_add].size() + next_edges[edge_to_add].size());
+            edges_to_add.insert(edges_to_add.end(), prev_edges[edge_to_add].begin(), prev_edges[edge_to_add].end())
+            edges_to_add.insert(edges_to_add.end(), next_edges[edge_to_add].begin(), next_edges[edge_to_add].end())
+        }*/
+    }
+
+}
+
+
+void PathFinderkb::addEdgeToSubGraph(int edge_to_add, std::map<int, uint64_t> & vertex_subgraph_map, HyperBasevector & subgraph, vector<uint64_t > & traversed_edge_list){
+    // for each edge to add, need to add vertices and n adjacent edges
+    auto bv = mHBV.EdgeObject(edge_to_add);
+    // store relationship between vertices here and in main graph
+    int prev_vertex = subgraph.N();
+    int next_vertex = subgraph.N() + 1;
+    vertex_subgraph_map[prev_vertex] = mToLeft[edge_to_add];
+    vertex_subgraph_map[next_vertex] = mToRight[edge_to_add];
+    subgraph.AddVertices(2);
+    subgraph.AddEdge(prev_vertex,  next_vertex, bv);// add edge takes vertex from, vertex to and base vector
+    vector<uint64_t> edges_to_add;
+    edges_to_add.reserve(prev_edges[edge_to_add].size() + next_edges[edge_to_add].size());
+    edges_to_add.insert(edges_to_add.end(), prev_edges[edge_to_add].begin(), prev_edges[edge_to_add].end());
+    edges_to_add.insert(edges_to_add.end(), next_edges[edge_to_add].begin(), next_edges[edge_to_add].end());
+    // edges_to_add, std::map<int, uint64_t> & vertex_subgraph_map, HyperBasevector & subgraph,
+    //vector<uint64_t > & traversed_edge_list, int edges_to_traverse, int traversals=0
+    traverseGraphCreateSubgraph(edges_to_add, vertex_subgraph_map,  subgraph,
+                                traversed_edge_list,  4,  0);
+}
+
 void PathFinderkb::resolveComplexRegionsUsingLMPData(){
     std::vector<LMPPair > lmp_pairs = mapEdgesToLMPReads();
     std::cout << "lmp pairs size: " << lmp_pairs.size() << std::endl;
@@ -50,29 +133,43 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData(){
     init_prev_next_vectors();// need to clarify what mToLeft and mToRight are, guessing they're just into/out of each node
     std::cout<<"vectors initialised"<<std::endl;
     std::vector<std::vector<uint64_t>> paths_to_separate;
+    std::ofstream outfile;
+    std::set<int> paths_found;
+    outfile.open ("read_indices.txt");
+    std::map<int, uint64_t> vertex_subgraph_map;
+    HyperBasevector subgraph;
+    vector<uint64_t > traversed_edge_list;
     bool reversed = false;
+    int number_paths_found = 0;
     // simplest approach is to separate all paths from LMP pairs
     for (auto pair: lmp_pairs) {
         auto p1 = pair.p1;
         auto p2 = pair.p2;
         for (auto e1: p1) {// these are the edges
             for (auto e2: p2) {
-                // need to decde how to determine if its in a complex region for now if there's anything not resolvable going out of first edge of into second edge
-                if ( next_edges[e1].size() > 1 || prev_edges[e2].size() > 1 ) {
+                // p1 and p2 might be mapped with either first
+                if (next_edges[e1].size() > 1 || prev_edges[e2].size() > 1 || next_edges[e2].size() > 1 ||
+                    prev_edges[e1].size() > 1) {
                     //std::cout << "pair spans complex region" << std::endl;
-                    auto shared_paths = 0; // this takes ages, so see if working out whether edge is in complex region makes a difference
+                    auto shared_paths = 0;
                     for (auto inp:mEdgeToPathIds[e1]) {// find paths associated with in_e
-                         //std::cout << "inp" << inp << std::endl;
+                        //std::cout << "inp" << inp << std::endl;
                         for (auto outp:mEdgeToPathIds[e2]) {// ditto out edge
                             //std::cout << "outp" << outp << std::endl;
-                            if (inp == outp) {// if they're on the same path
+                            if ((inp == outp) && (paths_found.find(inp) ==
+                                                  paths_found.end())) {// if they're on the same path and this path hasn't been added
+                                paths_found.insert(inp);
                                 std::cout << "shared path found" << std::endl;
+                                outfile << "read index:" << pair.read_index << "from edge:" << e1 << "to edge" << e2
+                                        << std::endl;
+                                addEdgeToSubGraph(e1, vertex_subgraph_map, subgraph, traversed_edge_list);
                                 shared_paths++;
-                                if (shared_paths == 1) {//not the best solution, but should work-ish
+                                if (shared_paths == 1) {
                                     std::vector<uint64_t> pv;
                                     for (auto e:mPaths[inp]) pv.push_back(e); // create vector of edges on theshared pat
                                     std::cout << "found first path from " << e1 << " to " << e2 << path_str(pv)
                                               << std::endl;
+                                    outfile << "path string of shared path:" << path_str(pv) << std::endl;
                                     paths_to_separate.push_back({});
                                     int16_t ei = 0;
                                     while (mPaths[inp][ei] != e1) ei++; // find which edge on the path is the in edge
@@ -82,21 +179,26 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData(){
                                     if (ei >= mPaths[inp].size()) {
                                         std::cout << "reversed path detected!" << std::endl;
                                         reversed = true;
-                                    } else {break;}
+                                    } else { break; }
                                     paths_to_separate.back().push_back(e2);
                                     //std::cout<<"added!"<<std::endl;
+                                    number_paths_found += 1;
+
                                 }
                             }
-                        }
-                        if (shared_paths > 1){
-                            break;
+                            if (shared_paths > 1) {
+                                break;
+                            }
                         }
                     }
                 }
-
             }
         }
     }
+        BinaryWriter::writeFile("/Users/barrk/Documents/ecoli_dataset/subgraph.hbv", subgraph);
+        for (auto const &key : vertex_subgraph_map){
+            std::cout << "Node: " << key.first << " from node " << key.second << std::endl;
+        }
 
         uint64_t sep=0;
         std::map<uint64_t,std::vector<uint64_t>> old_edges_to_new;
@@ -126,6 +228,7 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData(){
 std::string PathFinderkb::path_str(std::vector<uint64_t> path) {
     std::string s="[";
     for (auto p:path){
+        // output edge id on hbv and involution
         s+=std::to_string(p)+":"+std::to_string(mInv[p])+" ";//+" ("+std::to_string(mHBV.EdgeObject(p).size())+"bp "+std::to_string(paths_per_kbp(p))+"ppk)  ";
     }
     s+="]";
@@ -239,6 +342,7 @@ void PathFinderkb::untangle_complex_in_out_choices(uint64_t large_frontier_size,
             continue;
         }
 
+        // this creates new vertices at the end of the graph, connects start to these, and removes old connection then repeats on the involution
         auto oen=separate_path(p, verbose_separation);
         if (oen.size()>0) {
             for (auto et:oen){
@@ -365,13 +469,13 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
             return {};}
     }
     //create two new vertices (for the FW and BW path)
-    uint64_t current_vertex_fw=mHBV.N(),current_vertex_rev=mHBV.N()+1;
+    uint64_t current_vertex_fw=mHBV.N(),current_vertex_rev=mHBV.N()+1; // .N is number of vertices, so these ar ethe two vertices added on the next line
     mHBV.AddVertices(2);
     //migrate connections (dangerous!!!)
     if (verbose_separation) std::cout<<"Migrating edge "<<p[0]<<" To node old: "<<mToRight[p[0]]<<" new: "<<current_vertex_fw<<std::endl;
-    mHBV.GiveEdgeNewToVx(p[0],mToRight[p[0]],current_vertex_fw);
+    mHBV.GiveEdgeNewToVx(p[0],mToRight[p[0]],current_vertex_fw); // edit graph so edge p now goes to newly created vertex instead of old vertex
     if (verbose_separation) std::cout<<"Migrating edge "<<mInv[p[0]]<<" From node old: "<<mToLeft[mInv[p[0]]]<<" new: "<<current_vertex_rev<<std::endl;
-    mHBV.GiveEdgeNewFromVx(mInv[p[0]],mToLeft[mInv[p[0]]],current_vertex_rev);
+    mHBV.GiveEdgeNewFromVx(mInv[p[0]],mToLeft[mInv[p[0]]],current_vertex_rev);// erases old connection from old involution vertex, and connects edge to old
     std::map<uint64_t,std::vector<uint64_t>> old_edges_to_new;
 
     for (auto ei=1;ei<p.size()-1;++ei){
@@ -383,7 +487,7 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
         mHBV.AddVertices(2);
 
         //now, duplicate next edge for the FW and reverse path
-        auto nef=mHBV.AddEdge(prev_vertex_fw,current_vertex_fw,mHBV.EdgeObject(p[ei]));
+        auto nef=mHBV.AddEdge(prev_vertex_fw,current_vertex_fw,mHBV.EdgeObject(p[ei]));// add an edge for each edge in path, with appropriate basevector
         if (verbose_separation)  std::cout<<"Edge "<<nef<<": copy of "<<p[ei]<<": "<<prev_vertex_fw<<" - "<<current_vertex_fw<<std::endl;
         mToLeft.push_back(prev_vertex_fw);
         mToRight.push_back(current_vertex_fw);
@@ -402,7 +506,7 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
         mEdgeToPathIds.resize(mEdgeToPathIds.size()+2);
     }
     if (verbose_separation) std::cout<<"Migrating edge "<<p[p.size()-1]<<" From node old: "<<mToLeft[p[p.size()-1]]<<" new: "<<current_vertex_fw<<std::endl;
-    mHBV.GiveEdgeNewFromVx(p[p.size()-1],mToLeft[p[p.size()-1]],current_vertex_fw);
+    mHBV.GiveEdgeNewFromVx(p[p.size()-1],mToLeft[p[p.size()-1]],current_vertex_fw);// attach new edges back into graph at right position
     if (verbose_separation) std::cout<<"Migrating edge "<<mInv[p[p.size()-1]]<<" To node old: "<<mToRight[mInv[p[p.size()-1]]]<<" new: "<<current_vertex_rev<<std::endl;
     mHBV.GiveEdgeNewToVx(mInv[p[p.size()-1]],mToRight[mInv[p[p.size()-1]]],current_vertex_rev);
 
@@ -423,10 +527,11 @@ void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> ed
         std::vector<std::vector<uint64_t>> possible_new_edges;
         bool translated=false,ambiguous=false;
         for (auto i=0;i<p.size();++i){
-            if (edgemap.count(p[i])) {
+            if (edgemap.count(p[i])) { // if edge i on path p has been translated
                 possible_new_edges.push_back(edgemap[p[i]]);
                 if (not translated) translated=true;
-                if (possible_new_edges.back().size()>1) ambiguous=true;
+                // if same edge is in multiple paths, this could occur
+                if (possible_new_edges.back().size()>1) ambiguous=true; // if there is more than 1 edge mapping, its ambiguous
             }
             else possible_new_edges.push_back({p[i]});
         }

@@ -51,36 +51,44 @@ std::array<uint64_t,3> PathFinder::path_votes(std::vector<uint64_t> path){
     //first detect paths going out of first edge, also add them to open_paths
     std::list<std::pair<ReadPath,uint16_t>> initial_paths, open_paths;
     //std::cout<<"starting at edge "<<path[0]<<std::endl;
-    for (auto pi:mEdgeToPathIds[path[0]]){
+    for (auto pi:mEdgeToPathIds[path[0]]){ // for each path that the first edge of the argument path is on
 
-        auto p=mPaths[pi];
+        auto p=mPaths[pi]; // find all paths that edge is on
         //std::cout<<p<<std::endl;
         if (p.size()>1){
             uint16_t i=0;
-            while (p[i]!=path[0]) ++i;
-            if (i<p.size()-1) {
-                open_paths.insert(open_paths.end(),std::make_pair(p,i));
+            while (p[i]!=path[0]) ++i; //traverse the path until we get to the first edge of the argument path
+            if (i<p.size()-1) {// if we aren't aat the end of the path then we add this path id and i
+                open_paths.insert(open_paths.end(),std::make_pair(p,i));// so open path is one that contains path[0] not as the last edge
                 //std::cout<<" inserting into open paths"<<std::endl;
             }
         }
     }
-    initial_paths.insert(initial_paths.begin(),open_paths.begin(),open_paths.end());
+    // open paths is list: (path_id, index on path that path meets agrument path)
+    initial_paths.insert(initial_paths.begin(),open_paths.begin(),open_paths.end());// use all open paths as initial paths
     //std::cout<<"initial paths generated from edge"<<path[0]<<" "<<initial_paths.size() <<std::endl;
     // basically every path in the mEdgeToPathIds[e] is either on the openPaths, starts here o
     for (auto ei=1;ei<path.size();++ei) {
 
+        // by the time we have run the contents of this loop for path[1],
+        // we will have erased all open path elements whose next edge is path[2].. path[ei]
+        // so this is detemining whether paths into path continue along it
+        // but, suppose a path continues along the entirety, after step 1, we will have voted against it path.size -1 times!
+        // this might be more votes against than a shorter path that doesn't continue along it! - no, only one open_paths entry per path
         auto e=path[ei];
         //std::cout<<" going through edge "<<e<<" open list size: "<<open_paths.size()<<" paths on this edge: "<<mEdgeToPathIds[e].size()<<std::endl;
         //First go through the open list
+        // for inital open paths list, which is looped over when ei = 1, paths which map to path[0] and path[1] sequentially are retained
         for (auto o=open_paths.begin();o!=open_paths.end();) {
             //if goes somewhere else, vote against and remove
-            if (o->first[o->second+1]!=e){
+            if (o->first[o->second+1]!=e){// if the next edge on this path is not e (the current edge cant be )
                 //std::cout<<"AGAINST: previous path goes to "<<o->first[o->second+1]<<std::endl;
                 vagainst.push_back(o->first);
                 o=open_paths.erase(o);
+                // in this case we do not increment o, i assume as its been erased, o is now automatically the next element
             } else { //else, advance
-                ++(o->second);
-                ++o;
+                ++(o->second);// increment edge index so when ei is incrememnt, this checks the next edge on o, rather than the one just checked
+                ++o; // check next path in open paths
             }
         }
 
@@ -89,47 +97,47 @@ std::array<uint64_t,3> PathFinder::path_votes(std::vector<uint64_t> path){
         std::list<std::pair<ReadPath,uint16_t>> new_paths;
 
         //check paths coming here from somewhere else and vote against
-        for (auto ip:mEdgeToPathIds[e]) {
+        for (auto ip:mEdgeToPathIds[e]) {// how do we avoid looping over the path that's the argument?
             //path is of size 1: irrelevant
             auto p=mPaths[ip];
             //std::cout<<"Considering path "<<ip<<":"<<p<<std::endl;
-            if (p.size()==1) continue;
+            if (p.size()==1) continue; // what is the point of ever having a path of length 1? shouldn't they just not be added?
 
-            //path starts_here, add to the open list later TODO: no need on the last edge!
+            //path starts_here, rather than goes into it, add to the open list later TODO: no need on the last edge!
             if (p[0]==e) {
                 new_paths.insert(new_paths.end(),std::make_pair(p,0));
                 //std::cout<<"adding new path to the open list"<<std::endl;
                 continue;
             }
 
-            //path in the open list?
+            //path in the open list? - this can't occur on first time round loop- can it occur afterwards given that so many open pathd are erased in first inner loop
             auto lp=open_paths.begin();
-            for (;lp!=open_paths.end();++lp){
+            for (;lp!=open_paths.end();++lp){ // why not use std::find?
                 if (p==lp->first) break;
             }
 
-            if (lp!=open_paths.end()){
+            if (lp!=open_paths.end()){ // if we broke inside the above conditional then lp is first entry in open paths with path=p
                 //path is in the open list
 
-                //last edge?
+                //last edge? -ei is edge index, e is path itself.
                 if (ei==path.size()-1) {
-                    //check if path in initial paths
+                    //check if path in initial paths- i.e. one of the paths which goes into path[0]
                     auto ipp=initial_paths.begin();
                     for (;ipp!=initial_paths.end();++ipp){
                         if (p==ipp->first) break;
                     }
                     //path in initial_paths?
-                    if (ipp!=initial_paths.end()){
+                    if (ipp!=initial_paths.end()){// so p is in both open paths and initial paths
                         //++pv[0];
-                        vfor.push_back(p);
+                        vfor.push_back(p); // so if we're at the last edge of argument path, and p goes into it, and then along it, we vote for it
                         //std::cout<<"FOR: last edge and this path was in the initial list"<<std::endl;
                     }
                     else{
                         //++pv[1];
-                        vpartial.push_back(p);
+                        vpartial.push_back(p);//this path joins argument path somewhre after first edge
                         //std::cout<<"PARTIAL: last edge and this path was NOT in the initial list"<<std::endl;
                     }
-                } else if (lp->first.size()-1==lp->second){
+                } else if (lp->first.size()-1==lp->second){ // if path p containing edge e from argument path is in open paths, but edge e is the last edge of path p, it is a partial vote
                     //++pv[1];
                     vpartial.push_back(p);
                     open_paths.erase(lp);
@@ -138,18 +146,18 @@ std::array<uint64_t,3> PathFinder::path_votes(std::vector<uint64_t> path){
             } else {
                 //path comes from somewhere else, vote against
                 //++pv[2];
-                vagainst.push_back(p);
+                vagainst.push_back(p); // so p shares an edge with argument path, but does not start on it, or join it at the start
                 //std::cout<<"AGAINST: path comes from somewhere else"<<std::endl;
             }
 
         }
-
+        // add paths which start at edge e to open paths
         open_paths.insert(open_paths.end(),new_paths.begin(),new_paths.end());
     }
 
     //auto tv=transition_votes(path[i],path[i+1])
     //std::cout<<"Paths on left edge "<<mEdgeToPathIds[left_e].size()<<" inv "<<mEdgeToPathIds[mInv[left_e]].size()<<std::endl;
-    std::array<uint64_t,3> pv={0,0,0};
+    std::array<uint64_t,3> pv={0,0,0}; // for, partial, against
     //collect votes:
     //on favour are on favour:
     //pv[0]=vfor.size();
@@ -157,10 +165,28 @@ std::array<uint64_t,3> PathFinder::path_votes(std::vector<uint64_t> path){
 
     for (auto vf:vfor){
         bool u=false;
+        // look for this vote for in used votes, if its from the same read as a used vote, do nothing
+        // same read is a readpath with the same offset, and ==, read path inherits from vector<int> so assume == behaves the same
         for (auto vu:votes_used) if (vu.same_read(vf)) {u=true;break;}
+        // if we did not find the vote for readpath in votes used, add it
         if (!u) {
             votes_used.insert(votes_used.end(), vf);
-            pv[0]++;
+            pv[0]++;// incrmenting here means the same read cannot vote more than once
+            // could the case where read is in vote for and vote aginst?
+            // if a path overlaps multiple disconnected times - i think you get this in repetitive heterozygous regions:
+            // then *i think* it would be added to open paths, then be removed from then rejoin open paths
+            // each time its added to open paths, t contributes a vote for,
+            // each time its removed, it contributes a vote against
+            // only vote for is counted as votes used isn't reset
+
+            // such a path would be inserted into new paths, rest of that inner loop skipped, added to open paths
+            // as next edge of this path = next edge of argument path, it is not removed in first inner loop
+            // in second inner loop, as it is not in initial paths, its added to partial votes
+            // but when we increment to edge where this path deviates, it is removed from open paths
+            // when it rejoins, it is not in open paths, so is added to votes against
+
+            // if a path overlaps in the beginning, and the end, but not the middle, it is not added to votes for because it is never re-added to open paths
+            // so think we can mix partial/against vovtes, but not for votes, guess thats ok.
         }
     }
     for (auto vp:vpartial){

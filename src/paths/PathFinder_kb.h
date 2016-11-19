@@ -14,6 +14,8 @@
 #include "kmers/BigKMer.h"
 #include "Vec.h"
 #include <lmp/lmp_mapper.h>
+#include <fstream>
+#include <iostream>
 
 
 
@@ -69,6 +71,9 @@ public:
     std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector<uint64_t> p, bool verbose_separation);
 
 private:
+    void PathFinderkb::addEdgeToSubGraph(int edge_to_add, std::map<int, uint64_t> & vertex_subgraph_map, HyperBasevector & subgraph, vector<uint64_t > & traversed_edge_list);
+    void PathFinderkb::traverseGraphCreateSubgraph(vector<uint64_t>  edges_to_add, std::map<int, uint64_t> & vertex_subgraph_map, HyperBasevector & subgraph,
+                                                   vector<uint64_t > & traversed_edge_list, int edges_to_traverse, int traversal);
     HyperBasevector& mHBV;
     vecbvec& lmp_data;
     vec<int>& mInv;
