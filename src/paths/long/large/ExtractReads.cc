@@ -68,6 +68,7 @@ bool InputFileReader::get_bam_record(){
 
 int InputFileReader::read_binary(std::string out_dir, std::string prefix){
      // Read the fastb &qualp pair
+     std::cout << "reading in pe data from file: " << out_dir << "/" << prefix << "frag_reads_orig.fastb" << std::endl;
      this->bases.ReadAll(out_dir + "/" + prefix + "frag_reads_orig.fastb");
      this->quals.ReadAll(out_dir + "/" + prefix + "frag_reads_orig.qualp");
 }

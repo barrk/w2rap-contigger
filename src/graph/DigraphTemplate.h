@@ -1811,8 +1811,9 @@ template<class E> void digraphE<E>::GiveEdgeNewFromVx
      }
 
 template<class E> void digraphE<E>::GiveEdgeNewToVx
-( int edge_id, int old_to_w, int new_to_w ) {
-       int j = Position( to_edge_obj_[old_to_w], edge_id );
+( int edge_id, int old_to_w, int new_to_w ) { // old to w is vertex edge used to go to
+          // to_edge_obj_is vec <vec<int> > so guess to_edge_obj_[old_to_w] is the list of edges going to old vertex
+       int j = Position( to_edge_obj_[old_to_w], edge_id ); // so this is the position of edge id in list of edges goiong to old vertex
        ForceAssert( j != -1 );
        int v = to_[old_to_w][j];
        int i = Position( from_edge_obj_[v],edge_id );

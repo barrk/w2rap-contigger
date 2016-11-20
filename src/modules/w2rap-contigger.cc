@@ -412,6 +412,8 @@ int main(const int argc, const char * argv[]) {
 
         std::cout << "   DONE!" << std::endl;
         if (dump_perf) perf_file << checkpoint_perf_time("LoadReads") << std::endl;
+        std::cout << "number of pe bases:" <<pe_data.bases.size() << " and quals: " << pe_data.quals.size() << std::endl;
+
     }
     {//This scope-trick to invalidate old data is dirty
 
@@ -577,7 +579,6 @@ int main(const int argc, const char * argv[]) {
         bool FINAL_TINY = True;
         bool UNWIND3 = True;
 
-        // need to clarify exactly where this should go, think its here though
         if (mp_read_files != "") {
             std::cout << "Reading mate pair files" << std::endl;
             MpData mp_data(mp_read_files);
@@ -594,6 +595,7 @@ int main(const int argc, const char * argv[]) {
             // rhis segfaults when doing the dictionary lookup, again!
             pf.resolveComplexRegionsUsingLMPData();
         } else {
+            std::cout << "number of pe bases:" <<pe_data.bases.size() << " and quals: " << pe_data.quals.size() << std::endl;
             vecbvec mp_dummy; // add this so we can pass abov one by reference
             Simplify(out_dir, hbvr, inv, pathsr, pe_data.bases, pe_data.quals, MAX_SUPP_DEL, TAMP_EARLY_MIN, MIN_RATIO2,
                      MAX_DEL2,

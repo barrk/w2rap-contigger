@@ -133,14 +133,8 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData(){
     init_prev_next_vectors();// need to clarify what mToLeft and mToRight are, guessing they're just into/out of each node
     std::cout<<"vectors initialised"<<std::endl;
     std::vector<std::vector<uint64_t>> paths_to_separate;
-    std::ofstream outfile;
     std::set<int> paths_found;
-    outfile.open ("read_indices.txt");
-    std::map<int, uint64_t> vertex_subgraph_map;
-    HyperBasevector subgraph;
-    vector<uint64_t > traversed_edge_list;
     bool reversed = false;
-    int number_paths_found = 0;
     // simplest approach is to separate all paths from LMP pairs
     for (auto pair: lmp_pairs) {
         auto p1 = pair.p1;
@@ -148,8 +142,9 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData(){
         for (auto e1: p1) {// these are the edges
             for (auto e2: p2) {
                 // p1 and p2 might be mapped with either first
-                if (next_edges[e1].size() > 1 || prev_edges[e2].size() > 1 || next_edges[e2].size() > 1 ||
-                    prev_edges[e1].size() > 1) {
+                // the second part of this conditional vaguely determines whether either of the edges is complex
+                if ((e1 != e2) && (next_edges[e1].size() > 1 || prev_edges[e2].size() > 1 || next_edges[e2].size() > 1 ||
+                    prev_edges[e1].size() > 1)) {
                     //std::cout << "pair spans complex region" << std::endl;
                     auto shared_paths = 0;
                     for (auto inp:mEdgeToPathIds[e1]) {// find paths associated with in_e
@@ -160,30 +155,33 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData(){
                                                   paths_found.end())) {// if they're on the same path and this path hasn't been added
                                 paths_found.insert(inp);
                                 std::cout << "shared path found" << std::endl;
-                                outfile << "read index:" << pair.read_index << "from edge:" << e1 << "to edge" << e2
-                                        << std::endl;
-                                addEdgeToSubGraph(e1, vertex_subgraph_map, subgraph, traversed_edge_list);
                                 shared_paths++;
                                 if (shared_paths == 1) {
+                                    // need to determine which of e1 and e2 is first i npath for indexes below, mPaths doesn't have find method on it, even though really its a vector
+                                    bool seen_e1 = false;
+                                    int16_t i = 0;
+                                    while (mPaths[inp][i] != e2) {
+                                        if (mPaths[inp][i] == e1){ seen_e1 = true;}
+                                        i++;
+                                    }
+                                    auto first = seen_e1 ? e1:e2;
+                                    auto second = seen_e1 ? e2:e1;
                                     std::vector<uint64_t> pv;
                                     for (auto e:mPaths[inp]) pv.push_back(e); // create vector of edges on theshared pat
                                     std::cout << "found first path from " << e1 << " to " << e2 << path_str(pv)
                                               << std::endl;
-                                    outfile << "path string of shared path:" << path_str(pv) << std::endl;
                                     paths_to_separate.push_back({});
                                     int16_t ei = 0;
-                                    while (mPaths[inp][ei] != e1) ei++; // find which edge on the path is the in edge
+                                    while (mPaths[inp][ei] != first) ei++; // find which edge on the path is the in edge
                                     // add all edges on the path until the out edge
-                                    while (mPaths[inp][ei] != e2 && ei < mPaths[inp].size())
+                                    while (mPaths[inp][ei] != second && ei < mPaths[inp].size())
                                         paths_to_separate.back().push_back(mPaths[inp][ei++]);
                                     if (ei >= mPaths[inp].size()) {
                                         std::cout << "reversed path detected!" << std::endl;
                                         reversed = true;
-                                    } else { break; }
-                                    paths_to_separate.back().push_back(e2);
-                                    //std::cout<<"added!"<<std::endl;
-                                    number_paths_found += 1;
-
+                                    }
+                                    paths_to_separate.back().push_back(second);
+                                    std::cout<<"added!"<< path_str(paths_to_separate.back()) << std::endl;
                                 }
                             }
                             if (shared_paths > 1) {
@@ -195,10 +193,6 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData(){
             }
         }
     }
-        BinaryWriter::writeFile("/Users/barrk/Documents/ecoli_dataset/subgraph.hbv", subgraph);
-        for (auto const &key : vertex_subgraph_map){
-            std::cout << "Node: " << key.first << " from node " << key.second << std::endl;
-        }
 
         uint64_t sep=0;
         std::map<uint64_t,std::vector<uint64_t>> old_edges_to_new;
@@ -208,6 +202,7 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData(){
                 std::cout<<"WARNING: path starts or ends in an already modified edge, skipping"<<std::endl;
                 continue;
             }
+            std::cout<<"separating path  "<<path_str(p)<< std::endl;
 
             auto oen=separate_path(p, true);
             if (oen.size()>0) {
@@ -458,7 +453,7 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
     //changes neighbourhood (i.e. creates new vertices and moves the to and from for the implicated edges).
 
     //creates a copy of each node but the first and the last, connects only linearly to the previous copy,
-    //std::cout<<std::endl<<"Separating path"<<std::endl;
+    std::cout<<std::endl<<"Separating path"<< path_str(p) << std::endl;
     std::set<uint64_t> edges_fw;
     std::set<uint64_t> edges_rev;
     for (auto e:p){//TODO: this is far too astringent...
@@ -472,7 +467,9 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
     uint64_t current_vertex_fw=mHBV.N(),current_vertex_rev=mHBV.N()+1; // .N is number of vertices, so these ar ethe two vertices added on the next line
     mHBV.AddVertices(2);
     //migrate connections (dangerous!!!)
-    if (verbose_separation) std::cout<<"Migrating edge "<<p[0]<<" To node old: "<<mToRight[p[0]]<<" new: "<<current_vertex_fw<<std::endl;
+    if (verbose_separation) std::cout<<"Migrating edge "<<p[0]<<std::endl;
+    std::cout <<" To node old: "<<mToRight[p[0]]<<std::endl;
+    std::cout << " new: "<<current_vertex_fw<<std::endl;
     mHBV.GiveEdgeNewToVx(p[0],mToRight[p[0]],current_vertex_fw); // edit graph so edge p now goes to newly created vertex instead of old vertex
     if (verbose_separation) std::cout<<"Migrating edge "<<mInv[p[0]]<<" From node old: "<<mToLeft[mInv[p[0]]]<<" new: "<<current_vertex_rev<<std::endl;
     mHBV.GiveEdgeNewFromVx(mInv[p[0]],mToLeft[mInv[p[0]]],current_vertex_rev);// erases old connection from old involution vertex, and connects edge to old
@@ -508,6 +505,7 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
     if (verbose_separation) std::cout<<"Migrating edge "<<p[p.size()-1]<<" From node old: "<<mToLeft[p[p.size()-1]]<<" new: "<<current_vertex_fw<<std::endl;
     mHBV.GiveEdgeNewFromVx(p[p.size()-1],mToLeft[p[p.size()-1]],current_vertex_fw);// attach new edges back into graph at right position
     if (verbose_separation) std::cout<<"Migrating edge "<<mInv[p[p.size()-1]]<<" To node old: "<<mToRight[mInv[p[p.size()-1]]]<<" new: "<<current_vertex_rev<<std::endl;
+    // this is where it errors
     mHBV.GiveEdgeNewToVx(mInv[p[p.size()-1]],mToRight[mInv[p[p.size()-1]]],current_vertex_rev);
 
     //TODO: cleanup new isolated elements and leading-nowhere paths.
