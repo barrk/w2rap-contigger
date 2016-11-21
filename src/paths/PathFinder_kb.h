@@ -35,7 +35,7 @@ public:
     {
         hbv.ToLeft(mToLeft);
         hbv.ToRight(mToRight);
-        std::cout << "first read: " << lmp_data[0] << std::endl;
+        //std::cout << "first read: " << lmp_data[0] << std::endl;
     }
 
 

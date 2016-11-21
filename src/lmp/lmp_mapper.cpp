@@ -36,12 +36,40 @@ ReadPath LMPMapper::getReadMathPair(int read_index){
 void LMPMapper::mapReads(){
     kMatch.Hbv2Map(&hbv);
     std::cout << kMatch.edgeMap.size() << std::endl;
+    int mapped_to_single_edge = 0;
+    int mappted_to_multiple_edge = 0;
+    int unmapped_reads = 0;
     //std::vector<edgeKmerPosition> res = kmatch.lookupRead(lmp_data[0].ToString());
     for (int i=0; i < lmp_reads.size(); i++){
         std::vector<edgeKmerPosition> mapped_edges = kMatch.lookupRead(lmp_reads[i].ToString());
         //std::cout << "Mapped read:" << i << " string " << lmp_reads[i].ToString() << " to " << mapped_edges.size() << "edges" << std::endl;
         read_edge_maps.push_back(mapped_edges);
+        int distinct_edge_ids = 0;
+        if (mapped_edges.size() != 0){
+            int distinct_edge_ids = 1;
+            int current_edge_id = mapped_edges[0].edge_id;
+        for (auto mapping: mapped_edges){
+            if (mapping.edge_id != current_edge_id){
+                current_edge_id = mapping.edge_id;
+                distinct_edge_ids += 1;
+
+        }
+        }
+            if (distinct_edge_ids == 1){
+                mapped_to_single_edge += 1;
+            }
+            if (distinct_edge_ids > 1){
+                mappted_to_multiple_edge += 1;
+            }
+        } else {
+            if (mapped_edges.size() == 0){
+            unmapped_reads += 1;
+        } }
     }
+    std::cout << "Unmapped reads: " << unmapped_reads << std::endl;
+    std::cout << "Mapped to single edge: " << mapped_to_single_edge << std::endl;
+    std::cout << "Mapped to multiple edges: " << mappted_to_multiple_edge << std::endl;
+    std::cout << "TOtal reads: " << lmp_reads.size() << std:: endl;
 }
 
 void LMPMapper::LMPReads2MappedPairedEdgePaths(std::vector<LMPPair > & lmp_pairs_for_scaffolding){

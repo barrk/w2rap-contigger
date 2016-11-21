@@ -217,6 +217,8 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData(){
             migrate_readpaths(old_edges_to_new);
         }
         std::cout<<" "<<sep<<" paths separated!"<<std::endl;
+    BinaryWriter::writeFile("/Users/barrk/Documents/ecoli_dataset/after_lmp_mapping.hbv", mHBV);
+    WriteReadPathVec(mPaths, "/Users/barrk/Documents/ecoli_dataset/after_lmp_mapping.paths");
 
 }
 
@@ -467,12 +469,11 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
     uint64_t current_vertex_fw=mHBV.N(),current_vertex_rev=mHBV.N()+1; // .N is number of vertices, so these ar ethe two vertices added on the next line
     mHBV.AddVertices(2);
     //migrate connections (dangerous!!!)
-    if (verbose_separation) std::cout<<"Migrating edge "<<p[0]<<std::endl;
-    std::cout <<" To node old: "<<mToRight[p[0]]<<std::endl;
-    std::cout << " new: "<<current_vertex_fw<<std::endl;
     mHBV.GiveEdgeNewToVx(p[0],mToRight[p[0]],current_vertex_fw); // edit graph so edge p now goes to newly created vertex instead of old vertex
+    mToRight[p[0]] = current_vertex_fw;
     if (verbose_separation) std::cout<<"Migrating edge "<<mInv[p[0]]<<" From node old: "<<mToLeft[mInv[p[0]]]<<" new: "<<current_vertex_rev<<std::endl;
     mHBV.GiveEdgeNewFromVx(mInv[p[0]],mToLeft[mInv[p[0]]],current_vertex_rev);// erases old connection from old involution vertex, and connects edge to old
+    mToLeft[mInv[p[0]]] = current_vertex_rev;
     std::map<uint64_t,std::vector<uint64_t>> old_edges_to_new;
 
     for (auto ei=1;ei<p.size()-1;++ei){
@@ -504,9 +505,10 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
     }
     if (verbose_separation) std::cout<<"Migrating edge "<<p[p.size()-1]<<" From node old: "<<mToLeft[p[p.size()-1]]<<" new: "<<current_vertex_fw<<std::endl;
     mHBV.GiveEdgeNewFromVx(p[p.size()-1],mToLeft[p[p.size()-1]],current_vertex_fw);// attach new edges back into graph at right position
+    mToLeft[p[p.size()-1]] = current_vertex_fw;
     if (verbose_separation) std::cout<<"Migrating edge "<<mInv[p[p.size()-1]]<<" To node old: "<<mToRight[mInv[p[p.size()-1]]]<<" new: "<<current_vertex_rev<<std::endl;
-    // this is where it errors
     mHBV.GiveEdgeNewToVx(mInv[p[p.size()-1]],mToRight[mInv[p[p.size()-1]]],current_vertex_rev);
+    mToRight[mInv[p[p.size()-1]]] = current_vertex_rev;
 
     //TODO: cleanup new isolated elements and leading-nowhere paths.
     //for (auto ei=1;ei<p.size()-1;++ei) mHBV.DeleteEdges({p[ei]});
