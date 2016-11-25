@@ -8,7 +8,7 @@
 #include "lmp_mapper.h"
 #include <algorithm>
 
-LMPMapper::LMPMapper(vecbvec lmp_reads, HyperBasevector& hbv, KMatch kmatch): lmp_reads(lmp_reads), hbv(hbv), kMatch(kmatch), read_edge_maps(initalise_read_edge_map()) {}
+LMPMapper::LMPMapper(vecbvec lmp_reads, HyperBasevector& hbv, vec<int>& inv, KMatch kmatch): lmp_reads(lmp_reads), hbv(hbv), inv(inv), kMatch(kmatch), read_edge_maps(initalise_read_edge_map()) {}
 
 bool compareEdgeKmerPositions(const edgeKmerPosition &ekp1, const edgeKmerPosition &ekp2){
     // sort by edge id first, then offset. so a higher edge id with a lower offset would be the greater one
@@ -58,6 +58,8 @@ void LMPMapper::mapReads(){
     int mapped_to_single_edge = 0;
     int mappted_to_multiple_edge = 0;
     int unmapped_reads = 0;
+    int mapped_to_single_edge_rc = 0;
+    int mappted_to_multiple_edge_rc = 0;
     //std::vector<edgeKmerPosition> res = kmatch.lookupRead(lmp_data[0].ToString());
     for (int i=0; i < lmp_reads.size(); i++){
         std::vector<edgeKmerPosition> mapped_edges = kMatch.lookupRead(lmp_reads[i].ToString());
@@ -91,21 +93,21 @@ void LMPMapper::mapReads(){
     std::cout << "TOtal reads: " << lmp_reads.size() << std:: endl;
 }
 
-void LMPMapper::LMPReads2MappedPairedEdgePaths(std::vector<LMPPair > & lmp_pairs_for_scaffolding){
+void LMPMapper::LMPReads2MappedPairedEdgePaths(std::vector<LMPPair > & lmp_pairs_for_scaffolding, std::vector<LMPPair > & lmp_pairs_for_insert_size_estimation){
     mapReads();
-    readEdgeMap2LMPPairs(lmp_pairs_for_scaffolding);
+    readEdgeMap2LMPPairs(lmp_pairs_for_scaffolding,  lmp_pairs_for_insert_size_estimation);
     std::cout << "LMPReads2MappedPairedEdgePaths lmp pairs size: " << lmp_pairs_for_scaffolding.size() << std::endl;
 
 }
 
-void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair > & lmp_pairs_for_scaffolding){
+void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair > & lmp_pairs_for_scaffolding, std::vector<LMPPair > & lmp_pairs_for_insert_size_estimation){
     std::vector<LMPPair > read_paths;
     int counter = 0;
     int counter_p1 = 0;
     int counter_p2 = 0;
-    for (int i=0; i < read_edge_maps.size() - 1; ++i){
+    for (int i=0; i < read_edge_maps.size() - 1; ++i) {
         LMPPair lmp_pair;
-        lmp_pair.read_index = i/2;
+        lmp_pair.read_index = i / 2;
         std::vector<edgeKmerPosition> read_mapping_p1 = read_edge_maps[i];
         //read_mapping_p1 = readOffsetFilter(read_mapping_p1);
         int read_len = static_cast<int>(lmp_reads[i].ToString().size());
@@ -115,67 +117,41 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair > & lmp_pairs_for_scaff
         std::vector<edgeKmerPosition> read_mapping_p2 = read_edge_maps[i];
         //read_mapping_p2 = readOffsetFilter(read_mapping_p2);
         lmp_pair.p2 = sortMappingsFindFullyMappedEdges(read_mapping_p2, read_len, i);
-        if (lmp_pair.p1.size() != 0){
-            if (lmp_pair.p2.size() != 0){
+        if (lmp_pair.p1.size() != 0) {
+            if (lmp_pair.p2.size() != 0) {
                 counter += 1;
+                for (auto edge1: lmp_pair.p1) {
+                    if (lmp_pair.p1.size() == 1 && lmp_pair.p2.size() == 1) {
+                        if (lmp_pair.p1[0] == inv[lmp_pair.p2[0]]) {
+                            // todo: lmp_pair is wrong data type for this, as we need edge offset
+                            lmp_pairs_for_insert_size_estimation.push_back(lmp_pair);
+                        }
+
+                    } else {
+                        read_paths.push_back(
+                                lmp_pair);
+                    }
+
+                }
+
             }
             counter_p1 += 1;
-        }
-        if (lmp_pair.p2.size() != 0){
-            counter_p2 += 1;
-        }
-        if (!sanityCheck(lmp_pair, i)){
-            // decide what to do in this case... sanity check is more useful in working out mapping hasn't gone horriblywrong
-            //std::cout << "pair failed sanity check" << std::endl;
-            // for now just discard these read paths
-        } else {
-            read_paths.push_back(
-                    lmp_pair);
+
+            if (lmp_pair.p2.size() != 0) {
+                counter_p2 += 1;
+            }
         }
     }
     std::cout << "total both pairs mapped: " << counter << " p1 mapped: " << counter_p1 << "p2 mapped " << counter_p2 << std::endl;
     removeUselessLMPMappings(read_paths, lmp_pairs_for_scaffolding);
     std::cout << "readEdgeMap2LMPPairs lmp pairs size: " << lmp_pairs_for_scaffolding.size() << std::endl;
+        std::cout << "pairs map to edge and reverse complement and signle edge: "
+                  << lmp_pairs_for_insert_size_estimation.size() << std::endl;
+
 
 }
 
 
-void LMPMapper::removeUselessLMPMappings(std::vector<LMPPair > &read_paths, std::vector<LMPPair > &read_paths_for_scaffolding){
-    // if mappings are both to the same edge, or there are no mappings, remove these from consideration
-    for (auto read_path_pair: read_paths){
-        if (read_path_pair.p1.size() != 0 && read_path_pair.p2.size() != 0){
-            //std::cout << "read path pair has nonzero mappings:" << read_path_pair.p1[0] << read_path_pair.p2[0] << std::endl;
-            if (read_path_pair.p1 != read_path_pair.p2){
-                read_paths_for_scaffolding.push_back(read_path_pair);
-            }
-
-        }
-
-    }
-    std::cout << read_paths_for_scaffolding.size() << " of " << read_paths.size() << "lmp pair paths useable for scaffolding" << std::endl;
-
-}
-
-
-
-bool LMPMapper::sanityCheck(LMPPair lmp_pair, int i, int insert_size=8000){
-    // check that if reads map to long edges, then the pairs map to the same edge, hardcode 'long' to longer than any lmp insert size
-    // think conditionals are evaluated left to right, so this will sotp evaluating as soon as one of these is false
-   // if both reads map to one edge, and that is a long edge
-    if ((lmp_pair.p1.size() == 1 && lmp_pair.p2.size() == 1) && (hbv.EdgeObject(lmp_pair.p1[0]).size() > (insert_size*2))){
-        //edgeKmerPosition e1 = read_edge_maps[i-1];
-        //edgeKmerPosition e2 = read_edge_maps[i];
-        //int edge_sequence_length = static_cast<int>(hbv.EdgeObject(lmp_pair.p1[0]).size());
-        // if the read maps to within $insert_size of edge of edge, we don't expect both reads to map to same edge
-        //bool offsets_at_edge_of_edge = (e1.offset < (edge_sequence_length - insert_size) || e2.offset < (edge_sequence_length - insert_size) || e1.offset < insert_size || e2.offset < insert_size);
-        //if (lmp_pair.p1[0] == lmp_pair.p2[0] || offsets_at_edge_of_edge)){
-            return true;
-        //}
-    } else if (lmp_pair.p1.size() > 1 || lmp_pair.p2.size() > 1 || lmp_pair.p1.size() == 0 || lmp_pair.p2.size() == 0){
-        return true;
-    }
-    return false;
-}
 
 
 ReadPath LMPMapper::sortMappingsFindFullyMappedEdges(std::vector<edgeKmerPosition>  read_mapping, int read_length, int i){

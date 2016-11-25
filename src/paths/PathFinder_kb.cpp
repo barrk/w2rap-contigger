@@ -36,9 +36,10 @@ void PathFinderkb::init_prev_next_vectors(){
 
 std::vector<LMPPair > PathFinderkb::mapEdgesToLMPReads(){//(std::vector<LMPPair > & lmp_pairs_for_scaffolding){
     KMatch kmatch(31);
-    LMPMapper lmp_mapper(lmp_data, mHBV, kmatch);
+    LMPMapper lmp_mapper(lmp_data, mHBV, mInv, kmatch);
     std::vector<LMPPair > lmp_pairs;
-    lmp_mapper.LMPReads2MappedPairedEdgePaths(lmp_pairs);
+    std::vector<LMPPair >  lmp_pairs_for_insert_size_estimation;
+    lmp_mapper.LMPReads2MappedPairedEdgePaths(lmp_pairs, lmp_pairs_for_insert_size_estimation);
     std::cout << "mapEdgesToLMPReads lmp pairs size: " << lmp_pairs.size() << std::endl;
     return lmp_pairs;
 }
@@ -124,6 +125,11 @@ void PathFinderkb::addEdgeToSubGraph(int edge_to_add, std::map<int, uint64_t> & 
     //vector<uint64_t > & traversed_edge_list, int edges_to_traverse, int traversals=0
     traverseGraphCreateSubgraph(edges_to_add, vertex_subgraph_map,  subgraph,
                                 traversed_edge_list,  4,  0);
+}
+
+void PathFinderkb::gatherStats(){
+    std::vector<LMPPair > lmp_pairs = mapEdgesToLMPReads();
+
 }
 
 void PathFinderkb::resolveComplexRegionsUsingLMPData(){
