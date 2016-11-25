@@ -14,7 +14,7 @@ bool compareEdgeKmerPositions(const edgeKmerPosition &ekp1, const edgeKmerPositi
     // sort by edge id first, then offset. so a higher edge id with a lower offset would be the greater one
     if (ekp1.edge_id < ekp2.edge_id){
         return true;
-    } else if (ekp1.edge_id == ekp2.edge_id && ekp1.offset < ekp2.offset){
+    } else if (ekp1.edge_id == ekp2.edge_id && ekp1.edge_offset < ekp2.edge_offset){
         // we're on the same edge, so the one with the lowest offset is lower
         return true;
     } else {
@@ -32,6 +32,25 @@ ReadPath LMPMapper::getReadMathPair(int read_index){
     ReadPath pair = read_index%2 == 0 ? read_paths[read_index + 1] : read_paths[read_index -1 1]
     return pair;
 }*/
+
+// stolen from gonza so blame him!!
+std::vector<edgeKmerPosition> LMPMapper::readOffsetFilter(std::vector<edgeKmerPosition> data){
+    // Count the number of edges_id that map to each kmer in the read, filter out the edges that map to a position that has more than one edge mapped to it
+            // input is a vector with all the links for a specific rea
+    std::vector<edgeKmerPosition> links;
+    std::map<int, unsigned int> pos_count;
+    for (auto l: data){
+        // Aumentar el contador, valores son inicializados a 0!?
+                pos_count[l.read_offset] += 1;
+    }
+    // Solo seleccionados lo que estan en offsets de la lectura con un solo edge mapeado
+    for (auto l: data){
+        if (pos_count[l.read_offset] == 1){
+                links.push_back(l);
+            }
+        }
+    return links;
+}
 
 void LMPMapper::mapReads(){
     kMatch.Hbv2Map(&hbv);
@@ -88,11 +107,13 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair > & lmp_pairs_for_scaff
         LMPPair lmp_pair;
         lmp_pair.read_index = i/2;
         std::vector<edgeKmerPosition> read_mapping_p1 = read_edge_maps[i];
+        //read_mapping_p1 = readOffsetFilter(read_mapping_p1);
         int read_len = static_cast<int>(lmp_reads[i].ToString().size());
         // ensure that full edges will be together, with offsets in increasing order, in read_mapping vector
         lmp_pair.p1 = sortMappingsFindFullyMappedEdges(read_mapping_p1, read_len, i);
         i = i + 1;
         std::vector<edgeKmerPosition> read_mapping_p2 = read_edge_maps[i];
+        //read_mapping_p2 = readOffsetFilter(read_mapping_p2);
         lmp_pair.p2 = sortMappingsFindFullyMappedEdges(read_mapping_p2, read_len, i);
         if (lmp_pair.p1.size() != 0){
             if (lmp_pair.p2.size() != 0){
@@ -181,13 +202,13 @@ ReadPath LMPMapper::getFullyMappedEdges(std::vector<edgeKmerPosition> read_mappi
     }
     int current_edge_id = read_mapping[0].edge_id;
     int consecutive_offsets = 0;
-    int last_offset = read_mapping[0].offset;
+    int last_offset = read_mapping[0].edge_offset;
     ReadPath paths;
     for (auto it = read_mapping.begin(); it != read_mapping.end(); ++it) {
         // if we're still on the same edge
         if (it->edge_id == current_edge_id) {
             // if the edge offset is consecutive
-            if (it->offset == (last_offset + 1)) {
+            if (it->edge_offset == (last_offset + 1)) {
                 consecutive_offsets += 1;
                 /*if (is_r2 && consecutive_offsets > 60) {
                     std::cout << "edge offset: " << last_offset << " consecutiv offsets: " << consecutive_offsets << " kmer errors allowed " << kmer_errors_allowed << " threshold:  " << read_length - k - kmer_errors_allowed << std::endl;
@@ -209,7 +230,7 @@ ReadPath LMPMapper::getFullyMappedEdges(std::vector<edgeKmerPosition> read_mappi
             current_edge_id = it->edge_id;
             consecutive_offsets = 0;
         }
-        last_offset = it->offset;
+        last_offset = it->edge_offset;
         // if the above conditional would miss this because we're at the end of the loop, exit here
         if (std::next(it) == read_mapping.end() && ((consecutive_offsets == hbv.EdgeObject(current_edge_id).size() - k) || consecutive_offsets == read_length - k || (is_r2 && (consecutive_offsets > read_length - k - kmer_errors_allowed)))){
             //std::cout << "edge mapped at end:" << it->edge_id << std::endl;

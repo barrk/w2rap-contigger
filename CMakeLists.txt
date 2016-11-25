@@ -395,7 +395,8 @@ add_executable(w2rap-contigger src/modules/w2rap-contigger.cc
 add_executable(hbv2gfa src/modules/hbv2gfa.cc
         $<TARGET_OBJECTS:hb_base_libs>)
 
-add_executable(runthis src/test_code/runthis.cpp src/test_code/testcode_hbv.cpp src/test_code/testcode_2.cpp src/kmers/kmatch/KMatch.cc $<TARGET_OBJECTS:hb_base_libs>)
+add_executable(runthis src/test_code/runthis.cpp src/system/gzstream/gzstream.C src/test_code/testcode_hbv.cpp src/test_code/testcode_2.cpp
+        src/kmers/kmatch/KMatch.cc src/paths/long/large/ExtractReads.cc src/test_code/pacbio/pacbio_pather.cpp $<TARGET_OBJECTS:hb_base_libs>)
 
 ##Zlib link
 if (ZLIB_FOUND)
