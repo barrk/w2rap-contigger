@@ -105,14 +105,14 @@ void LMPMapper::mapReads(){
 
 }
 
-void LMPMapper::LMPReads2MappedPairedEdgePaths(std::vector<LMPPair > & lmp_pairs_for_scaffolding, std::vector<LMPPair > & lmp_pairs_for_insert_size_estimation){
+void LMPMapper::LMPReads2MappedPairedEdgePaths(std::vector<LMPPair > & lmp_pairs_for_scaffolding, std::vector<LMPPair > & lmp_pairs_for_insert_size_estimation, std::map<uint64_t, std::vector<int> > edge_id_to_pair_id_map){
     mapReads();
-    readEdgeMap2LMPPairs(lmp_pairs_for_scaffolding,  lmp_pairs_for_insert_size_estimation);
+    readEdgeMap2LMPPairs(lmp_pairs_for_scaffolding,  lmp_pairs_for_insert_size_estimation, edge_id_to_pair_id_map);
     std::cout << "LMPReads2MappedPairedEdgePaths lmp pairs size: " << lmp_pairs_for_scaffolding.size() << std::endl;
 
 }
 
-void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair > & lmp_pairs_for_scaffolding, std::vector<LMPPair > & lmp_pairs_for_insert_size_estimation){
+void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair >  & lmp_pairs_for_scaffolding, std::vector<LMPPair > & lmp_pairs_for_insert_size_estimation, std::map<uint64_t, std::vector<int> > edge_id_to_pair_id_map){
     int counter = 0;
     int counter_p1 = 0;
     int counter_p2 = 0;
@@ -122,6 +122,9 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair > & lmp_pairs_for_scaff
     std::ofstream edge_map_counter;
     edge_map_counter.open("/Users/barrk/Documents/arabidopsis_data/edge_mapping_counts_used_downstream.txt");
     std::map<uint64_t, int> mapping_counts;
+    // to determine if region is solvable, need to
+    std::map<uint64_t, std::vector<LMPPair>> edge_id_lmp_dict;
+    int pair_id;
     for (int i=0; i < read_edge_maps.size() - 1; ++i) {
         LMPPair lmp_pair;
         lmp_pair.read_index = i / 2;
@@ -145,6 +148,7 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair > & lmp_pairs_for_scaff
                             lmp_pairs_for_insert_size_estimation.push_back(lmp_pair);
                             read_indices << "Pair index for insert size estimation" << i << std::endl;
                         } else { // if they both map to a single edge, but not the same edge, it can be used to join 2 edges, maybe...
+                            lmp_pair.pair_id = pair_id;
                             lmp_pairs_for_scaffolding.push_back(
                                 lmp_pair);
                             counter_single_reads_mapping_different_edges += 1;
@@ -155,9 +159,13 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair > & lmp_pairs_for_scaff
                             for (auto edge2: lmp_pair.p2) {
                                 mapping_counts[edge2] += 1;
                                 }
+                            pair_id += 1;
+                            edge_id_to_pair_id_map[lmp_pair.p1[0]].push_back(pair_id);
+                            edge_id_to_pair_id_map[lmp_pair.p2[0]].push_back(pair_id);
                             }
                         }
                 }   else { // if reads validly map to more than one edge, these can also be used for scaffolding
+                        lmp_pair.pair_id = pair_id;
                         lmp_pairs_for_scaffolding.push_back(
                                 lmp_pair);
                         read_indices << "Pair index for scaffoding" << i << std::endl;
@@ -166,7 +174,11 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair > & lmp_pairs_for_scaff
                         }
                         for (auto edge2: lmp_pair.p2) {
                             mapping_counts[edge2] += 1;
-                }
+                        }
+                        pair_id += 1;
+                        for (auto edge: lmp_pair.p1){edge_id_to_pair_id_map[edge].push_back(pair_id);}
+                        for (auto edge: lmp_pair.p2){edge_id_to_pair_id_map[edge].push_back(pair_id);}
+
                     }
 
                 //}

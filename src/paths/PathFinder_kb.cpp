@@ -34,14 +34,15 @@ void PathFinderkb::init_prev_next_vectors(){
 
 }
 
-std::vector<LMPPair > PathFinderkb::mapEdgesToLMPReads(){//(std::vector<LMPPair > & lmp_pairs_for_scaffolding){
+std::tuple <std::vector<LMPPair >, std::vector<LMPPair >, std::map<uint64_t, std::vector<int> > > PathFinderkb::mapEdgesToLMPReads(){
     KMatch kmatch(31);
     LMPMapper lmp_mapper(lmp_data, mHBV, mInv, kmatch);
-    std::vector<LMPPair > lmp_pairs;
+    std::vector<LMPPair >  lmp_pairs;
+    std::map<uint64_t, std::vector<int> > edge_id_to_pair_id_map;
     std::vector<LMPPair >  lmp_pairs_for_insert_size_estimation;
-    lmp_mapper.LMPReads2MappedPairedEdgePaths(lmp_pairs, lmp_pairs_for_insert_size_estimation);
+    lmp_mapper.LMPReads2MappedPairedEdgePaths(lmp_pairs, lmp_pairs_for_insert_size_estimation, edge_id_to_pair_id_map);
     std::cout << "mapEdgesToLMPReads lmp pairs size: " << lmp_pairs.size() << std::endl;
-    return lmp_pairs;
+    return std::make_tuple(lmp_pairs, lmp_pairs_for_insert_size_estimation, edge_id_to_pair_id_map);
 }
 
 /* logic for standalone graph traversal
@@ -128,15 +129,22 @@ void PathFinderkb::addEdgeToSubGraph(int edge_to_add, std::map<int, uint64_t> & 
 }
 
 void PathFinderkb::gatherStats() {
+
+    int large_frontier_size = 100;
+    init_prev_next_vectors();// mToLeft and mToright are to/from vertices
+    std::tuple<std::vector<LMPPair >, std::vector<LMPPair >, std::map<uint64_t, std::vector<int> > > mapping_results = mapEdgesToLMPReads();
+    std::vector<LMPPair > pairs_for_scaffolding = std::get<0>(mapping_results);
+    std::vector<LMPPair > pairs_for_insert_size_calculation = std::get<1>(mapping_results);
+    std::map<uint64_t, std::vector<int> >  edge_id_to_pair_id_map = std::get<2>(mapping_results);
     // can use linux tools to get number of reads mappig to these edges to save time searching in here
     // once we have the read ids, can select a suitable subset to run quickly during development
     std::ofstream edge_ids_with_long_frontiera;
     edge_ids_with_long_frontiera.open("/Users/barrk/Documents/arabidopsis_data/long_fronteir_edge_is_with_same_in_out_degree.txt");
-    int large_frontier_size = 100;
-    init_prev_next_vectors();// mToLeft and mToright are to/from vertices
-    std::vector<LMPPair> lmp_pairs = mapEdgesToLMPReads();
+    std::ofstream solveable_regions;
+    solveable_regions.open("/Users/barrk/Documents/arabidopsis_data/solveable_regions.txt");
     int same_in_out_degree = 0;
     int same_in_out_degree_complex = 0;
+    int  solveable_regions_count = 0 ;
     std::map<uint64_t, int> mapping_counts;
     for (int e = 0; e < mHBV.EdgeObjectCount(); ++e) {
         if (e < mInv[e] && mHBV.EdgeObject(e).size() < large_frontier_size) {
@@ -144,21 +152,56 @@ void PathFinderkb::gatherStats() {
             if (f[0].size() == f[1].size() && f[0].size() != 0) {
                 same_in_out_degree += 1;
                 edge_ids_with_long_frontiera << "Edge: " << e << "size:" <<  f[0].size() << std::endl;
-                if (f[0].size() > 0) {
+                if (f[0].size() > 1) {
                     same_in_out_degree_complex += 1;
+                    std::vector<int> mapped_lmp_in;
+                    std::vector<int> mapped_lmp_out;
+                    int pair_id = edge_id_to_pair_id_map[0][0];
+                    // find number of lmp reads mapping to each large fronteir edge
+                    for (auto edge: f[0]){
+                        for (auto pair_id :  edge_id_to_pair_id_map[edge]){
+                        mapped_lmp_in.push_back(pair_id);
+                        }
+                    }
+                    for (auto edge: f[1]) {
+                        for (auto pair_id :  edge_id_to_pair_id_map[edge]) {
+                            mapped_lmp_out.push_back(pair_id);
+                        }
+                    }
+                    // determine if the reads can completely solve the region
+                    // this will be the case if there are read pairs mapping to every in/out edge
+                    std::vector<int> pairs_with_both_reads_mapping;
+                    std::set_intersection(pairs_with_both_reads_mapping.begin(), pairs_with_both_reads_mapping.end(),
+                                          pairs_with_both_reads_mapping.begin(), pairs_with_both_reads_mapping.end(),
+                                          std::back_inserter(pairs_with_both_reads_mapping));
+                    // as i so far haven't taken coverage into account, many reads might solve this region, so geq not =
+                    if (pairs_with_both_reads_mapping.size() >= f[0].size()){
+                        solveable_regions_count += 1;
+                        // here we would go on to actually solve this region
+                        for (auto pair_id: pairs_with_both_reads_mapping) {
+                            solveable_regions << "Edge id: " <<
+                            e << " read id:" << pair_id << std::endl;
+                        }
+                    }
                 }
             }
 
         }
 
     }
+    edge_ids_with_long_frontiera.close();
+    solveable_regions.close();
     std::cout << "Regions with same degree in and out:" << same_in_out_degree << std::endl;
     std::cout << "Complex regions with same degree in and out:" << same_in_out_degree_complex << std::endl;
+    std::cout << "Complex regions solveable wit lmp reads:" << solveable_regions_count<< std::endl;
 
 }
 
 void PathFinderkb::resolveComplexRegionsUsingLMPData(){
-    std::vector<LMPPair > lmp_pairs = mapEdgesToLMPReads();
+    std::tuple<std::vector<LMPPair >, std::vector<LMPPair >, std::map<uint64_t, std::vector<int> > > mapping_results = mapEdgesToLMPReads();
+    std::vector<LMPPair > lmp_pairs = std::get<0>(mapping_results);
+    std::vector<LMPPair > pairs_for_insert_size_calculation = std::get<1>(mapping_results);
+    std::map<uint64_t, std::vector<int> >  edge_id_to_pair_id_map = std::get<2>(mapping_results);
     std::cout << "lmp pairs size: " << lmp_pairs.size() << std::endl;
     // then find complex regions, for now in same way as original pathfinder
     init_prev_next_vectors();

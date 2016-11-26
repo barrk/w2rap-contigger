@@ -15,6 +15,7 @@
 #include "Vec.h"
 #include <lmp/lmp_mapper.h>
 #include <fstream>
+#include <algorithm>
 #include <iostream>
 
 
@@ -56,7 +57,7 @@ public:
     //bool join_edges_in_path(std::vector<uint64_t> p);
     std::array<std::vector<uint64_t>,2>  get_all_long_frontiers(uint64_t e,uint64_t large_frontier_size);
     //void migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> edgemap);
-    std::vector<LMPPair > PathFinderkb::mapEdgesToLMPReads();//(std::vector<LMPPair > & lmp_pairs_for_scaffolding);
+    std::tuple <std::vector<LMPPair >, std::vector<LMPPair >, std::map<uint64_t, std::vector<int> > > PathFinderkb::mapEdgesToLMPReads();//(std::vector<LMPPair > & lmp_pairs_for_scaffolding);
     void PathFinderkb::resolveComplexRegionsUsingLMPData();
     void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> edgemap);
     std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector<uint64_t> p, bool verbose_separation);
