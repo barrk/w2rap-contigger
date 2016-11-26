@@ -127,8 +127,33 @@ void PathFinderkb::addEdgeToSubGraph(int edge_to_add, std::map<int, uint64_t> & 
                                 traversed_edge_list,  4,  0);
 }
 
-void PathFinderkb::gatherStats(){
-    std::vector<LMPPair > lmp_pairs = mapEdgesToLMPReads();
+void PathFinderkb::gatherStats() {
+    // can use linux tools to get number of reads mappig to these edges to save time searching in here
+    // once we have the read ids, can select a suitable subset to run quickly during development
+    std::ofstream edge_ids_with_long_frontiera;
+    edge_ids_with_long_frontiera.open("/Users/barrk/Documents/arabidopsis_data/long_fronteir_edge_is_with_same_in_out_degree.txt");
+    int large_frontier_size = 100;
+    init_prev_next_vectors();// mToLeft and mToright are to/from vertices
+    std::vector<LMPPair> lmp_pairs = mapEdgesToLMPReads();
+    int same_in_out_degree = 0;
+    int same_in_out_degree_complex = 0;
+    std::map<uint64_t, int> mapping_counts;
+    for (int e = 0; e < mHBV.EdgeObjectCount(); ++e) {
+        if (e < mInv[e] && mHBV.EdgeObject(e).size() < large_frontier_size) {
+            auto f = get_all_long_frontiers(e, large_frontier_size);
+            if (f[0].size() == f[1].size() && f[0].size() != 0) {
+                same_in_out_degree += 1;
+                edge_ids_with_long_frontiera << "Edge: " << e << "size:" <<  f[0].size() << std::endl;
+                if (f[0].size() > 0) {
+                    same_in_out_degree_complex += 1;
+                }
+            }
+
+        }
+
+    }
+    std::cout << "Regions with same degree in and out:" << same_in_out_degree << std::endl;
+    std::cout << "Complex regions with same degree in and out:" << same_in_out_degree_complex << std::endl;
 
 }
 
@@ -136,7 +161,7 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData(){
     std::vector<LMPPair > lmp_pairs = mapEdgesToLMPReads();
     std::cout << "lmp pairs size: " << lmp_pairs.size() << std::endl;
     // then find complex regions, for now in same way as original pathfinder
-    init_prev_next_vectors();// need to clarify what mToLeft and mToRight are, guessing they're just into/out of each node
+    init_prev_next_vectors();
     std::cout<<"vectors initialised"<<std::endl;
     std::vector<std::vector<uint64_t>> paths_to_separate;
     std::set<int> paths_found;

@@ -54,12 +54,14 @@ std::vector<edgeKmerPosition> LMPMapper::readOffsetFilter(std::vector<edgeKmerPo
 
 void LMPMapper::mapReads(){
     kMatch.Hbv2Map(&hbv);
+    std::cout << Date() << "starting read mapping"<< std::endl;
     std::cout << kMatch.edgeMap.size() << std::endl;
     int mapped_to_single_edge = 0;
     int mappted_to_multiple_edge = 0;
     int unmapped_reads = 0;
     int mapped_to_single_edge_rc = 0;
     int mappted_to_multiple_edge_rc = 0;
+    std::map<uint64_t, int> mapping_counts;
     //std::vector<edgeKmerPosition> res = kmatch.lookupRead(lmp_data[0].ToString());
     for (int i=0; i < lmp_reads.size(); i++){
         std::vector<edgeKmerPosition> mapped_edges = kMatch.lookupRead(lmp_reads[i].ToString());
@@ -67,14 +69,16 @@ void LMPMapper::mapReads(){
         read_edge_maps.push_back(mapped_edges);
         int distinct_edge_ids = 0;
         if (mapped_edges.size() != 0){
-            int distinct_edge_ids = 1;
+            int distinct_edge_ids = +1;
             int current_edge_id = mapped_edges[0].edge_id;
-        for (auto mapping: mapped_edges){
-            if (mapping.edge_id != current_edge_id){
-                current_edge_id = mapping.edge_id;
-                distinct_edge_ids += 1;
+            mapping_counts[current_edge_id] += 1;
+            for (auto mapping: mapped_edges){
+                if (mapping.edge_id != current_edge_id){
+                    current_edge_id = mapping.edge_id;
+                    distinct_edge_ids += 1;
+                    mapping_counts[current_edge_id] += 1;
 
-        }
+                }
         }
             if (distinct_edge_ids == 1){
                 mapped_to_single_edge += 1;
@@ -87,10 +91,18 @@ void LMPMapper::mapReads(){
             unmapped_reads += 1;
         } }
     }
+    std::cout << Date() << "finished read mapping"<< std::endl;
+
     std::cout << "Unmapped reads: " << unmapped_reads << std::endl;
     std::cout << "Mapped to single edge: " << mapped_to_single_edge << std::endl;
     std::cout << "Mapped to multiple edges: " << mappted_to_multiple_edge << std::endl;
     std::cout << "TOtal reads: " << lmp_reads.size() << std:: endl;
+    std::ofstream edge_map_counter;
+    edge_map_counter.open("/Users/barrk/Documents/arabidopsis_data/edge_mapping_counts_raw.txt");
+    for (auto edge_map_count: mapping_counts){
+        edge_map_counter << edge_map_count.first << ', ' << edge_map_count.second << std::endl;
+    }
+
 }
 
 void LMPMapper::LMPReads2MappedPairedEdgePaths(std::vector<LMPPair > & lmp_pairs_for_scaffolding, std::vector<LMPPair > & lmp_pairs_for_insert_size_estimation){
@@ -101,10 +113,15 @@ void LMPMapper::LMPReads2MappedPairedEdgePaths(std::vector<LMPPair > & lmp_pairs
 }
 
 void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair > & lmp_pairs_for_scaffolding, std::vector<LMPPair > & lmp_pairs_for_insert_size_estimation){
-    std::vector<LMPPair > read_paths;
     int counter = 0;
     int counter_p1 = 0;
     int counter_p2 = 0;
+    int counter_single_reads_mapping_different_edges = 0;
+    std::ofstream read_indices;
+    read_indices.open("/Users/barrk/Documents/arabidopsis_data/mapped_read_indices.txt");
+    std::ofstream edge_map_counter;
+    edge_map_counter.open("/Users/barrk/Documents/arabidopsis_data/edge_mapping_counts_used_downstream.txt");
+    std::map<uint64_t, int> mapping_counts;
     for (int i=0; i < read_edge_maps.size() - 1; ++i) {
         LMPPair lmp_pair;
         lmp_pair.read_index = i / 2;
@@ -117,22 +134,42 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair > & lmp_pairs_for_scaff
         std::vector<edgeKmerPosition> read_mapping_p2 = read_edge_maps[i];
         //read_mapping_p2 = readOffsetFilter(read_mapping_p2);
         lmp_pair.p2 = sortMappingsFindFullyMappedEdges(read_mapping_p2, read_len, i);
+        lmp_pair.read_index = i;
         if (lmp_pair.p1.size() != 0) {
             if (lmp_pair.p2.size() != 0) {
                 counter += 1;
-                for (auto edge1: lmp_pair.p1) {
+                //for (auto edge1: lmp_pair.p1) {
                     if (lmp_pair.p1.size() == 1 && lmp_pair.p2.size() == 1) {
                         if (lmp_pair.p1[0] == inv[lmp_pair.p2[0]]) {
                             // todo: lmp_pair is wrong data type for this, as we need edge offset
                             lmp_pairs_for_insert_size_estimation.push_back(lmp_pair);
-                        }
-
-                    } else {
-                        read_paths.push_back(
+                            read_indices << "Pair index for insert size estimation" << i << std::endl;
+                        } else { // if they both map to a single edge, but not the same edge, it can be used to join 2 edges, maybe...
+                            lmp_pairs_for_scaffolding.push_back(
                                 lmp_pair);
+                            counter_single_reads_mapping_different_edges += 1;
+                            read_indices << "Pair index for scaffoding" << i << std::endl;
+                            for (auto edge1: lmp_pair.p1) {
+                                mapping_counts[edge1] += 1;
+                                }
+                            for (auto edge2: lmp_pair.p2) {
+                                mapping_counts[edge2] += 1;
+                                }
+                            }
+                        }
+                }   else { // if reads validly map to more than one edge, these can also be used for scaffolding
+                        lmp_pairs_for_scaffolding.push_back(
+                                lmp_pair);
+                        read_indices << "Pair index for scaffoding" << i << std::endl;
+                        for (auto edge1: lmp_pair.p1) {
+                            mapping_counts[edge1] += 1;
+                        }
+                        for (auto edge2: lmp_pair.p2) {
+                            mapping_counts[edge2] += 1;
+                }
                     }
 
-                }
+                //}
 
             }
             counter_p1 += 1;
@@ -141,13 +178,18 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair > & lmp_pairs_for_scaff
                 counter_p2 += 1;
             }
         }
-    }
+
+    read_indices.close();
     std::cout << "total both pairs mapped: " << counter << " p1 mapped: " << counter_p1 << "p2 mapped " << counter_p2 << std::endl;
-    removeUselessLMPMappings(read_paths, lmp_pairs_for_scaffolding);
+    //removeUselessLMPMappings(read_paths, lmp_pairs_for_scaffolding);
     std::cout << "readEdgeMap2LMPPairs lmp pairs size: " << lmp_pairs_for_scaffolding.size() << std::endl;
         std::cout << "pairs map to edge and reverse complement and signle edge: "
                   << lmp_pairs_for_insert_size_estimation.size() << std::endl;
-
+    std::cout << "single reads mapping to different edges: " << counter_single_reads_mapping_different_edges << std::endl;
+    for (auto edge_map_count: mapping_counts){
+        edge_map_counter << edge_map_count.first << ', ' << edge_map_count.second << std::endl;
+    }
+    edge_map_counter.close();
 
 }
 

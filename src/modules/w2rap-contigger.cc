@@ -218,7 +218,7 @@ int main(const int argc, const char * argv[]) {
 
     //========== Main Program Begins ======
     // This has to be according to the input
-    PeData pe_data;// (pe_read_files);
+    PeData pe_data;
     vecbvec bases;
     VecPQVec quals;
 
@@ -234,7 +234,7 @@ int main(const int argc, const char * argv[]) {
     int MAX_CELL_PATHS = 50;
     int MAX_DEPTH = 10;
 
-    std::cout << "reading files: " << out_dir << "/" << out_prefix << ".large_K.final.hbv" << std::endl;
+    std::cout << "reading files: " << out_dir << "/" << out_prefix << ".large_K.hbv" << std::endl;
     //== Set computational resources ===
     SetThreads(threads, False);
     SetMaxMemory(int64_t(round(max_mem * 1024.0 * 1024.0 * 1024.0)));
@@ -250,14 +250,15 @@ int main(const int argc, const char * argv[]) {
             //mp_data.read_binary("/Users/barrk/Documents/ecoli_dataset/", "");
             std::cout << "Mate pair files read" << std::endl;
 
-            BinaryReader::readFile(out_dir + "/" + out_prefix + ".large_K.final.hbv", &hbvr);
-            LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".large_K.final.paths").c_str());
+            BinaryReader::readFile(out_dir + "/" + out_prefix + ".large_K.hbv", &hbvr);
+            LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".large_K.paths").c_str());
+        std::cout << "paired end graph loaded" << std::endl;
             VecULongVec invPaths;
             hbvr.Involution(inv);
             invert(pathsr, invPaths, hbvr.EdgeObjectCount());
             // HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, HyperBasevector& lmp_data, int min_reads = 5
             PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
-            // rhis segfaults when doing the dictionary lookup, again!
+            pf.gatherStats();
             //pf.resolveComplexRegionsUsingLMPData();
             Scram(1);
     }
@@ -409,8 +410,8 @@ int main(const int argc, const char * argv[]) {
         std::cout << "Loading reads in fastb/qualp format..." << std::endl;
 
         pe_data.read_binary(out_dir, "");
-//        bases.ReadAll(out_dir + "/frag_reads_orig.fastb");
-//        quals.ReadAll(out_dir + "/frag_reads_orig.qualp");
+        bases.ReadAll(out_dir + "/frag_reads_orig.fastb");
+        quals.ReadAll(out_dir + "/frag_reads_orig.qualp");
 
         std::cout << "   DONE!" << std::endl;
         if (dump_perf) perf_file << checkpoint_perf_time("LoadReads") << std::endl;
@@ -616,6 +617,8 @@ int main(const int argc, const char * argv[]) {
                      ANALYZE_BRANCHES_VERBOSE2, TRACE_SEQ, DEGLOOP, EXT_FINAL, EXT_FINAL_MODE, PULL_APART_VERBOSE,
                      PULL_APART_TRACE, DEGLOOP_MODE, DEGLOOP_MIN_DIST, IMPROVE_PATHS, IMPROVE_PATHS_LARGE, FINAL_TINY,
                      UNWIND3, run_pathfinder, dump_pf);
+                BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".large_K.simplified.hbv", hbvr);
+                WriteReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".large_K.simplified.paths").c_str());
 
         }
 
