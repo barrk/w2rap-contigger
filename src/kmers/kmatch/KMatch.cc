@@ -67,15 +67,16 @@ void KMatch::Hbv2Map(HyperBasevector* hbv){
   uint32_t seq_index=0;
 
   auto edges = hbv->Edges();
-
+  std::vector<edgeKmerPosition> temp_vector;
+  edgeKmerPosition tmatch;
   for (auto seqN=0; seqN<edges.size(); ++seqN) {
     auto seq = edges[seqN].ToString();
     auto kv = this->ProduceKmers(seq);
 
     for (auto a=0; a<kv.size(); ++a){
+      temp_vector.clear();
       if (this->edgeMap.find(kv[a].kmer) == this->edgeMap.end()){
-        std::vector<edgeKmerPosition> temp_vector;
-        edgeKmerPosition tmatch;
+
         tmatch.edge_id = seq_index;
         tmatch.edge_offset = kv[a].offset;
         temp_vector.push_back(tmatch);
@@ -83,16 +84,16 @@ void KMatch::Hbv2Map(HyperBasevector* hbv){
 
       } else {
         auto temp_vector = this->edgeMap[kv[a].kmer];
-        edgeKmerPosition tmatch;
         tmatch.edge_id = seq_index;
         tmatch.edge_offset = kv[a].offset;
         temp_vector.push_back(tmatch);
         this->edgeMap[kv[a].kmer] = temp_vector;
       }
+
     }
     seq_index++;
   }
-  std::cout << Date() << "finished building edge dict"<< std::endl;
+  std::cout << Date() << "finishe dbuilding edge dict"<< std::endl;
 
 }
 

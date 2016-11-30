@@ -84,25 +84,11 @@ void PathFinderkb::traverseGraphCreateSubgraph(vector<uint64_t>  edges_to_add, s
             subgraph.AddEdge(prev_vertex, next_vertex, bv);
             traversed_edge_list.push_back(*edge);
             if ((traversals + 1) <= edges_to_traverse) {
-                traverseGraphCreateSubgraph(edges_to_add, vertex_subgraph_map, subgraph, traversed_edge_list, edges_to_traverse,
-                                   traversals);
+                traverseGraphCreateSubgraph(edges_to_add, vertex_subgraph_map, subgraph, traversed_edge_list,
+                                            edges_to_traverse,
+                                            traversals);
             }
         }
-        /*while(counter < edges_to_traverse) {
-            for (auto edge : edges_to_add) {
-                basevector bv = mHBV.EdgeObject(edge_to_add);
-                int prev_vertex = subgraph.N();
-                int next_vertex = subgraph.N() + 1;
-                vertex_subgraph_map[prev_vertex] = mToLeft[edge_to_add];
-                vertex_subgraph_map[next_vertex] =mToRight[edge_to_add];
-                subgraph.AddVertices(2);
-                subgraph.AddEdge(prev_vertex,  next_vertex, bv);
-            }
-            edges_to_add.clear();
-            edges_to_add.reserve(prev_edges[edge_to_add].size() + next_edges[edge_to_add].size());
-            edges_to_add.insert(edges_to_add.end(), prev_edges[edge_to_add].begin(), prev_edges[edge_to_add].end())
-            edges_to_add.insert(edges_to_add.end(), next_edges[edge_to_add].begin(), next_edges[edge_to_add].end())
-        }*/
     }
 
 }
@@ -130,7 +116,7 @@ void PathFinderkb::addEdgeToSubGraph(int edge_to_add, std::map<int, uint64_t> & 
 
 void PathFinderkb::gatherStats() {
 
-    int large_frontier_size = 100;
+    int large_frontier_size = 1500;
     init_prev_next_vectors();// mToLeft and mToright are to/from vertices
     std::tuple<std::vector<LMPPair >, std::vector<LMPPair >, std::map<uint64_t, std::vector<int> > > mapping_results = mapEdgesToLMPReads();
     std::vector<LMPPair > pairs_for_scaffolding = std::get<0>(mapping_results);
@@ -146,34 +132,66 @@ void PathFinderkb::gatherStats() {
     int same_in_out_degree_complex = 0;
     int  solveable_regions_count = 0 ;
     std::map<uint64_t, int> mapping_counts;
+    std::vector<uint64_t > edges_to_look_for = {8, 321, 480, 391, 463, 358, 337, 478};
+    auto paths_containing_edges_to_look_for = {mEdgeToPathIds[8], mEdgeToPathIds[321], mEdgeToPathIds[480], mEdgeToPathIds[391],
+                                                                 mEdgeToPathIds[463], mEdgeToPathIds[358], mEdgeToPathIds[337], mEdgeToPathIds[478]};
+    /*for (auto edge:edges_to_look_for) {
+        std::cout << "edge: " << edge << std::endl;
+        for (auto path_id: mEdgeToPathIds[edge]) {
+            // when printing path id here, it printed absolutely loads
+            if (mPaths[path_id].size() > 2) {
+                std::cout << "path id: " << path_id << std::endl;
+                std::vector<uint64_t> pathvec;
+                for (auto e:mPaths[path_id]) { pathvec.push_back(e); }
+                std::cout << path_str(pathvec) << std::endl;
+            }
+        }
+    }*/
     for (int e = 0; e < mHBV.EdgeObjectCount(); ++e) {
+        if (std::find(edges_to_look_for.begin(), edges_to_look_for.end(), e) != edges_to_look_for.end()){
+            std::cout << "edge of interest:" << e << std::endl;
+        }
+        // e < mInv[e] checks that this is a forward directed edge? nope, canonical representation
         if (e < mInv[e] && mHBV.EdgeObject(e).size() < large_frontier_size) {
             auto f = get_all_long_frontiers(e, large_frontier_size);
             if (f[0].size() == f[1].size() && f[0].size() != 0) {
                 same_in_out_degree += 1;
-                edge_ids_with_long_frontiera << "Edge: " << e << "size:" <<  f[0].size() << std::endl;
+                edge_ids_with_long_frontiera << "Edge: " << e << " size: " <<  f[0].size() << std::endl;
                 if (f[0].size() > 1) {
                     same_in_out_degree_complex += 1;
                     std::vector<int> mapped_lmp_in;
                     std::vector<int> mapped_lmp_out;
-                    int pair_id = edge_id_to_pair_id_map[0][0];
                     // find number of lmp reads mapping to each large fronteir edge
                     for (auto edge: f[0]){
                         for (auto pair_id :  edge_id_to_pair_id_map[edge]){
                         mapped_lmp_in.push_back(pair_id);
+                            mapping_counts[edge] += 1;
+                        }
+                        for (auto pair_id :  edge_id_to_pair_id_map[mInv[edge]]){//it could be on r1 or r2 so check involution
+                            mapped_lmp_in.push_back(pair_id);
+                            mapping_counts[edge] += 1;
                         }
                     }
                     for (auto edge: f[1]) {
-                        for (auto pair_id :  edge_id_to_pair_id_map[edge]) {
+                        for (auto pair_id :  edge_id_to_pair_id_map[mInv[edge]]) {
                             mapped_lmp_out.push_back(pair_id);
+                            mapping_counts[edge] += 1;
+                        }
+                        for (auto pair_id :  edge_id_to_pair_id_map[edge]){//it could be on r1 or r2 so check involution
+                            mapped_lmp_out.push_back(pair_id);
+                            mapping_counts[edge] += 1;
                         }
                     }
                     // determine if the reads can completely solve the region
                     // this will be the case if there are read pairs mapping to every in/out edge
                     std::vector<int> pairs_with_both_reads_mapping;
-                    std::set_intersection(pairs_with_both_reads_mapping.begin(), pairs_with_both_reads_mapping.end(),
-                                          pairs_with_both_reads_mapping.begin(), pairs_with_both_reads_mapping.end(),
+                    std::set_intersection(mapped_lmp_in.begin(), mapped_lmp_in.end(),
+                                          mapped_lmp_out.begin(), mapped_lmp_out.end(),
                                           std::back_inserter(pairs_with_both_reads_mapping));
+                    if (pairs_with_both_reads_mapping.size() > 0) {
+                        std::cout << "pairs with both reads mapping size: " << pairs_with_both_reads_mapping.size()
+                                  << std::endl;
+                    }
                     // as i so far haven't taken coverage into account, many reads might solve this region, so geq not =
                     if (pairs_with_both_reads_mapping.size() >= f[0].size()){
                         solveable_regions_count += 1;
@@ -341,7 +359,7 @@ void PathFinderkb::untangle_complex_in_out_choices(uint64_t large_frontier_size,
                                     if (inp == outp) {// if they're on the same path
 
                                         shared_paths++;
-                                        if (shared_paths==1){//not the best solution, but should work-ish
+                                        if (shared_paths==1){
                                             std::vector<uint64_t > pv;
                                             for (auto e:mPaths[inp]) pv.push_back(e); // create vector of edges on theshared pat
                                             std::cout<<"found first path from "<<in_e<<" to "<< out_e << path_str(pv)<< std::endl;
@@ -528,7 +546,7 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
     //moves paths across to the new reapeat instances as needed
     //changes neighbourhood (i.e. creates new vertices and moves the to and from for the implicated edges).
 
-    //creates a copy of each node but the first and the last, connects only linearly to the previous copy,
+    //creates a copy of each node but the first and the last, connects  linearly to the previous copy,
     std::cout<<std::endl<<"Separating path"<< path_str(p) << std::endl;
     std::set<uint64_t> edges_fw;
     std::set<uint64_t> edges_rev;

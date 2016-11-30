@@ -39,5 +39,6 @@ class LMPMapper{
         //void LMPMapper::removeUselessLMPMappings(std::vector<LMPPair > &read_paths, std::vector<LMPPair > &read_paths_for_scaffolding);
         std::vector<edgeKmerPosition> LMPMapper::readOffsetFilter(std::vector<edgeKmerPosition> data);
         //bool LMPMapper::compareEdgeKmerPositions(const edgeKmerPosition &ekp1, const edgeKmerPosition &ekp2);
-};
+        std::string LMPMapper::path_str(ReadPath path);
+        };
 #endif //W2RAP_CONTIGGER_LMP_MAPPER_H

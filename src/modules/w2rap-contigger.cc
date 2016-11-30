@@ -249,10 +249,11 @@ int main(const int argc, const char * argv[]) {
             MpData mp_data(mp_read_files);
             //mp_data.read_binary("/Users/barrk/Documents/ecoli_dataset/", "");
             std::cout << "Mate pair files read" << std::endl;
-
-            BinaryReader::readFile(out_dir + "/" + out_prefix + ".large_K.hbv", &hbvr);
-            LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".large_K.paths").c_str());
-        std::cout << "paired end graph loaded" << std::endl;
+            BinaryReader::readFile(out_dir + "/" + out_prefix + ".contig.hbv", &hbvr);
+            LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".contig.paths").c_str());
+            //BinaryReader::readFile(out_dir + "/" + out_prefix + ".large_K.hbv", &hbvr);
+            //LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".large_K.paths").c_str());
+            std::cout << "paired end graph loaded" << std::endl;
             VecULongVec invPaths;
             hbvr.Involution(inv);
             invert(pathsr, invPaths, hbvr.EdgeObjectCount());
