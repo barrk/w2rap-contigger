@@ -42,6 +42,7 @@ std::tuple <std::vector<LMPPair >, std::vector<LMPPair >, std::map<uint64_t, std
     std::vector<LMPPair >  lmp_pairs_for_insert_size_estimation;
     lmp_mapper.LMPReads2MappedPairedEdgePaths(lmp_pairs, lmp_pairs_for_insert_size_estimation, edge_id_to_pair_id_map);
     std::cout << "mapEdgesToLMPReads lmp pairs size: " << lmp_pairs.size() << std::endl;
+    std::cout << "mapEdgesToLMPReads edge id to pair id map size lmp pairs size: " << edge_id_to_pair_id_map.size() << std::endl;
     return std::make_tuple(lmp_pairs, lmp_pairs_for_insert_size_estimation, edge_id_to_pair_id_map);
 }
 
@@ -132,7 +133,16 @@ void PathFinderkb::gatherStats() {
     int same_in_out_degree_complex = 0;
     int  solveable_regions_count = 0 ;
     std::map<uint64_t, int> mapping_counts;
+    std::cout << "edge_id_to_pair_id_map size: " << edge_id_to_pair_id_map.size() << std::endl;
     std::vector<uint64_t > edges_to_look_for = {8, 321, 480, 391, 463, 358, 337, 478};
+    for (auto edge: edges_to_look_for){
+        std::cout << "pair ids for edge: " << edge << std::endl;
+        for (auto pid: edge_id_to_pair_id_map[edge]){
+            std::cout << pid << " " << std::endl;
+        }
+
+    }
+    std::cout << " " << std::endl;
     auto paths_containing_edges_to_look_for = {mEdgeToPathIds[8], mEdgeToPathIds[321], mEdgeToPathIds[480], mEdgeToPathIds[391],
                                                                  mEdgeToPathIds[463], mEdgeToPathIds[358], mEdgeToPathIds[337], mEdgeToPathIds[478]};
     /*for (auto edge:edges_to_look_for) {
@@ -158,6 +168,16 @@ void PathFinderkb::gatherStats() {
                 same_in_out_degree += 1;
                 edge_ids_with_long_frontiera << "Edge: " << e << " size: " <<  f[0].size() << std::endl;
                 if (f[0].size() > 1) {
+                    std::cout << "looking for mappings to edges in fronteir: " << std::endl;
+                    for (auto frontier: f[0]){
+                        std::cout << frontier << " ";
+                    }
+                    std::cout << std::endl;
+                    std::cout << "to out fronteir: " << std::endl;
+                    for (auto frontier: f[1]){
+                        std::cout << frontier << " ";
+                    }
+                    std::cout << std::endl;
                     same_in_out_degree_complex += 1;
                     std::vector<int> mapped_lmp_in;
                     std::vector<int> mapped_lmp_out;
@@ -199,6 +219,7 @@ void PathFinderkb::gatherStats() {
                         for (auto pair_id: pairs_with_both_reads_mapping) {
                             solveable_regions << "Edge id: " <<
                             e << " read id:" << pair_id << std::endl;
+                            std::cout << "Edge id: " <<  e << " read id:" << pair_id << std::endl;
                         }
                     }
                 }

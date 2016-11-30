@@ -22,7 +22,7 @@ class LMPMapper{
         LMPMapper(vecbvec lmp_reads, HyperBasevector& hbv, vec<int>& inv, KMatch kmatch);
         vecbvec lmp_reads;
         std::vector<LMPPair > read_paths;
-        void LMPMapper::LMPReads2MappedPairedEdgePaths(std::vector<LMPPair >  & lmp_pairs_for_scaffolding, std::vector<LMPPair > & lmp_pairs_for_insert_size_estimation, std::map<uint64_t, std::vector<int> > edge_id_to_pair_id_map);
+        void LMPMapper::LMPReads2MappedPairedEdgePaths(std::vector<LMPPair >  & lmp_pairs_for_scaffolding, std::vector<LMPPair > & lmp_pairs_for_insert_size_estimation, std::map<uint64_t, std::vector<int> > & edge_id_to_pair_id_map);
 
     private:
         KMatch kMatch;
@@ -33,7 +33,7 @@ class LMPMapper{
         std::vector<ReadPath> initalise_read_path(){std::vector<ReadPath> res; return res;};
         ReadPath LMPMapper::getFullyMappedEdges(std::vector<edgeKmerPosition> read_mapping, int read_length, int count,  int k=31);
         void LMPMapper::mapReads();
-        void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair >  & lmp_pairs_for_scaffolding, std::vector<LMPPair > & lmp_pairs_for_insert_size_estimation, std::map<uint64_t, std::vector<int> > edge_id_to_pair_id_map);
+        void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair >  & lmp_pairs_for_scaffolding, std::vector<LMPPair > & lmp_pairs_for_insert_size_estimation, std::map<uint64_t, std::vector<int> > & edge_id_to_pair_id_map);
          ReadPath LMPMapper::sortMappingsFindFullyMappedEdges(std::vector<edgeKmerPosition>  read_mapping, int read_length, int count);
         //bool sanityCheck(LMPPair lmp_pair, int i,  int insert_size=8000);
         //void LMPMapper::removeUselessLMPMappings(std::vector<LMPPair > &read_paths, std::vector<LMPPair > &read_paths_for_scaffolding);
