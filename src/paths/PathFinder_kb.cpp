@@ -81,11 +81,11 @@ void PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & long_fronteirs
         edges = next_edges[e];
     }
     for (auto edge:edges){
-        std::cout << "traversing edge: " << edge << " distance traverse: " << distance_traversed <<std::endl;
+        //std::cout << "traversing edge: " << edge << " distance traverse: " << distance_traversed <<std::endl;
         auto edge_length = mHBV.EdgeObject(edge).size();
         // if we haven't traversed this edge, traverse it
         if (std::find(traversed_edge_list.begin(), traversed_edge_list.end(), edge) == traversed_edge_list.end()) {
-            std::cout << "edge not traversed, length: " << edge_length << " dustance traversed "  << distance_traversed << " distance left to traverse: " << (large_frontier_size - distance_traversed) <<std::endl;
+            //std::cout << "edge not traversed, length: " << edge_length << " dustance traversed "  << distance_traversed << " distance left to traverse: " << (large_frontier_size - distance_traversed) <<std::endl;
             // if this edge takes us far enough away, add it to long fronteirs
             if (edge_length > (large_frontier_size - distance_traversed)){
                 long_fronteirs.push_back(edge);
@@ -196,7 +196,7 @@ void PathFinderkb::gatherStats() {
             std::cout << "edge of interest:" << edge_index << std::endl;
         }
         // e < mInv[e] checks that this is a forward directed edge? nope, canonical representation
-        if (edge_index < mInv[edge_index] ) {//&& mHBV.EdgeObject(edge_index).size() < large_frontier_size) {
+        //if (edge_index < mInv[edge_index] ) {//&& mHBV.EdgeObject(edge_index).size() < large_frontier_size) {
             edges_beyond_distance(long_frontiers_in, edge_index,  traversed_edge_list, large_frontier_size, 0, "right");
             traversed_edge_list.clear();
             std::cout << "traversed edge list cleared: " << traversed_edge_list.size() << std::endl;
@@ -242,6 +242,7 @@ void PathFinderkb::gatherStats() {
                             mapping_counts[edge] += 1;
                         }
                     }
+                    // if there is
                     for (auto edge: long_frontiers_out) {
                         for (auto pair_id :  edge_id_to_pair_id_map[mInv[edge]]) {
                             mapped_lmp_out.push_back(pair_id);
@@ -252,12 +253,25 @@ void PathFinderkb::gatherStats() {
                             mapping_counts[edge] += 1;
                         }
                     }
+                    if (edge_index == 321){
+                        std::cout << "mapping out/in, if there is a pair id in common, that pair resolves a path" << std::endl;
+                        for (auto lmp_pair_in: mapped_lmp_in){
+                            std::cout << lmp_pair_in << " ";
+                        }
+                        std::cout << "pair ids mapping to edge leavig complex regions" << std::endl;
+                        for (auto lmp_pair_out: mapped_lmp_out){
+                            std::cout << lmp_pair_out << " ";
+                        }
+
+                    }
                     // determine if the reads can completely solve the region
                     // this will be the case if there are read pairs mapping to every in/out edge
                     std::vector<int> pairs_with_both_reads_mapping;
-                    std::set_intersection(mapped_lmp_in.begin(), mapped_lmp_in.end(),
+                    std::vector<int>::iterator it;
+                    it = std::set_intersection(mapped_lmp_in.begin(), mapped_lmp_in.end(),
                                           mapped_lmp_out.begin(), mapped_lmp_out.end(),
-                                          std::back_inserter(pairs_with_both_reads_mapping));
+                                          pairs_with_both_reads_mapping.begin());
+                    pairs_with_both_reads_mapping.resize(it-pairs_with_both_reads_mapping.begin());
                     if (pairs_with_both_reads_mapping.size() > 0) {
                         std::cout << "pairs with both reads mapping size: " << pairs_with_both_reads_mapping.size()
                                   << std::endl;
@@ -273,7 +287,7 @@ void PathFinderkb::gatherStats() {
                         }
                     }
                 }
-            }
+            //}
 
         }
         long_frontiers_in.clear();
