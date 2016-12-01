@@ -71,7 +71,7 @@ std::tuple <std::vector<LMPPair >, std::vector<LMPPair >, std::map<uint64_t, std
 }*/
 
 
-void PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & long_fronteirs, uint64_t e, vector<uint64_t > & traversed_edge_list, uint64_t large_frontier_size, int distance_traversed=0, std::string direction="right") {
+void PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & long_fronteirs, std::vector<std::vector<uint64_t> >  & paths_to_long_fronteirs, uint64_t e, std::vector<uint64_t > & traversed_edge_list, uint64_t large_frontier_size, int distance_traversed=0, std::string direction="right") {
     /*
      * to find edges in region lmp pairs might solve, we want to traverse graph until we're large_frontier_size away from e
      */
@@ -89,10 +89,11 @@ void PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & long_fronteirs
             // if this edge takes us far enough away, add it to long fronteirs
             if (edge_length > (large_frontier_size - distance_traversed)){
                 long_fronteirs.push_back(edge);
+                paths_to_long_fronteirs.push_back(traversed_edge_list);
                 traversed_edge_list.push_back(edge);
             } else { // if this edge does not take us far enough away, add its length to distance traversed go to next edge
                 distance_traversed += mHBV.EdgeObject(edge).size();
-                edges_beyond_distance(long_fronteirs, edge, traversed_edge_list, large_frontier_size,  distance_traversed, direction);
+                edges_beyond_distance(long_fronteirs, paths_to_long_fronteirs, edge, traversed_edge_list, large_frontier_size,  distance_traversed, direction);
 
             }
         }
@@ -177,6 +178,7 @@ void PathFinderkb::gatherStats() {
     }*/
     std::cout << " " << std::endl;
     vector<uint64_t > traversed_edge_list;
+    std::vector<std::vector<uint64_t> >  paths_to_long_fronteirs;
     std::vector<uint64_t>  long_frontiers_in;
     std::vector<uint64_t>  long_frontiers_out;
     auto paths_containing_edges_to_look_for = {mEdgeToPathIds[8], mEdgeToPathIds[321], mEdgeToPathIds[480], mEdgeToPathIds[391],
@@ -199,10 +201,10 @@ void PathFinderkb::gatherStats() {
         }
         // e < mInv[e] checks that this is a forward directed edge? nope, canonical representation
         //if (edge_index < mInv[edge_index]) {//&& mHBV.EdgeObject(edge_index).size() < large_frontier_size) {
-            edges_beyond_distance(long_frontiers_in, edge_index, traversed_edge_list, large_frontier_size, 0, "right");
+            edges_beyond_distance(long_frontiers_in, paths_to_long_fronteirs, edge_index, traversed_edge_list, large_frontier_size, 0, "right");
             traversed_edge_list.clear();
             std::cout << "traversed edge list cleared: " << traversed_edge_list.size() << std::endl;
-            edges_beyond_distance(long_frontiers_out, edge_index, traversed_edge_list, large_frontier_size, 0, "left");
+            edges_beyond_distance(long_frontiers_out, paths_to_long_fronteirs, edge_index, traversed_edge_list, large_frontier_size, 0, "left");
 
             if (edge_index == 321) {
                 std::cout << "long frontiers of edge 321" << std::endl;
@@ -243,11 +245,11 @@ void PathFinderkb::gatherStats() {
                             mapping_counts[edge] += 1;
                         }
                         //std::cout << std::endl;
-                        for (auto pair_id :  edge_id_to_pair_id_map[mInv[edge]]) {//it could be on r1 or r2 so check involution
+                        /*for (auto pair_id :  edge_id_to_pair_id_map[mInv[edge]]) {//it could be on r1 or r2 so check involution
                             //std::cout  << pair_id << " ";
                             mapped_lmp_in.push_back(pair_id);
                             mapping_counts[edge] += 1;
-                        }
+                        }*/
                         //std::cout << std::endl;
                     }
                     // if there is
@@ -260,12 +262,12 @@ void PathFinderkb::gatherStats() {
                         }
                         std::cout << std::endl;
 
-                        for (auto pair_id :  edge_id_to_pair_id_map[edge]) {//it could be on r1 or r2 so check involution
+                        /*for (auto pair_id :  edge_id_to_pair_id_map[edge]) {//it could be on r1 or r2 so check involution
                             std::cout  << pair_id << " ";
                             mapped_lmp_out.push_back(pair_id);
                             mapping_counts[edge] += 1;
                         }
-                        std::cout << std::endl;
+                        std::cout << std::endl;*/
 
                     }
                     if (edge_index == 321) {
@@ -311,6 +313,7 @@ void PathFinderkb::gatherStats() {
                 //}
 
             }
+            paths_to_long_fronteirs.clear();
             long_frontiers_in.clear();
             long_frontiers_out.clear();
         //}
