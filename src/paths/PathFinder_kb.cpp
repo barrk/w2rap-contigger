@@ -160,6 +160,8 @@ void PathFinderkb::gatherStats() {
     edge_ids_with_long_frontiera.open("/Users/barrk/Documents/arabidopsis_data/long_fronteir_edge_is_with_same_in_out_degree.txt");
     std::ofstream solveable_regions;
     solveable_regions.open("/Users/barrk/Documents/arabidopsis_data/solveable_regions.txt");
+    std::ofstream paths_over_subgraph;
+    paths_over_subgraph.open("/Users/barrk/Documents/ecoli_data/solveable_regions_subgraph.txt");
     int same_in_out_degree = 0;
     int same_in_out_degree_complex = 0;
     int  solveable_regions_count = 0 ;
@@ -266,13 +268,53 @@ void PathFinderkb::gatherStats() {
                     }
                     // determine if the reads can completely solve the region
                     // this will be the case if there are read pairs mapping to every in/out edge
-                    std::vector<int> pairs_with_both_reads_mapping;
-                    std::vector<int>::iterator it;
-                    it = std::set_intersection(mapped_lmp_in.begin(), mapped_lmp_in.end(),
+                    /*
+                     std::vector<int> v(10);                      // 0  0  0  0  0  0  0  0  0  0
+                      std::vector<int>::iterator it;
+
+                      std::sort (first,first+5);     //  5 10 15 20 25
+                      std::sort (second,second+5);   // 10 20 30 40 50
+
+                      it=std::set_intersection (first, first+5, second, second+5, v.begin());
+                                                                   // 10 20 0  0  0  0  0  0  0  0
+                      v.resize(it-v.begin());
+                     */
+                    /*
+                     * sort(v1.begin(), v1.end());
+                        sort(v2.begin(), v2.end());
+
+                        set_intersection(v1.begin(),v1.end(),v2.begin(),v2.end(),back_inserter(v3));
+
+                     */
+                    for (auto p1_id: mapped_lmp_in){
+                            if ((std::find(mapped_lmp_out.begin(), mapped_lmp_out.end(), p1_id) !=
+                                 mapped_lmp_out.end())) {
+                                auto pair = pairs_for_scaffolding[p1_id];
+                                paths_over_subgraph << "pair briding repeat found: " << std::endl;
+                                paths_over_subgraph << "p1 readpath ";
+                                for (auto p:pair.p1) {
+                                    paths_over_subgraph << p << " ";
+                                }
+                                paths_over_subgraph << std::endl;
+
+                                paths_over_subgraph << "p2 readpath ";
+                                for (auto p:pair.p2) {
+                                    paths_over_subgraph << p << " ";
+                                }
+                                paths_over_subgraph << std::endl;
+
+                            }
+                    }
+                    //std::vector<int> pairs_with_both_reads_mapping;
+                    //std::vector<int>::iterator it;
+                    //std::sort(mapped_lmp_in.begin(), mapped_lmp_in.end());
+                    //std::sort(mapped_lmp_out.begin(), mapped_lmp_out.end());
+                    // segfaults here
+                    /*it = std::set_intersection(mapped_lmp_in.begin(), mapped_lmp_in.end(),
                                           mapped_lmp_out.begin(), mapped_lmp_out.end(),
                                           pairs_with_both_reads_mapping.begin());
-                    pairs_with_both_reads_mapping.resize(it-pairs_with_both_reads_mapping.begin());
                     if (pairs_with_both_reads_mapping.size() > 0) {
+                        pairs_with_both_reads_mapping.resize(it-pairs_with_both_reads_mapping.begin());
                         std::cout << "pairs with both reads mapping size: " << pairs_with_both_reads_mapping.size()
                                   << std::endl;
                     }
@@ -285,7 +327,7 @@ void PathFinderkb::gatherStats() {
                             solveable_regions << "Edge id: " << edge_index << " read id:" << pair_id << std::endl;
                             std::cout << "Edge id: " <<  edge_index << " read id:" << pair_id << std::endl;
                         }
-                    }
+                    }*/
                 }
             //}
 
@@ -295,6 +337,7 @@ void PathFinderkb::gatherStats() {
     }
     edge_ids_with_long_frontiera.close();
     solveable_regions.close();
+    paths_over_subgraph.close();
     std::cout << "Regions with same degree in and out:" << same_in_out_degree << std::endl;
     std::cout << "Complex regions with same degree in and out:" << same_in_out_degree_complex << std::endl;
     std::cout << "Complex regions solveable wit lmp reads:" << solveable_regions_count<< std::endl;
