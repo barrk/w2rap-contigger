@@ -157,24 +157,24 @@ void PathFinderkb::gatherStats() {
     // can use linux tools to get number of reads mappig to these edges to save time searching in here
     // once we have the read ids, can select a suitable subset to run quickly during development
     std::ofstream edge_ids_with_long_frontiera;
-    edge_ids_with_long_frontiera.open("/Users/barrk/Documents/arabidopsis_data/long_fronteir_edge_is_with_same_in_out_degree.txt");
+    edge_ids_with_long_frontiera.open("/Users/barrk/Documents/arabidopsis_data/ecoli_fronteir_edge_is_with_same_in_out_degree_single_edge_mappings.txt");
     std::ofstream solveable_regions;
-    solveable_regions.open("/Users/barrk/Documents/arabidopsis_data/solveable_regions.txt");
+    solveable_regions.open("/Users/barrk/Documents/ecoli_data/solveable_regions_single_edge_mappings.txt");
     std::ofstream paths_over_subgraph;
-    paths_over_subgraph.open("/Users/barrk/Documents/ecoli_data/solveable_regions_subgraph.txt");
+    paths_over_subgraph.open("/Users/barrk/Documents/ecoli_data/solveable_regions_subgraph_single_edge_mappings.txt");
     int same_in_out_degree = 0;
     int same_in_out_degree_complex = 0;
     int  solveable_regions_count = 0 ;
     std::map<uint64_t, int> mapping_counts;
     std::cout << "edge_id_to_pair_id_map size: " << edge_id_to_pair_id_map.size() << std::endl;
     std::vector<uint64_t > edges_to_look_for = {8, 321, 480, 391, 463, 358, 337, 478};
-    for (auto edge: edges_to_look_for){
+    /*for (auto edge: edges_to_look_for){
         std::cout << "pair ids for edge: " << edge << std::endl;
         for (auto pid: edge_id_to_pair_id_map[edge]){
             std::cout << pid << " " << std::endl;
         }
 
-    }
+    }*/
     std::cout << " " << std::endl;
     vector<uint64_t > traversed_edge_list;
     std::vector<uint64_t>  long_frontiers_in;
@@ -194,39 +194,40 @@ void PathFinderkb::gatherStats() {
         }
     }*/
     for (auto edge_index: edges_to_look_for) {
-        if (std::find(edges_to_look_for.begin(), edges_to_look_for.end(), edge_index) != edges_to_look_for.end()){
+        if (std::find(edges_to_look_for.begin(), edges_to_look_for.end(), edge_index) != edges_to_look_for.end()) {
             std::cout << "edge of interest:" << edge_index << std::endl;
         }
         // e < mInv[e] checks that this is a forward directed edge? nope, canonical representation
-        //if (edge_index < mInv[edge_index] ) {//&& mHBV.EdgeObject(edge_index).size() < large_frontier_size) {
-            edges_beyond_distance(long_frontiers_in, edge_index,  traversed_edge_list, large_frontier_size, 0, "right");
+        //if (edge_index < mInv[edge_index]) {//&& mHBV.EdgeObject(edge_index).size() < large_frontier_size) {
+            edges_beyond_distance(long_frontiers_in, edge_index, traversed_edge_list, large_frontier_size, 0, "right");
             traversed_edge_list.clear();
             std::cout << "traversed edge list cleared: " << traversed_edge_list.size() << std::endl;
-            edges_beyond_distance(long_frontiers_out,  edge_index,  traversed_edge_list, large_frontier_size, 0, "left");
+            edges_beyond_distance(long_frontiers_out, edge_index, traversed_edge_list, large_frontier_size, 0, "left");
 
-            if (edge_index == 321){
+            if (edge_index == 321) {
                 std::cout << "long frontiers of edge 321" << std::endl;
-                for (auto e: long_frontiers_in){
+                for (auto e: long_frontiers_in) {
                     std::cout << e << " ";
                 }
                 std::cout << std::endl;
-                for (auto e: long_frontiers_out){
+                for (auto e: long_frontiers_out) {
                     std::cout << e << " ";
                 }
-                std::cout <<  std::endl;
+                std::cout << std::endl;
 
             }
-            if (long_frontiers_in.size() == long_frontiers_out.size()){//} && long_frontiers_in.size() != 0) {
+            if (long_frontiers_in.size() == long_frontiers_out.size()) {//} && long_frontiers_in.size() != 0) {
                 same_in_out_degree += 1;
-                edge_ids_with_long_frontiera << "Edge: " << edge_index << " size: " <<  long_frontiers_in.size() << std::endl;
+                edge_ids_with_long_frontiera << "Edge: " << edge_index << " size: " << long_frontiers_in.size()
+                                             << std::endl;
                 if (long_frontiers_in.size() > 1) {
                     std::cout << "looking for mappings to edges in fronteir: " << std::endl;
-                    for (auto frontier: long_frontiers_in){
+                    for (auto frontier: long_frontiers_in) {
                         std::cout << frontier << " ";
                     }
                     std::cout << std::endl;
                     std::cout << "to out fronteir: " << std::endl;
-                    for (auto frontier: long_frontiers_out){
+                    for (auto frontier: long_frontiers_out) {
                         std::cout << frontier << " ";
                     }
                     std::cout << std::endl;
@@ -234,106 +235,85 @@ void PathFinderkb::gatherStats() {
                     std::vector<int> mapped_lmp_in;
                     std::vector<int> mapped_lmp_out;
                     // find number of lmp reads mapping to each large fronteir edge
-                    for (auto edge: long_frontiers_in){
-                        for (auto pair_id :  edge_id_to_pair_id_map[edge]){
-                        mapped_lmp_in.push_back(pair_id);
-                            mapping_counts[edge] += 1;
-                        }
-                        for (auto pair_id :  edge_id_to_pair_id_map[mInv[edge]]){//it could be on r1 or r2 so check involution
+                    for (auto edge: long_frontiers_in) {
+                        //std::cout << "Edge in: " <<edge <<std::endl;
+                        for (auto pair_id :  edge_id_to_pair_id_map[edge]) {
+                            //std::cout  << pair_id << " ";
                             mapped_lmp_in.push_back(pair_id);
                             mapping_counts[edge] += 1;
                         }
+                        //std::cout << std::endl;
+                        for (auto pair_id :  edge_id_to_pair_id_map[mInv[edge]]) {//it could be on r1 or r2 so check involution
+                            //std::cout  << pair_id << " ";
+                            mapped_lmp_in.push_back(pair_id);
+                            mapping_counts[edge] += 1;
+                        }
+                        //std::cout << std::endl;
                     }
                     // if there is
                     for (auto edge: long_frontiers_out) {
+                        std::cout << "Edge out: " <<edge <<std::endl;
                         for (auto pair_id :  edge_id_to_pair_id_map[mInv[edge]]) {
+                            std::cout  << pair_id << " ";
                             mapped_lmp_out.push_back(pair_id);
                             mapping_counts[edge] += 1;
                         }
-                        for (auto pair_id :  edge_id_to_pair_id_map[edge]){//it could be on r1 or r2 so check involution
+                        std::cout << std::endl;
+
+                        for (auto pair_id :  edge_id_to_pair_id_map[edge]) {//it could be on r1 or r2 so check involution
+                            std::cout  << pair_id << " ";
                             mapped_lmp_out.push_back(pair_id);
                             mapping_counts[edge] += 1;
                         }
+                        std::cout << std::endl;
+
                     }
-                    if (edge_index == 321){
-                        std::cout << "mapping out/in, if there is a pair id in common, that pair resolves a path" << std::endl;
-                        for (auto lmp_pair_in: mapped_lmp_in){
+                    if (edge_index == 321) {
+                        std::cout << "mapping out/in, if there is a pair id in common, that pair resolves a path"
+                                  << std::endl;
+                        for (auto lmp_pair_in: mapped_lmp_in) {
                             std::cout << lmp_pair_in << " ";
                         }
                         std::cout << "pair ids mapping to edge leavig complex regions" << std::endl;
-                        for (auto lmp_pair_out: mapped_lmp_out){
+                        for (auto lmp_pair_out: mapped_lmp_out) {
                             std::cout << lmp_pair_out << " ";
                         }
 
                     }
-                    // determine if the reads can completely solve the region
-                    // this will be the case if there are read pairs mapping to every in/out edge
-                    /*
-                     std::vector<int> v(10);                      // 0  0  0  0  0  0  0  0  0  0
-                      std::vector<int>::iterator it;
-
-                      std::sort (first,first+5);     //  5 10 15 20 25
-                      std::sort (second,second+5);   // 10 20 30 40 50
-
-                      it=std::set_intersection (first, first+5, second, second+5, v.begin());
-                                                                   // 10 20 0  0  0  0  0  0  0  0
-                      v.resize(it-v.begin());
-                     */
-                    /*
-                     * sort(v1.begin(), v1.end());
-                        sort(v2.begin(), v2.end());
-
-                        set_intersection(v1.begin(),v1.end(),v2.begin(),v2.end(),back_inserter(v3));
-
-                     */
-                    for (auto p1_id: mapped_lmp_in){
-                            if ((std::find(mapped_lmp_out.begin(), mapped_lmp_out.end(), p1_id) !=
-                                 mapped_lmp_out.end())) {
-                                auto pair = pairs_for_scaffolding[p1_id];
-                                paths_over_subgraph << "pair briding repeat found: " << std::endl;
-                                paths_over_subgraph << "p1 readpath ";
-                                for (auto p:pair.p1) {
-                                    paths_over_subgraph << p << " ";
-                                }
-                                paths_over_subgraph << std::endl;
-
-                                paths_over_subgraph << "p2 readpath ";
-                                for (auto p:pair.p2) {
-                                    paths_over_subgraph << p << " ";
-                                }
-                                paths_over_subgraph << std::endl;
-
+                    std::map<std::pair<uint64_t, uint64_t>, int > counts_for_each_solveabe_pair;
+                    // find pairs which are in both mapped_lmp_in, and mapped_lmp_out- these can be used to solve this region
+                    for (auto p1_id: mapped_lmp_in) {
+                        if ((std::find(mapped_lmp_out.begin(), mapped_lmp_out.end(), p1_id) !=
+                             mapped_lmp_out.end())) {
+                            //std::cout << "pair id: " << p1_id << std::endl;
+                            auto pair = pairs_for_scaffolding[p1_id];
+                            counts_for_each_solveabe_pair[std::make_pair(pair.p1[0], pair.p2[0])] += 1;
+                            //std::cout << "pair bridging repeat found: " << std::endl;
+                            //std::cout << "p1 readpath ";
+                            for (auto p:pair.p1) {
+                                std::cout << p << " ";
                             }
-                    }
-                    //std::vector<int> pairs_with_both_reads_mapping;
-                    //std::vector<int>::iterator it;
-                    //std::sort(mapped_lmp_in.begin(), mapped_lmp_in.end());
-                    //std::sort(mapped_lmp_out.begin(), mapped_lmp_out.end());
-                    // segfaults here
-                    /*it = std::set_intersection(mapped_lmp_in.begin(), mapped_lmp_in.end(),
-                                          mapped_lmp_out.begin(), mapped_lmp_out.end(),
-                                          pairs_with_both_reads_mapping.begin());
-                    if (pairs_with_both_reads_mapping.size() > 0) {
-                        pairs_with_both_reads_mapping.resize(it-pairs_with_both_reads_mapping.begin());
-                        std::cout << "pairs with both reads mapping size: " << pairs_with_both_reads_mapping.size()
-                                  << std::endl;
-                    }
-                    // as i so far haven't taken coverage into account, many reads might solve this region, so geq not =
-                    // this should be degree of node at start of complex
-                    if (pairs_with_both_reads_mapping.size() >= long_frontiers_in.size()){
-                        solveable_regions_count += 1;
-                        // here we would go on to actually solve this region
-                        for (auto pair_id: pairs_with_both_reads_mapping) {
-                            solveable_regions << "Edge id: " << edge_index << " read id:" << pair_id << std::endl;
-                            std::cout << "Edge id: " <<  edge_index << " read id:" << pair_id << std::endl;
-                        }
-                    }*/
-                }
-            //}
+                            //std::cout << std::endl;
 
-        }
-        long_frontiers_in.clear();
-        long_frontiers_out.clear();
+                            //std::cout << "p2 readpath ";
+                            for (auto p:pair.p2) {
+                                std::cout << p << " ";
+                            }
+                            std::cout << std::endl;
+
+                        }
+                    }
+                    for (auto edge_pair_count: counts_for_each_solveabe_pair){
+                        std::pair<uint64_t, uint64_t> key = edge_pair_count.first;
+                        std::cout << "count for pair:" << edge_pair_count.first.first <<  " " << edge_pair_count.first.second << " : " <<edge_pair_count.second <<std::endl;
+                    }
+                }
+                //}
+
+            }
+            long_frontiers_in.clear();
+            long_frontiers_out.clear();
+        //}
     }
     edge_ids_with_long_frontiera.close();
     solveable_regions.close();
