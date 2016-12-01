@@ -66,7 +66,7 @@ private:
     void PathFinderkb::addEdgeToSubGraph(int edge_to_add, std::map<int, uint64_t> & vertex_subgraph_map, HyperBasevector & subgraph, vector<uint64_t > & traversed_edge_list);
     void PathFinderkb::traverseGraphCreateSubgraph(vector<uint64_t>  edges_to_add, std::map<int, uint64_t> & vertex_subgraph_map, HyperBasevector & subgraph,
                                                    vector<uint64_t > & traversed_edge_list, int edges_to_traverse, int traversal);
-    std::vector<uint64_t>  PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & long_fronteirs, uint64_t e, vector<uint64_t > & traversed_edge_list, uint64_t large_frontier_size, int distance_traversed=0, std::string direction="right");
+    void PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & long_fronteirs, uint64_t e, vector<uint64_t > & traversed_edge_list, uint64_t large_frontier_size, int distance_traversed=0, std::string direction="right");
     HyperBasevector& mHBV;
     vecbvec& lmp_data;
     vec<int>& mInv;

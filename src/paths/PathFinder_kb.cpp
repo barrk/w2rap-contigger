@@ -46,8 +46,8 @@ std::tuple <std::vector<LMPPair >, std::vector<LMPPair >, std::map<uint64_t, std
     return std::make_tuple(lmp_pairs, lmp_pairs_for_insert_size_estimation, edge_id_to_pair_id_map);
 }
 
-/* logic for standalone graph traversal
-void traverse_graph(map <string, vector<tuple<string, string, string, bool> > > &edge_list, string start_node, int traversals,
+// logic for standalone graph traversal
+/*void traverse_graph(map <string, vector<tuple<string, string, string, bool> > > &edge_list, string start_node, int traversals,
             int total_traversals, ofstream &outfile, vector<pair<string, string>> &traversed_edge_list){
             traversals += 1;
             vector<tuple<string, string, string, bool> > adjacent_nodes = edge_list[start_node];
@@ -71,7 +71,7 @@ void traverse_graph(map <string, vector<tuple<string, string, string, bool> > > 
 }*/
 
 
-std::vector<uint64_t>  PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & long_fronteirs, uint64_t e, vector<uint64_t > & traversed_edge_list, uint64_t large_frontier_size, int distance_traversed=0, std::string direction="right") {
+void PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & long_fronteirs, uint64_t e, vector<uint64_t > & traversed_edge_list, uint64_t large_frontier_size, int distance_traversed=0, std::string direction="right") {
     /*
      * to find edges in region lmp pairs might solve, we want to traverse graph until we're large_frontier_size away from e
      */
@@ -80,20 +80,24 @@ std::vector<uint64_t>  PathFinderkb::edges_beyond_distance(std::vector<uint64_t>
     } else {
         edges = next_edges[e];
     }
-    std::vector<uint64_t> edges_going_beyond_frontier_size;
     for (auto edge:edges){
+        std::cout << "traversing edge: " << edge << " distance traverse: " << distance_traversed <<std::endl;
         auto edge_length = mHBV.EdgeObject(edge).size();
+        // if we haven't traversed this edge, traverse it
         if (std::find(traversed_edge_list.begin(), traversed_edge_list.end(), edge) == traversed_edge_list.end()) {
+            std::cout << "edge not traversed, length: " << edge_length << " dustance traversed "  << distance_traversed << " distance left to traverse: " << (large_frontier_size - distance_traversed) <<std::endl;
+            // if this edge takes us far enough away, add it to long fronteirs
             if (edge_length > (large_frontier_size - distance_traversed)){
                 long_fronteirs.push_back(edge);
                 traversed_edge_list.push_back(edge);
+            } else { // if this edge does not take us far enough away, add its length to distance traversed go to next edge
+                distance_traversed += mHBV.EdgeObject(edge).size();
+                edges_beyond_distance(long_fronteirs, edge, traversed_edge_list, large_frontier_size,  distance_traversed, direction);
+
             }
-        } else {
-            distance_traversed += edge_length;
-            edges_beyond_distance(long_fronteirs, e, traversed_edge_list, large_frontier_size,  distance_traversed, direction);
         }
     }
-    return long_fronteirs;
+    //return long_fronteirs;
 
 }
 
@@ -144,7 +148,7 @@ void PathFinderkb::addEdgeToSubGraph(int edge_to_add, std::map<int, uint64_t> & 
 
 void PathFinderkb::gatherStats() {
 
-    int large_frontier_size = 1500;
+    int large_frontier_size = 3500;
     init_prev_next_vectors();// mToLeft and mToright are to/from vertices
     std::tuple<std::vector<LMPPair >, std::vector<LMPPair >, std::map<uint64_t, std::vector<int> > > mapping_results = mapEdgesToLMPReads();
     std::vector<LMPPair > pairs_for_scaffolding = std::get<0>(mapping_results);
@@ -170,6 +174,9 @@ void PathFinderkb::gatherStats() {
 
     }
     std::cout << " " << std::endl;
+    vector<uint64_t > traversed_edge_list;
+    std::vector<uint64_t>  long_frontiers_in;
+    std::vector<uint64_t>  long_frontiers_out;
     auto paths_containing_edges_to_look_for = {mEdgeToPathIds[8], mEdgeToPathIds[321], mEdgeToPathIds[480], mEdgeToPathIds[391],
                                                                  mEdgeToPathIds[463], mEdgeToPathIds[358], mEdgeToPathIds[337], mEdgeToPathIds[478]};
     /*for (auto edge:edges_to_look_for) {
@@ -189,37 +196,35 @@ void PathFinderkb::gatherStats() {
             std::cout << "edge of interest:" << edge_index << std::endl;
         }
         // e < mInv[e] checks that this is a forward directed edge? nope, canonical representation
-        if (edge_index < mInv[edge_index] && mHBV.EdgeObject(edge_index).size() < large_frontier_size) {
-            vector<uint64_t > traversed_edge_list;
-            std::vector<uint64_t>  long_fronteirs;
-            auto edges_into_region = edges_beyond_distance(long_fronteirs, edge_index,  traversed_edge_list, large_frontier_size, 0, "right");
+        if (edge_index < mInv[edge_index] ) {//&& mHBV.EdgeObject(edge_index).size() < large_frontier_size) {
+            edges_beyond_distance(long_frontiers_in, edge_index,  traversed_edge_list, large_frontier_size, 0, "right");
             traversed_edge_list.clear();
-            long_fronteirs.clear();
-            auto edges_out_of_region = edges_beyond_distance(long_fronteirs,  edge_index,  traversed_edge_list, large_frontier_size, 0, "left");
+            std::cout << "traversed edge list cleared: " << traversed_edge_list.size() << std::endl;
+            edges_beyond_distance(long_frontiers_out,  edge_index,  traversed_edge_list, large_frontier_size, 0, "left");
 
-            /*if (edge_index == 321){
+            if (edge_index == 321){
                 std::cout << "long frontiers of edge 321" << std::endl;
-                for (auto e: f[0]){
+                for (auto e: long_frontiers_in){
                     std::cout << e << " ";
                 }
                 std::cout << std::endl;
-                for (auto e: f[1]){
+                for (auto e: long_frontiers_out){
                     std::cout << e << " ";
                 }
                 std::cout <<  std::endl;
 
-            }*/
-            if (edges_into_region.size() == edges_out_of_region.size() && edges_into_region.size() != 0) {
+            }
+            if (long_frontiers_in.size() == long_frontiers_out.size()){//} && long_frontiers_in.size() != 0) {
                 same_in_out_degree += 1;
-                edge_ids_with_long_frontiera << "Edge: " << edge_index << " size: " <<  edges_into_region.size() << std::endl;
-                if (edges_into_region.size() > 1) {
+                edge_ids_with_long_frontiera << "Edge: " << edge_index << " size: " <<  long_frontiers_in.size() << std::endl;
+                if (long_frontiers_in.size() > 1) {
                     std::cout << "looking for mappings to edges in fronteir: " << std::endl;
-                    for (auto frontier: edges_into_region){
+                    for (auto frontier: long_frontiers_in){
                         std::cout << frontier << " ";
                     }
                     std::cout << std::endl;
                     std::cout << "to out fronteir: " << std::endl;
-                    for (auto frontier: edges_out_of_region){
+                    for (auto frontier: long_frontiers_out){
                         std::cout << frontier << " ";
                     }
                     std::cout << std::endl;
@@ -227,7 +232,7 @@ void PathFinderkb::gatherStats() {
                     std::vector<int> mapped_lmp_in;
                     std::vector<int> mapped_lmp_out;
                     // find number of lmp reads mapping to each large fronteir edge
-                    for (auto edge: edges_into_region){
+                    for (auto edge: long_frontiers_in){
                         for (auto pair_id :  edge_id_to_pair_id_map[edge]){
                         mapped_lmp_in.push_back(pair_id);
                             mapping_counts[edge] += 1;
@@ -237,7 +242,7 @@ void PathFinderkb::gatherStats() {
                             mapping_counts[edge] += 1;
                         }
                     }
-                    for (auto edge: edges_out_of_region) {
+                    for (auto edge: long_frontiers_out) {
                         for (auto pair_id :  edge_id_to_pair_id_map[mInv[edge]]) {
                             mapped_lmp_out.push_back(pair_id);
                             mapping_counts[edge] += 1;
@@ -259,7 +264,7 @@ void PathFinderkb::gatherStats() {
                     }
                     // as i so far haven't taken coverage into account, many reads might solve this region, so geq not =
                     // this should be degree of node at start of complex
-                    if (pairs_with_both_reads_mapping.size() >= edges_into_region.size()){
+                    if (pairs_with_both_reads_mapping.size() >= long_frontiers_in.size()){
                         solveable_regions_count += 1;
                         // here we would go on to actually solve this region
                         for (auto pair_id: pairs_with_both_reads_mapping) {
@@ -271,7 +276,8 @@ void PathFinderkb::gatherStats() {
             }
 
         }
-
+        long_frontiers_in.clear();
+        long_frontiers_out.clear();
     }
     edge_ids_with_long_frontiera.close();
     solveable_regions.close();
