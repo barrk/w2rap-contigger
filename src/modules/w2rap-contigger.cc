@@ -609,7 +609,7 @@ int main(const int argc, const char * argv[]) {
             // HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, HyperBasevector& lmp_data, int min_reads = 5
             PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
             // rhis segfaults when doing the dictionary lookup, again!
-            pf.resolveComplexRegionsUsingLMPData();
+            //pf.resolveComplexRegionsUsingLMPData();
         } else {
             std::cout << "number of pe bases:" <<pe_data.bases.size() << " and quals: " << pe_data.quals.size() << std::endl;
             vecbvec mp_dummy; // add this so we can pass abov one by reference

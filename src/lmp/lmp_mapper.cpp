@@ -154,8 +154,6 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair >  & lmp_pairs_for_scaf
     // to determine if region is solvable, need to
     std::map<uint64_t, std::vector<LMPPair>> edge_id_lmp_dict;
     int pair_id = 0;
-    std::vector<uint64_t > edges_to_look_for = {8, 321, 480, 391, 463, 358, 337, 478};
-    std::vector<uint64_t > edges_to_look_for_inv = {inv[8], inv[321], inv[480], inv[391], inv[463], inv[358], inv[337], inv[478]};
     for (int i=0; i < read_edge_maps.size() - 1; ++i) {
         LMPPair lmp_pair;
         lmp_pair.read_index = i / 2;
@@ -194,30 +192,13 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair >  & lmp_pairs_for_scaf
                         }
                         auto edge1 = lmp_pair.p1[0];
                         edge_id_to_pair_id_map[edge1].push_back(lmp_pair.pair_id);
-                        if (std::find(edges_to_look_for.begin(), edges_to_look_for.end(), edge1) !=
-                            edges_to_look_for.end()) {
-                        auto edge2 = lmp_pair.p2[0];
-                        edge_id_to_pair_id_map[edge2].push_back(lmp_pair.pair_id);
-                        if (std::find(edges_to_look_for_inv.begin(), edges_to_look_for_inv.end(), edge2) !=
-                            edges_to_look_for_inv.end()) {
-                            std::cout << "lmp pair 2 mapping to edge: " << edge2 << ", " << lmp_pair.read_index
-                                      << std::endl;
-                        }
-                        if ((std::find(edges_to_look_for.begin(), edges_to_look_for.end(), edge1) !=
-                             edges_to_look_for.end()) &&
-                            (std::find(edges_to_look_for.begin(), edges_to_look_for.end(), inv[edge2]) !=
-                             edges_to_look_for.end())) {
-                            counter_both_edges_mapping_to_subgraph_potentially_solveably += 1;
-                            counts_for_each_solveabe_pair[std::make_pair(edge1, edge2)] += 1;
-                            pair_ids_for_each_solveabe_pair[std::make_pair(edge1, edge2)].push_back(lmp_pair.pair_id);
-                        }
 
                     }
+                    counter_p2 += 1;
                 }
-                counter_p2 += 1;
-            }
-            counter_p1 += 1;
+                counter_p1 += 1;
 
+            }
         }
     }
 

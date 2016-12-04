@@ -84,25 +84,6 @@ void PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & long_fronteirs
 }
 
 
-void PathFinderkb::addEdgeToSubGraph(int edge_to_add, std::map<int, uint64_t> & vertex_subgraph_map, HyperBasevector & subgraph, vector<uint64_t > & traversed_edge_list){
-    // for each edge to add, need to add vertices and n adjacent edges
-    auto bv = mHBV.EdgeObject(edge_to_add);
-    // store relationship between vertices here and in main graph
-    int prev_vertex = subgraph.N();
-    int next_vertex = subgraph.N() + 1;
-    vertex_subgraph_map[prev_vertex] = mToLeft[edge_to_add];
-    vertex_subgraph_map[next_vertex] = mToRight[edge_to_add];
-    subgraph.AddVertices(2);
-    subgraph.AddEdge(prev_vertex,  next_vertex, bv);// add edge takes vertex from, vertex to and base vector
-    vector<uint64_t> edges_to_add;
-    edges_to_add.reserve(prev_edges[edge_to_add].size() + next_edges[edge_to_add].size());
-    edges_to_add.insert(edges_to_add.end(), prev_edges[edge_to_add].begin(), prev_edges[edge_to_add].end());
-    edges_to_add.insert(edges_to_add.end(), next_edges[edge_to_add].begin(), next_edges[edge_to_add].end());
-    // edges_to_add, std::map<int, uint64_t> & vertex_subgraph_map, HyperBasevector & subgraph,
-    //vector<uint64_t > & traversed_edge_list, int edges_to_traverse, int traversals=0
-    traverseGraphCreateSubgraph(edges_to_add, vertex_subgraph_map,  subgraph,
-                                traversed_edge_list,  4,  0);
-}
 
 
 void PathFinderkb::gatherStats() {
@@ -117,24 +98,16 @@ void PathFinderkb::gatherStats() {
     int same_in_out_degree_complex = 0;
     int  solveable_regions_count = 0 ;
     std::map<uint64_t, int> mapping_counts;
-    std::cout << "edge_id_to_pair_id_map size: " << edge_id_to_pair_id_map.size() << std::endl;
-    std::vector<uint64_t > edges_to_look_for = {8, 321, 480, 391, 463, 358, 337, 478};
-    std::cout << " " << std::endl;
+
     vector<uint64_t > traversed_edge_list;
     std::vector<std::vector<uint64_t> >  paths_to_long_fronteirs;
     std::vector<uint64_t> intermediate_path;
     std::vector<uint64_t>  long_frontiers_in;
     std::vector<uint64_t>  long_frontiers_out;
     std::vector<std::vector<uint64_t>> paths_to_separate;
-    auto paths_containing_edges_to_look_for = {mEdgeToPathIds[8], mEdgeToPathIds[321], mEdgeToPathIds[480], mEdgeToPathIds[391],
-                                                                 mEdgeToPathIds[463], mEdgeToPathIds[358], mEdgeToPathIds[337], mEdgeToPathIds[478]};
 
-    for (auto edge_index: edges_to_look_for) {
-        if (std::find(edges_to_look_for.begin(), edges_to_look_for.end(), edge_index) != edges_to_look_for.end()) {
-            std::cout << "edge of interest:" << edge_index << std::endl;
-        }
+    for (int edge_index = 0; edge_index < mHBV.EdgeObjectCount(); ++edge_index) {
         // e < mInv[e] checks that this is a forward directed edge? nope, canonical representation
-        //if (edge_index < mInv[edge_index]) {//&& mHBV.EdgeObject(edge_index).size() < large_frontier_size) {
             edges_beyond_distance(long_frontiers_in, paths_to_long_fronteirs, intermediate_path, edge_index, traversed_edge_list, large_frontier_size, 0, 0, "right");
             traversed_edge_list.clear();
             std::cout << "traversed edge list cleared: " << traversed_edge_list.size() << std::endl;
@@ -158,7 +131,6 @@ void PathFinderkb::gatherStats() {
                         }
                         std::vector<int> pair_ids;
                         for (auto pair_id :  edge_id_to_pair_id_map[edge]) {
-                            //std::cout  << pair_id << " ";
                             pair_ids.push_back(pair_id);
                             mapping_counts[edge] += 1;
                         }
@@ -174,7 +146,6 @@ void PathFinderkb::gatherStats() {
                         }
                         std::vector<int> pair_ids;
                         for (auto pair_id :  edge_id_to_pair_id_map[mInv[edge]]) {
-                            //std::cout  << pair_id << " ";
                             mapping_counts[edge] += 1;
                             pair_ids.push_back(pair_id);
 
@@ -201,6 +172,7 @@ void PathFinderkb::gatherStats() {
                             }
                         }
                     }
+
                     for (auto edge_pair_count: counts_for_each_solveabe_pair){
                         std::pair<uint64_t, uint64_t> key = edge_pair_count.first;
                         uint64_t edge_in = key.first;

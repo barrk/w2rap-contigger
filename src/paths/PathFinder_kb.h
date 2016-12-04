@@ -56,17 +56,12 @@ public:
     std::string path_str(std::vector<uint64_t> e);
     //std::map<uint64_t,std::vector<uint64_t>> separate_path(std::vector<uint64_t> p, bool verbose_separation=false);
     //bool join_edges_in_path(std::vector<uint64_t> p);
-    std::array<std::vector<uint64_t>,2>  get_all_long_frontiers(uint64_t e,uint64_t large_frontier_size);
     //void migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> edgemap);
     std::tuple <std::vector<LMPPair >, std::vector<LMPPair >, std::map<uint64_t, std::vector<int> > > PathFinderkb::mapEdgesToLMPReads();//(std::vector<LMPPair > & lmp_pairs_for_scaffolding);
-    void PathFinderkb::resolveComplexRegionsUsingLMPData();
     void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> edgemap);
     std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector<uint64_t> p, bool verbose_separation);
 
 private:
-    void PathFinderkb::addEdgeToSubGraph(int edge_to_add, std::map<int, uint64_t> & vertex_subgraph_map, HyperBasevector & subgraph, vector<uint64_t > & traversed_edge_list);
-    void PathFinderkb::traverseGraphCreateSubgraph(vector<uint64_t>  edges_to_add, std::map<int, uint64_t> & vertex_subgraph_map, HyperBasevector & subgraph,
-                                                   vector<uint64_t > & traversed_edge_list, int edges_to_traverse, int traversal);
     void PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & long_fronteirs, std::vector<std::vector<uint64_t> >  & paths_to_long_fronteirs, std::vector<uint64_t> &  intermediate_path, uint64_t e, vector<uint64_t > & traversed_edge_list, uint64_t large_frontier_size, int recursion_depth=0, int distance_traversed=0, std::string direction="right");
     HyperBasevector& mHBV;
     vecbvec& lmp_data;
