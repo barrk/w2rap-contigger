@@ -406,6 +406,12 @@ void PathFinderkb::gatherStats() {
         migrate_readpaths(old_edges_to_new);
     }
     std::cout<<" "<<sep<<" paths separated!"<<std::endl;
+    BinaryWriter::writeFile("/Users/barrk/Documents/ecoli_dataset/v1/all_paths_separated.hbv", mHBV);
+    WriteReadPathVec(mPaths,"/Users/barrk/Documents/ecoli_dataset/v1/all__paths_separated.paths");
+    std::cout << "Dumping gfa" << std::endl;
+    int MAX_CELL_PATHS = 50;
+    int MAX_DEPTH = 10;
+    GFADump("/Users/barrk/Documents/ecoli_dataset/v1/all_paths_separated", mHBV, mInv, mPaths, MAX_CELL_PATHS, MAX_DEPTH, true);
 
 
 }
@@ -810,6 +816,8 @@ void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> ed
     //if more than one combination is valid, this chooses at random among them (could be done better? should the path be duplicated?)
     mHBV.ToLeft(mToLeft);
     mHBV.ToRight(mToRight);
+    std::ofstream edge_migrations;
+    edge_migrations.open("/Users/barrk/Documents/ecoli_data/v1/edge_migrations.txt");
     for (auto &p:mPaths){
         std::vector<std::vector<uint64_t>> possible_new_edges;
         bool translated=false,ambiguous=false;
@@ -824,7 +832,10 @@ void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> ed
         }
         if (translated){
             if (not ambiguous){ //just straigh forward translation
-                for (auto i=0;i<p.size();++i) p[i]=possible_new_edges[i][0];
+                for (auto i=0;i<p.size();++i) {
+                    std::cout << "Migrating edge: " << p[i] << " to edge " << possible_new_edges[i][0] << std::endl;
+                    edge_migrations << "Migrating edge: " << p[i] << " to edge " << possible_new_edges[i][0] << std::endl;
+                    p[i]=possible_new_edges[i][0];}
             }
             else {
                 //ok, this is the complicated case, we first generate all possible combinations
@@ -856,5 +867,6 @@ void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> ed
             }
         }
     }
+    edge_migrations.close();
 
 }
