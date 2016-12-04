@@ -149,14 +149,6 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair >  & lmp_pairs_for_scaf
     int counter_both_edges_mapping_to_subgraph_potentially_solveably = 0;
     std::map<std::pair<uint64_t, uint64_t>, int > counts_for_each_solveabe_pair;
     std::map<std::pair<uint64_t, uint64_t>, std::vector<int> > pair_ids_for_each_solveabe_pair;
-    std::ofstream read_indices;
-    read_indices.open("/Users/barrk/Documents/arabidopsis_data/mapped_read_indices.txt");
-    std::ofstream edge_map_counter;
-    edge_map_counter.open("/Users/barrk/Documents/arabidopsis_data/edge_mapping_counts_used_downstream.txt");
-    std::ofstream reads_mapping_to_edges_of_interest;
-    edge_map_counter.open("/Users/barrk/Documents/arabidopsis_data/reads_mapping_to_edges_of_interest.txt");
-    std::ofstream reads_mapping_to_region_potentially_solvably;
-    reads_mapping_to_region_potentially_solvably.open("/Users/barrk/Documents/ecoli_dataset/reads_mapping_to_region_potentially_solvably_single_edge_mapping.txt");
     std::map<uint64_t, int> mapping_counts;
     int map_to_same_edge=0;
     // to determine if region is solvable, need to
@@ -185,24 +177,15 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair >  & lmp_pairs_for_scaf
                 //for (auto edge1: lmp_pair.p1) {
                 if (lmp_pair.p1.size() == 1 && lmp_pair.p2.size() == 1) {
                     if (lmp_pair.p1[0] == inv[lmp_pair.p2[0]] || lmp_pair.p1[0] == lmp_pair.p2[0]) {
-                        //std::cout << "p1 p2  mapping single edge " << path_str(lmp_pair.p1) << std::endl;
                         // todo: lmp_pair is wrong data type for this, as we need edge offset
                         lmp_pairs_for_insert_size_estimation.push_back(lmp_pair);
-                        //std::cout << "Read index for insert size estimation " << lmp_pair.read_index << " and path str " << path_str(lmp_pair.p2) << std::endl;
                     } else { // if they both map to a single edge, but not the same edge, it can be used to join 2 edges, maybe...
-                        std::cout << "p1 mapping " << path_str(lmp_pair.p1) << std::endl;
-                        std::cout << "p2 mapping " << path_str(lmp_pair.p2) << std::endl;
-                        std::cout << "read length:" << lmp_reads[i].ToString().size() << std::endl;
-                        reads_mapping_to_region_potentially_solvably << "p1 mapping " << path_str(lmp_pair.p1)
-                                                                     << std::endl;
-                        reads_mapping_to_region_potentially_solvably << "p2 mapping " << path_str(lmp_pair.p2)
-                                                                     << std::endl;
+
                         lmp_pair.pair_id = pair_id;
                         lmp_pairs_for_scaffolding.push_back(
                                 lmp_pair);
                         pair_id += 1;
                         counter_single_reads_mapping_different_edges += 1;
-                        read_indices << "Pair index for scaffoding " << i << std::endl;
                         for (auto edge1: lmp_pair.p1) {
                             mapping_counts[edge1] += 1;
                         }
@@ -213,29 +196,12 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair >  & lmp_pairs_for_scaf
                         edge_id_to_pair_id_map[edge1].push_back(lmp_pair.pair_id);
                         if (std::find(edges_to_look_for.begin(), edges_to_look_for.end(), edge1) !=
                             edges_to_look_for.end()) {
-                            std::cout << "lmp pair 1 mapping to edge: " << edge1 << ", " << lmp_pair.read_index
-                                      << std::endl;
-                            std::cout << "path_str p1: " << path_str(lmp_pair.p1) << std::endl;
-                            std::cout << lmp_reads[lmp_pair.read_index] << std::endl;
-                            std::cout << "path_str p2: " << path_str(lmp_pair.p2) << std::endl;
-                            std::cout << lmp_reads[lmp_pair.read_index + 1] << std::endl;
-                            reads_mapping_to_edges_of_interest << "p1, " << edge1 << ", " << lmp_pair.read_index
-                                                               << std::endl;
-                            reads_mapping_to_region_potentially_solvably << "read index: " << lmp_pair.read_index
-                                                                         << std::endl;
-                            reads_mapping_to_region_potentially_solvably << "p1 mapping " << path_str(lmp_pair.p1)
-                                                                         << std::endl;
-                            reads_mapping_to_region_potentially_solvably << "p2 mapping " << path_str(lmp_pair.p2)
-                                                                         << std::endl;
-                        }
                         auto edge2 = lmp_pair.p2[0];
                         edge_id_to_pair_id_map[edge2].push_back(lmp_pair.pair_id);
                         if (std::find(edges_to_look_for_inv.begin(), edges_to_look_for_inv.end(), edge2) !=
                             edges_to_look_for_inv.end()) {
                             std::cout << "lmp pair 2 mapping to edge: " << edge2 << ", " << lmp_pair.read_index
                                       << std::endl;
-                            reads_mapping_to_edges_of_interest << "p2, " << edge2 << ", " << lmp_pair.read_index
-                                                               << std::endl;
                         }
                         if ((std::find(edges_to_look_for.begin(), edges_to_look_for.end(), edge1) !=
                              edges_to_look_for.end()) &&
@@ -249,41 +215,18 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair >  & lmp_pairs_for_scaf
                     }
                 }
                 counter_p2 += 1;
-
             }
-
-
             counter_p1 += 1;
 
         }
     }
 
-    reads_mapping_to_region_potentially_solvably.close();
-    read_indices.close();
     std::cout << "p1 and p2 map to same egde: " << map_to_same_edge << std::endl;
     std::cout << "total both pairs mapped: " << counter << " p1 mapped: " << counter_p1 << "p2 mapped " << counter_p2 << std::endl;
     //removeUselessLMPMappings(read_paths, lmp_pairs_for_scaffolding);
     std::cout << "readEdgeMap2LMPPairs lmp pairs size: " << lmp_pairs_for_scaffolding.size() << std::endl;
         std::cout << "pairs map to edge and reverse complement and signle edge: "
                   << lmp_pairs_for_insert_size_estimation.size() << std::endl;
-    std::cout << "single reads mapping to different edges: " << counter_single_reads_mapping_different_edges << std::endl;
-    // edge337 completely missig here
-    for (const auto &edge_map_count: mapping_counts){
-        //std::cout << edge_map_count.first << ", " << edge_map_count.second << std::endl;
-        edge_map_counter << edge_map_count.first << ", " << edge_map_count.second << std::endl;
-    }
-    /*for (auto edge_id_pair_id: edge_id_to_pair_id_map){
-        std::cout << "pair ids for edge: " << edge_id_pair_id.first << std::endl;
-        for (auto pid: edge_id_pair_id.second){
-            std::cout << pid << " " << std::endl;
-        }
-    }*/
-    edge_map_counter.close();
-    for (auto edge_pair_count: counts_for_each_solveabe_pair){
-        std::pair<uint64_t, uint64_t> key = edge_pair_count.first;
-        std::cout << "count for pair:" << edge_pair_count.first.first <<  " " << edge_pair_count.first.second << " : " <<edge_pair_count.second <<std::endl;
-        //std::cout << "pair id for solveable pair" << key.first << ", " << key.second << " : " << pair_ids_for_each_solveabe_pair[key] << std::endl;
-    }
 
 }
 
@@ -322,21 +265,13 @@ ReadPath LMPMapper::getFullyMappedEdges(std::vector<edgeKmerPosition> read_mappi
             // if the edge offset is consecutive
             if (it->edge_offset == (last_offset + 1)) {
                 consecutive_offsets += 1;
-                /*if (is_r2 && consecutive_offsets > 60) {
-                    std::cout << "edge offset: " << last_offset << " consecutiv offsets: " << consecutive_offsets << " kmer errors allowed " << kmer_errors_allowed << " threshold:  " << read_length - k - kmer_errors_allowed << std::endl;
-                    std::cout << "Mapping edge: " << hbv.EdgeObject(current_edge_id).ToString().substr(last_offset, 150) << std::endl;
-                    std::cout << "to read length" << read_length << " offset " << last_offset << " string " << lmp_reads[i].ToString() << std::endl;
-                }*/
-                //std::cout << "incrementing consecutive offsets:" << std::endl;
 
             }
         }
             // if we're onto a new edge, then check if we completed the previous edge -
         else {
-            //std::cout << "current consecutively mapped edges: " << consecutive_offsets << "mapping edge: " << std::endl;//<< hbv.EdgeObject(it->edge_id).ToString() << std::endl;
             // if the number of consecutive offsets is equal to the number of kmers on the read, -1 because we count transitions its fully mapped, L - k
             if ((consecutive_offsets == hbv.EdgeObject(current_edge_id).size() - k) || consecutive_offsets == read_length - k || (is_r2 && (consecutive_offsets > read_length - kmer_errors_allowed))) { // lmp reads are shorter than edges, but check both whether entire read OR entire edge is mapped
-                //std::cout << "current consecutively mapped edges: " << consecutive_offsets << "edge mapped:" << it->edge_id << std::endl;
                 paths.push_back(current_edge_id);
             }
             current_edge_id = it->edge_id;
@@ -345,7 +280,6 @@ ReadPath LMPMapper::getFullyMappedEdges(std::vector<edgeKmerPosition> read_mappi
         last_offset = it->edge_offset;
         // if the above conditional would miss this because we're at the end of the loop, exit here
         if (std::next(it) == read_mapping.end() && ((consecutive_offsets == hbv.EdgeObject(current_edge_id).size() - k) || consecutive_offsets == read_length - k || (is_r2 && (consecutive_offsets > read_length - k - kmer_errors_allowed)))){
-            //std::cout << "edge mapped at end:" << it->edge_id << std::endl;
             paths.push_back(current_edge_id);
         }
     }
