@@ -166,8 +166,6 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair >  & lmp_pairs_for_scaf
         std::vector<edgeKmerPosition> read_mapping_p2 = read_edge_maps[i];
         //read_mapping_p2 = readOffsetFilter(read_mapping_p2);
         lmp_pair.p2 = sortMappingsFindFullyMappedEdges(read_mapping_p2, read_len, i);
-        // why the hell did i do this!!??
-        //lmp_pair.read_index = i;
         if (lmp_pair.p1.size() != 0) {
             if (lmp_pair.p2.size() != 0) {
 

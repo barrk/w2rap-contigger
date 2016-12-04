@@ -40,7 +40,6 @@ std::tuple <std::vector<LMPPair >, std::vector<LMPPair >, std::map<uint64_t, std
     std::vector<LMPPair >  lmp_pairs_for_insert_size_estimation;
     lmp_mapper.LMPReads2MappedPairedEdgePaths(lmp_pairs, lmp_pairs_for_insert_size_estimation, edge_id_to_pair_id_map);
     std::cout << "mapEdgesToLMPReads lmp pairs size: " << lmp_pairs.size() << std::endl;
-    std::cout << "mapEdgesToLMPReads edge id to pair id map size lmp pairs size: " << edge_id_to_pair_id_map.size() << std::endl;
     return std::make_tuple(lmp_pairs, lmp_pairs_for_insert_size_estimation, edge_id_to_pair_id_map);
 }
 
@@ -54,7 +53,6 @@ void PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & long_fronteirs
     } else {
         edges = next_edges[e];
     }
-    //std::cout << "traversal called for edge: " << e << std::endl;
     // edges between the start edge and the end edge are ones we traverse through in that recursion stack,
     // only want paths from beginning node, i.e. when recursion depth is 0, but paths can split at any time
     for (auto edge:edges){
@@ -110,14 +108,10 @@ void PathFinderkb::gatherStats() {
         // e < mInv[e] checks that this is a forward directed edge? nope, canonical representation
             edges_beyond_distance(long_frontiers_in, paths_to_long_fronteirs, intermediate_path, edge_index, traversed_edge_list, large_frontier_size, 0, 0, "right");
             traversed_edge_list.clear();
-            std::cout << "traversed edge list cleared: " << traversed_edge_list.size() << std::endl;
             edges_beyond_distance(long_frontiers_out, paths_to_long_fronteirs, intermediate_path, edge_index, traversed_edge_list, large_frontier_size, 0, 0, "left");
 
             if (long_frontiers_in.size() == long_frontiers_out.size()) {//} && long_frontiers_in.size() != 0) {
                 same_in_out_degree += 1;
-                for (auto path: paths_to_long_fronteirs){
-                    std::cout << path_str(path) << std::endl;
-                }
                 if (long_frontiers_in.size() > 1) {
                     same_in_out_degree_complex += 1;
                     std::map<uint64_t, std::pair< std::vector<uint64_t>, std::vector<int> > > mapped_lmp_in;
@@ -150,7 +144,6 @@ void PathFinderkb::gatherStats() {
                             pair_ids.push_back(pair_id);
 
                         }
-                        std::cout << std::endl;
                         count += 1;
                         std::pair< std::vector<uint64_t>, std::vector<int> > result = std::make_pair(intermediate_edges, pair_ids);
                         mapped_lmp_out[edge] = result;
