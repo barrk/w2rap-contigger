@@ -190,6 +190,8 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair >  & lmp_pairs_for_scaf
                         }
                         auto edge1 = lmp_pair.p1[0];
                         edge_id_to_pair_id_map[edge1].push_back(lmp_pair.pair_id);
+                        auto edge2 = lmp_pair.p2[0];
+                        edge_id_to_pair_id_map[edge2].push_back(lmp_pair.pair_id);
 
                     }
                     counter_p2 += 1;
