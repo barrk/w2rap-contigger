@@ -84,7 +84,7 @@ void PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & long_fronteirs
 
 
 
-void PathFinderkb::gatherStats() {
+void PathFinderkb::resolveRegionsUsingLMPData() {
 
     int large_frontier_size = 3500;
     init_prev_next_vectors();// mToLeft and mToright are to/from vertices
@@ -150,6 +150,8 @@ void PathFinderkb::gatherStats() {
 
                     }
                     std::map<std::pair<uint64_t, uint64_t>, int > counts_for_each_solveabe_pair;
+                    std::map<uint64_t, std::pair< std::vector<uint64_t>, std::vector<int> > > mapped_lmp_1;
+                    std::map<uint64_t, std::pair< std::vector<uint64_t>, std::vector<int> > > mapped_lmp_2;
                     // find pairs which are in both mapped_lmp_in, and mapped_lmp_out- these can be used to solve this region
                     for (auto edge_in: long_frontiers_in) {
                         // TODO this way is horrible, need to design a better data structure
@@ -159,35 +161,47 @@ void PathFinderkb::gatherStats() {
                                 vector<int> p2_ids = mapped_lmp_out[edge_out].second;
                                 if ((std::find(p2_ids.begin(), p2_ids.end(), p1_id) !=
                                         p2_ids.end())) {
-                                    counts_for_each_solveabe_pair[std::make_pair(edge_in, edge_out)] += 1;
+                                    // pairs can map r1, r2 or r2, r2, these need to be recognised and counted as the same
+                                    auto edge1 = edge_in < edge_out ? edge_in:edge_out;
+                                    mapped_lmp_1[edge1] = edge1 == edge_in ? mapped_lmp_in[edge1]: mapped_lmp_out[edge1];
+                                    auto edge2 = edge_in > edge_out ? edge_in:edge_out;
+                                    mapped_lmp_2[edge2] = edge2 == edge_out ? mapped_lmp_out[edge2]: mapped_lmp_in[edge2];
+                                    // the dictionaries duplicate information, probably not needed
+                                    counts_for_each_solveabe_pair[std::make_pair(edge1, edge2)] += 1;
 
                                 }
                             }
                         }
                     }
 
+                    int paths_separated = 0;
                     for (auto edge_pair_count: counts_for_each_solveabe_pair){
                         std::pair<uint64_t, uint64_t> key = edge_pair_count.first;
-                        uint64_t edge_in = key.first;
-                        uint64_t edge_out = key.second;
-                        int count = edge_pair_count.second;
-                        std::cout << "count for pair:" << edge_pair_count.first.first <<  " " << edge_pair_count.first.second << " : " <<count <<std::endl;
-                        if (count > 5){
-                            std::vector<uint64_t> path_in = mapped_lmp_in[edge_in].first;
-                            std::vector<uint64_t> path_out = mapped_lmp_out[edge_out].first;
+                        uint64_t edge1 = key.first;
+                        uint64_t edge2 = key.second;
+                        int pair_count = edge_pair_count.second;
+                        std::cout << "count for pair:" << edge_pair_count.first.first <<  " " << edge_pair_count.first.second << " : " << pair_count << std::endl;
+                        if (pair_count > 5){
+                            std::vector<uint64_t> path1 = mapped_lmp_1[edge1].first;
+                            std::vector<uint64_t> path2 = mapped_lmp_2[edge2].first;
                             std::vector<uint64_t> full_path;
-                            full_path.push_back(edge_in);
-                            for (auto e:path_in){
+                            full_path.push_back(edge1);
+                            for (auto e:path1){
                                 full_path.push_back(e);
                             }
                             full_path.push_back(edge_index);
-                            for (auto e:path_out){
+                            for (auto e:path2){
                                 full_path.push_back(e);
                             }
-                            full_path.push_back(edge_out);
+                            full_path.push_back(edge2);
                             std::cout << "path to separate: " << path_str(full_path) << std::endl;
                             paths_to_separate.push_back(full_path);
+                            paths_separated += 1;
                         }
+                    }
+                    std::cout << "total paths eparated: " << paths_separated << " out of " << long_frontiers_in.size() << " len paths to separate " << paths_to_separate.size() << std::endl;
+                    if (long_frontiers_in.size() == paths_separated){
+                        solveable_regions_count += 1;
                     }
                 }
 

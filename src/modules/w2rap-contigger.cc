@@ -259,7 +259,7 @@ int main(const int argc, const char * argv[]) {
             invert(pathsr, invPaths, hbvr.EdgeObjectCount());
             // HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, HyperBasevector& lmp_data, int min_reads = 5
             PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
-            pf.gatherStats();
+            pf.resolveRegionsUsingLMPData();
             //pf.resolveComplexRegionsUsingLMPData();
             Scram(1);
     }

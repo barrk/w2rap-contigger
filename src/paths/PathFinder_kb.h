@@ -47,8 +47,7 @@ public:
 
     //ReadPath-related methods
 
-    void PathFinderkb::gatherStats();
-    void untangle_complex_in_out_choices(uint64_t large_frontier_size, bool verbose_separation=false);
+    void PathFinderkb::resolveRegionsUsingLMPData();
     void init_prev_next_vectors();
     //std::vector<std::vector<uint64_t>> is_unrollable_loop(uint64_t e,uint64_t min_side_sizes);//returns size of the unrolled loop
     //uint64_t paths_per_kbp(uint64_t e);
