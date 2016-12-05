@@ -49,19 +49,14 @@ public:
 
     void PathFinderkb::resolveRegionsUsingLMPData();
     void init_prev_next_vectors();
-    //std::vector<std::vector<uint64_t>> is_unrollable_loop(uint64_t e,uint64_t min_side_sizes);//returns size of the unrolled loop
-    //uint64_t paths_per_kbp(uint64_t e);
-    //std::string edge_pstr(uint64_t e);
     std::string path_str(std::vector<uint64_t> e);
-    //std::map<uint64_t,std::vector<uint64_t>> separate_path(std::vector<uint64_t> p, bool verbose_separation=false);
-    //bool join_edges_in_path(std::vector<uint64_t> p);
-    //void migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> edgemap);
     std::tuple <std::vector<LMPPair >, std::vector<LMPPair >, std::map<uint64_t, std::vector<int> > > PathFinderkb::mapEdgesToLMPReads();//(std::vector<LMPPair > & lmp_pairs_for_scaffolding);
     void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> edgemap);
     std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector<uint64_t> p, bool verbose_separation);
 
 private:
     void PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & long_fronteirs, std::vector<std::vector<uint64_t> >  & paths_to_long_fronteirs, std::vector<uint64_t> &  intermediate_path, uint64_t e, vector<uint64_t > & traversed_edge_list, uint64_t large_frontier_size, int recursion_depth=0, int distance_traversed=0, std::string direction="right");
+    std::vector<uint64_t>  PathFinderkb::canonicalisePath(std::vector<uint64_t> path);
     HyperBasevector& mHBV;
     vecbvec& lmp_data;
     vec<int>& mInv;
