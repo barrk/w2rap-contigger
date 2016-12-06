@@ -98,6 +98,14 @@ std::vector<uint64_t>  PathFinderkb::canonicalisePath(std::vector<uint64_t> path
 }
 
 
+
+typedef struct {
+    uint64_t e1;
+    uint64_t e2;
+    int path_id;
+    int length;
+} PathDetails;
+
 void PathFinderkb::resolveRegionsUsingLMPData() {
 
     int large_frontier_size = 3500;
@@ -117,7 +125,7 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
     std::vector<uint64_t> intermediate_path;
     std::vector<uint64_t>  long_frontiers_in;
     std::vector<uint64_t>  long_frontiers_out;
-    std::vector<std::vector<uint64_t>> paths_to_separate;
+    std::vector<std::vector<uint64_t> > paths_to_separate;
 
     for (int edge_index = 0; edge_index < mHBV.EdgeObjectCount(); ++edge_index) {
         // e < mInv[e] checks that this is a forward directed edge? nope, canonical representation
@@ -125,6 +133,21 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
             traversed_edge_list.clear();
             edges_beyond_distance(long_frontiers_out, paths_to_long_fronteirs, intermediate_path, edge_index, traversed_edge_list, large_frontier_size, 0, 0, "left");
 
+            // this finds ridiculously complex regions
+            bool im_middle_of_ridiculously_complex_region = false;
+            for (auto edge: long_frontiers_in){
+                if (1 < prev_edges[edge].size()){
+                    im_middle_of_ridiculously_complex_region = true;
+                }
+            }
+            for (auto edge: long_frontiers_out){
+                if (1 < next_edges[edge].size()){
+                    im_middle_of_ridiculously_complex_region = true;
+                }
+            }
+            if (im_middle_of_ridiculously_complex_region){
+                continue; //cf ecoli edge 76/77
+            }
             if (long_frontiers_in.size() == long_frontiers_out.size()) {//} && long_frontiers_in.size() != 0) {
                 same_in_out_degree += 1;
                 if (long_frontiers_in.size() > 1) {
@@ -182,6 +205,7 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
                     }
 
                     int paths_separated = 0;
+                    std::vector<PathDetails> path_end_tracker;
                     for (auto edge_pair_count: counts_for_each_solveabe_pair){
                         std::pair<uint64_t, uint64_t> key = edge_pair_count.first;
                         uint64_t edge_in = key.first;
@@ -221,12 +245,54 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
             long_frontiers_in.clear();
             long_frontiers_out.clear();
     }
+    // get both [354:355 204:205 481:480 ] and [354:355 204:205 302:303 204:205 481:480 ], want the longer- these must occur for different edges, so need tobe out of main loop
+    // should be able to incorporate this into above somewhere- but need to know length of path. given the paths are already calculated that can probably be moved up too
+    /*std::set<std::set<uint64_t, uint64_t> > edge_pairs;
+    for (std::vector<uint64_t> path; paths_to_separate){
+        auto before = edge_pairs.size();
+        std::set<uint64_t, uint64_t> path_ends = {path.front(), path.back()};
+        edge_pairs.insert(path_ends);
+        auto after = edge_pairs.size();
+        if (before == after){
+            // this doesn't do it, because we still need to know length of path, and index of path with these ends
+
+        }
+
+
+    }*/
+
+    std::map<std::set<uint64_t>, PathDetails> path_length_edge_map;
+    int path_index = 0;
+    for (auto path: paths_to_separate){
+        auto path_length = path.size();
+        PathDetails path_details;
+        path_details.path_id = path_index;
+        path_details.length = path_length;
+        uint64_t start = path.front();
+        uint64_t end = path.back();
+        std::set<uint64_t> edges;
+        edges.insert(start);
+        edges.insert(end);
+        if (path_length_edge_map.count(edges) == 0 || path_length > path_length_edge_map[edges].length){
+            path_length_edge_map[edges] = path_details;
+        }
+        path_index += 1;
+    }
+
+    
+    std::vector<std::vector<uint64_t> > paths_to_separate_final;
+    for (auto path_to_use: path_length_edge_map){
+        paths_to_separate_final.push_back(paths_to_separate[path_to_use.second.path_id]);
+        std::cout << path_str(paths_to_separate[path_to_use.second.path_id]) << std::endl;
+
+    }
+
     std::cout << "Regions with same degree in and out:" << same_in_out_degree << std::endl;
     std::cout << "Complex regions with same degree in and out:" << same_in_out_degree_complex << std::endl;
     std::cout << "Complex regions solveable wit lmp reads:" << solveable_regions_count<< std::endl;
     uint64_t sep=0;
     std::map<uint64_t,std::vector<uint64_t>> old_edges_to_new;
-    for (auto p:paths_to_separate){
+    for (auto p:paths_to_separate_final){
 
         if (old_edges_to_new.count(p.front()) > 0 or old_edges_to_new.count(p.back()) > 0) {
             std::cout<<"WARNING: path starts or ends in an already modified edge, skipping"<<std::endl;
@@ -361,8 +427,8 @@ void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> ed
         if (translated){
             if (not ambiguous){ //just straigh forward translation
                 for (auto i=0;i<p.size();++i) {
-                    std::cout << "Migrating edge: " << p[i] << " to edge " << possible_new_edges[i][0] << std::endl;
-                    edge_migrations << "Migrating edge: " << p[i] << " to edge " << possible_new_edges[i][0] << std::endl;
+                    //std::cout << "Migrating edge: " << p[i] << " to edge " << possible_new_edges[i][0] << std::endl;
+                    //edge_migrations << "Migrating edge: " << p[i] << " to edge " << possible_new_edges[i][0] << std::endl;
                     p[i]=possible_new_edges[i][0];}
             }
             else {
