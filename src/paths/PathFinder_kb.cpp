@@ -44,6 +44,7 @@ std::tuple <std::vector<LMPPair >, std::vector<LMPPair >, std::map<uint64_t, std
 }
 
 
+// this allows it to go round in circles indefinitely, which we don't want
 void PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & long_fronteirs, std::vector<std::vector<uint64_t> >  & paths_to_long_fronteirs, std::vector<uint64_t> & intermediate_path, uint64_t e, std::vector<uint64_t > & traversed_edge_list, uint64_t large_frontier_size, int recursion_depth=0, int distance_traversed=0, std::string direction="right") {
     /*
      * to find edges in region lmp pairs might solve, we want to traverse graph until we're large_frontier_size away from e
@@ -83,16 +84,21 @@ void PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & long_fronteirs
 
 std::vector<uint64_t>  PathFinderkb::canonicalisePath(std::vector<uint64_t> path){
     std::vector<uint64_t> result;
+    bool involution_path = false;
+    // if first edge is on involution, all will be
+    if (path[0] > mInv[path[0]]){
+        involution_path = true;
+    }
     for (auto edge: path){
-        if (edge < mInv[edge]){
-            result.push_back(edge);
-        } else {
+        if (involution_path){
             result.push_back(mInv[edge]);
+        } else {
+            result.push_back(edge);
         }
     }
-    if (result.back() < result.front()){
-        std::reverse(result.begin(), result.end());
-    }
+    //if (result.back() < result.front()){
+    //    std::reverse(result.begin(), result.end());
+    //}
     return result;
 
 }
@@ -128,26 +134,14 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
     std::vector<std::vector<uint64_t> > paths_to_separate;
 
     for (int edge_index = 0; edge_index < mHBV.EdgeObjectCount(); ++edge_index) {
+        if (edge_index == 1){
+            std::cout << "started looping over edges" << std::endl;
+        }
         // e < mInv[e] checks that this is a forward directed edge? nope, canonical representation
             edges_beyond_distance(long_frontiers_in, paths_to_long_fronteirs, intermediate_path, edge_index, traversed_edge_list, large_frontier_size, 0, 0, "right");
             traversed_edge_list.clear();
             edges_beyond_distance(long_frontiers_out, paths_to_long_fronteirs, intermediate_path, edge_index, traversed_edge_list, large_frontier_size, 0, 0, "left");
 
-            // this finds ridiculously complex regions
-            bool im_middle_of_ridiculously_complex_region = false;
-            for (auto edge: long_frontiers_in){
-                if (1 < prev_edges[edge].size()){
-                    im_middle_of_ridiculously_complex_region = true;
-                }
-            }
-            for (auto edge: long_frontiers_out){
-                if (1 < next_edges[edge].size()){
-                    im_middle_of_ridiculously_complex_region = true;
-                }
-            }
-            if (im_middle_of_ridiculously_complex_region){
-                continue; //cf ecoli edge 76/77
-            }
             if (long_frontiers_in.size() == long_frontiers_out.size()) {//} && long_frontiers_in.size() != 0) {
                 same_in_out_degree += 1;
                 if (long_frontiers_in.size() > 1) {
@@ -213,6 +207,7 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
                         int count = edge_pair_count.second;
                         std::cout << "count for pair:" << edge_pair_count.first.first <<  " " << edge_pair_count.first.second << " : " <<count <<std::endl;
                         if (count > 5){
+                            std::cout << "count > 5, paths added size:" << paths_to_separate.size() << std::endl;
                             std::vector<uint64_t> path_in = mapped_lmp_in[edge_in].first;
                             std::vector<uint64_t> path_out = mapped_lmp_out[edge_out].first;
                             std::vector<uint64_t> full_path;
@@ -226,11 +221,28 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
                             }
                             full_path.push_back(edge_out);
                             std::vector<uint64_t> path_canonical = canonicalisePath(full_path);
-                            if (std::find(paths_seen.begin(), paths_seen.end(), path_canonical) == paths_seen.end()) {
-                                paths_seen.insert(path_canonical);
-                                std::cout << "path to separate: " << path_str(full_path) << std::endl;
-                                paths_to_separate.push_back(full_path);
-                                paths_separated += 1;
+                            std::vector<uint64_t> path_reversed;
+                            path_reversed.resize(path_canonical.size());
+                            std::reverse_copy(path_canonical.begin(), path_canonical.end(), path_reversed.begin());
+                            std::vector<uint64_t> edges_to_look_for {77, 76, 197, 196};
+                            if ((std::find(edges_to_look_for.begin(), edges_to_look_for.end(), full_path.front()) != edges_to_look_for.end()) || (std::find(edges_to_look_for.begin(), edges_to_look_for.end(), full_path.back())!= edges_to_look_for.end())){
+                                std::cout << path_str(full_path) << std::endl;
+                                std::cout << path_str(path_canonical) << std::endl;
+                                std::cout << path_str(path_reversed) << std::endl;
+                            }
+                            if ((std::find(paths_seen.begin(), paths_seen.end(), path_canonical) == paths_seen.end()) && (std::find(paths_seen.begin(), paths_seen.end(), path_reversed) == paths_seen.end())) {
+                                int inner_path_length = 0;
+                                for (int i =1; i < path_canonical.size() -1; i++){
+                                    auto edge = mHBV.EdgeObject(path_canonical[i]);
+                                    inner_path_length += edge.size();
+                                    std::cout << "edge number: " << path_canonical[i] << " iner path length " << inner_path_length << std::endl;
+                                }
+                                if (inner_path_length < 20000) { // hardcoded something longer tha any lmp... insert size
+                                    paths_seen.insert(path_canonical);
+                                    std::cout << "path to separate: " << path_str(full_path) << std::endl;
+                                    paths_to_separate.push_back(path_canonical);
+                                    paths_separated += 1;
+                                }
                             }
                         }
                     }
@@ -270,16 +282,21 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
         path_details.length = path_length;
         uint64_t start = path.front();
         uint64_t end = path.back();
+        uint64_t start_rc = mInv[start];
+        uint64_t end_rc = mInv[end];
         std::set<uint64_t> edges;
         edges.insert(start);
         edges.insert(end);
-        if (path_length_edge_map.count(edges) == 0 || path_length > path_length_edge_map[edges].length){
+        std::set<uint64_t> edges_rc;
+        edges.insert(start_rc);
+        edges.insert(end_rc);
+        // todo should check that rc start and end aren't included either
+        if ((path_length_edge_map.count(edges) == 0 ) || path_length > path_length_edge_map[edges].length){
             path_length_edge_map[edges] = path_details;
         }
         path_index += 1;
     }
 
-    
     std::vector<std::vector<uint64_t> > paths_to_separate_final;
     for (auto path_to_use: path_length_edge_map){
         paths_to_separate_final.push_back(paths_to_separate[path_to_use.second.path_id]);
