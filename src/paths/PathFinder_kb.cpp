@@ -92,6 +92,7 @@ std::vector<uint64_t>  PathFinderkb::canonicalisePath(std::vector<uint64_t> path
     for (auto edge: path){
         if (involution_path){
             result.push_back(mInv[edge]);
+            std::reverse(result.begin(), result.end());
         } else {
             result.push_back(edge);
         }
@@ -237,7 +238,7 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
                                     inner_path_length += edge.size();
                                     std::cout << "edge number: " << path_canonical[i] << " iner path length " << inner_path_length << std::endl;
                                 }
-                                if (inner_path_length < 20000) { // hardcoded something longer tha any lmp... insert size
+                                if (inner_path_length < 12000) { // hardcoded something longer tha any lmp... insert size
                                     paths_seen.insert(path_canonical);
                                     std::cout << "path to separate: " << path_str(full_path) << std::endl;
                                     paths_to_separate.push_back(path_canonical);
@@ -291,7 +292,8 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
         edges.insert(start_rc);
         edges.insert(end_rc);
         // todo should check that rc start and end aren't included either
-        if ((path_length_edge_map.count(edges) == 0 ) || path_length > path_length_edge_map[edges].length){
+        if (((path_length_edge_map.count(edges) == 0) && (path_length_edge_map.count(edges_rc) == 0)) ||
+                (path_length > path_length_edge_map[edges].length || path_length > path_length_edge_map[edges_rc].length)){
             path_length_edge_map[edges] = path_details;
         }
         path_index += 1;
@@ -309,21 +311,38 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
     std::cout << "Complex regions solveable wit lmp reads:" << solveable_regions_count<< std::endl;
     uint64_t sep=0;
     std::map<uint64_t,std::vector<uint64_t>> old_edges_to_new;
+    std::set<uint64_t> start_edges_seen;
+    std::set<uint64_t> end_edges_seen; // old edges to new should do this!!
     for (auto p:paths_to_separate_final){
 
         if (old_edges_to_new.count(p.front()) > 0 or old_edges_to_new.count(p.back()) > 0) {
             std::cout<<"WARNING: path starts or ends in an already modified edge, skipping"<<std::endl;
             continue;
         }
-
+        uint64_t start = p.front();
+        uint64_t end = p.back();
+        uint64_t start_rc = mInv[p.front()];
+        uint64_t end_rc = mInv[p.back()];
         // this creates new vertices at the end of the graph, connects start to these, and removes old connection then repeats on the involution
-        auto oen=separate_path(p, true);
-        if (oen.size()>0) {
-            for (auto et:oen){
-                if (old_edges_to_new.count(et.first)==0) old_edges_to_new[et.first]={};
-                for (auto ne:et.second) old_edges_to_new[et.first].push_back(ne);
+        if (std::find(start_edges_seen.begin(), start_edges_seen.end(), start) == start_edges_seen.end() &&
+             std::find(end_edges_seen.begin(), end_edges_seen.end(), end) == end_edges_seen.end() &&
+                std::find(start_edges_seen.begin(), start_edges_seen.end(), end_rc) == start_edges_seen.end() &&
+                std::find(end_edges_seen.begin(), end_edges_seen.end(), start_rc) == end_edges_seen.end()){
+                start_edges_seen.insert(start);
+                end_edges_seen.insert(end);
+                start_edges_seen.insert(end_rc);
+                end_edges_seen.insert(start_rc);
+                auto oen=separate_path(p, true);
+                    if (oen.size() > 0) {
+                        for (auto et:oen) {
+                            if (old_edges_to_new.count(et.first) == 0) old_edges_to_new[et.first] = {};
+                            for (auto ne:et.second) {
+                                old_edges_to_new[et.first].push_back(ne);
+                            }
+
+                        }
+                        sep++;
             }
-            sep++;
         }
     }
     if (old_edges_to_new.size()>0) {
