@@ -262,7 +262,7 @@ int main(const int argc, const char * argv[]) {
         std::cout << "hbv has" << hbvr.EdgeObjectCount() << "edges" <<  std::endl;
         BinaryWriter::writeFile("/Users/barrk/Documents/ecoli_dataset/v1/check_inv.hbv", hbvr);
         WriteReadPathVec(pathsr,"/Users/barrk/Documents/ecoli_dataset/v1/check_inv.paths");
-        std::cout << "reading in just written file" <<std::endl;
+        /*std::cout << "reading in just written file" <<std::endl;
         hbvr.Clear();
         pathsr.clear();
         inv.clear();
@@ -273,7 +273,7 @@ int main(const int argc, const char * argv[]) {
         std::cout << "testing involution after reading lmp hbv and calling involution" <<std::endl;
         std::cout << "hbv has" << hbvr.EdgeObjectCount() << "edges" <<  std::endl;
 
-        TestInvolution(hbvr, inv);
+        TestInvolution(hbvr, inv);*/
             //Scram(1);
     }
     //== Handle "special cases" to test on development==
@@ -722,7 +722,7 @@ int main(const int argc, const char * argv[]) {
         // Carry out final analyses and write final assembly files.
 
         // with r1s/r2s, passes all tests unti lthis one, so it gets broken in make gaps
-        hbvr.Involution(inv);
+        //hbvr.Involution(inv);
         vecbasevector G;
         FinalFiles(hbvr, inv, pathsr, subsam_names, subsam_starts, out_dir, out_prefix+ "_assembly", MAX_CELL_PATHS, MAX_DEPTH, G);
         GFADump(out_dir +"/"+ out_prefix + "_assembly", hbvr, inv, pathsr, MAX_CELL_PATHS, MAX_DEPTH, true);
