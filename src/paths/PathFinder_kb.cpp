@@ -207,7 +207,7 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
                         uint64_t edge_out = key.second;
                         int count = edge_pair_count.second;
                         std::cout << "count for pair:" << edge_pair_count.first.first <<  " " << edge_pair_count.first.second << " : " <<count <<std::endl;
-                        if (count > 5){
+                        if (count > 10){
                             std::cout << "count > 5, paths added size:" << paths_to_separate.size() << std::endl;
                             std::vector<uint64_t> path_in = mapped_lmp_in[edge_in].first;
                             std::vector<uint64_t> path_out = mapped_lmp_out[edge_out].first;
@@ -349,12 +349,12 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
         migrate_readpaths(old_edges_to_new);
     }
     std::cout<<" "<<sep<<" paths separated!"<<std::endl;
-    BinaryWriter::writeFile("/Users/barrk/Documents/ecoli_dataset/v1/all_paths_separated.hbv", mHBV);
-    WriteReadPathVec(mPaths,"/Users/barrk/Documents/ecoli_dataset/v1/all__paths_separated.paths");
-    std::cout << "Dumping gfa" << std::endl;
-    int MAX_CELL_PATHS = 50;
-    int MAX_DEPTH = 10;
-    GFADump("/Users/barrk/Documents/ecoli_dataset/v1/all_paths_separated", mHBV, mInv, mPaths, MAX_CELL_PATHS, MAX_DEPTH, true);
+    //BinaryWriter::writeFile("/Users/barrk/Documents/ecoli_dataset/v1/all_paths_separated.hbv", mHBV);
+    //WriteReadPathVec(mPaths,"/Users/barrk/Documents/ecoli_dataset/v1/all__paths_separated.paths");
+    //std::cout << "Dumping gfa" << std::endl;
+    //int MAX_CELL_PATHS = 50;
+    //int MAX_DEPTH = 10;
+    //GFADump("/Users/barrk/Documents/ecoli_dataset/v1/all_paths_separated", mHBV, mInv, mPaths, MAX_CELL_PATHS, MAX_DEPTH, true);
 
 
 }

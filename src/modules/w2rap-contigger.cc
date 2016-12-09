@@ -711,7 +711,13 @@ int main(const int argc, const char * argv[]) {
         //std::cout<<"all structures refreshed"<<std::endl;
         //PathFinder(hbvr,inv,pathsr,paths_inv).untangle_pins();
         //PathFinder(hbvr,inv,pathsr,paths_inv).untangle_complex_in_out_choices();
-
+        MpData mp_data(mp_read_files);
+        std::cout << "Mate pair files read" << std::endl;
+        PathFinderkb pf(hbvr, inv, pathsr, paths_inv, mp_data.bases);
+        pf.resolveRegionsUsingLMPData();
+        BinaryWriter::writeFile("/Users/barrk/Documents/ecoli_dataset/v1/after_pathfinder.hbv", hbvr);
+        WriteReadPathVec(pathsr, "/Users/barrk/Documents/ecoli_dataset/v1s/after+pathfinder.paths");
+        hbvr.Involution(inv);
         MakeGaps(hbvr, inv, pathsr, paths_inv, MIN_LINE, MIN_LINK_COUNT, out_dir, out_prefix, SCAFFOLD_VERBOSE,
                  GAP_CLEANUP);
         if (dump_perf) perf_file << checkpoint_perf_time("MakeGaps") << std::endl;
