@@ -241,27 +241,40 @@ int main(const int argc, const char * argv[]) {
     //TODO: try to find out max memory on the system to default to.
 
     if (katie_test){
-            //std::cout << "Reading input files DONE!" << std::endl << std::endl << std::endl;
-
-            //pe_data.write_binary(out_dir, "pe_");
 
             std::cout << "Reading mate pair files:" << mp_read_files << std::endl;
             MpData mp_data(mp_read_files);
-            //mp_data.read_binary("/Users/barrk/Documents/ecoli_dataset/", "");
             std::cout << "Mate pair files read" << std::endl;
             BinaryReader::readFile(out_dir + "/" + out_prefix + ".contig.hbv", &hbvr);
             LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".contig.paths").c_str());
-            //BinaryReader::readFile(out_dir + "/" + out_prefix + ".large_K.hbv", &hbvr);
-            //LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".large_K.paths").c_str());
             std::cout << "paired end graph loaded" << std::endl;
             VecULongVec invPaths;
             hbvr.Involution(inv);
+        // involution here is fine using ifles r1sa and r2s
+            //std::cout << "testing invlution after calling Involution method from pe hbv only" << std::endl;
+            //TestInvolution(hbvr, inv);
             invert(pathsr, invPaths, hbvr.EdgeObjectCount());
-            // HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, HyperBasevector& lmp_data, int min_reads = 5
             PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
             pf.resolveRegionsUsingLMPData();
-            //pf.resolveComplexRegionsUsingLMPData();
-            Scram(1);
+        // involution fine here
+        std::cout << "testing invlution after lmp pathing" << std::endl;
+        TestInvolution(hbvr, inv);
+        std::cout << "hbv has" << hbvr.EdgeObjectCount() << "edges" <<  std::endl;
+        BinaryWriter::writeFile("/Users/barrk/Documents/ecoli_dataset/v1/check_inv.hbv", hbvr);
+        WriteReadPathVec(pathsr,"/Users/barrk/Documents/ecoli_dataset/v1/check_inv.paths");
+        std::cout << "reading in just written file" <<std::endl;
+        hbvr.Clear();
+        pathsr.clear();
+        inv.clear();
+        BinaryReader::readFile("/Users/barrk/Documents/ecoli_dataset/v1/check_inv.hbv", &hbvr);
+        LoadReadPathVec(pathsr,"/Users/barrk/Documents/ecoli_dataset/v1/check_inv.paths");
+        //inv.clear();
+        hbvr.Involution(inv);
+        std::cout << "testing involution after reading lmp hbv and calling involution" <<std::endl;
+        std::cout << "hbv has" << hbvr.EdgeObjectCount() << "edges" <<  std::endl;
+
+        TestInvolution(hbvr, inv);
+            //Scram(1);
     }
     //== Handle "special cases" to test on development==
 
@@ -518,16 +531,6 @@ int main(const int argc, const char * argv[]) {
         std::cout << "--== Step 5: Assembling gaps ==--" << std::endl;
         std::cout << Date() <<": inverting paths"<<std::endl;
 
-        //////
-        //[GONZA]: append the pacbio paths to this vector as a first test
-        //auto bases = dataMag.mag["PE1"]->bases;
-        //auto bases2 = dataMag.mag["PB1"]->bases;
-        //PacbioPather pbp(&bases2, &hbvr);
-        //pbp.Hbv2Map(&hbvr);
-        //auto pb_paths = pbp.mapReads();
-        //pathsr.insert(pathsr.end(), pb_paths.begin(), pb_paths.end());
-        /////
-
         invert(pathsr, paths_inv, hbvr.EdgeObjectCount());
         if (dump_perf) perf_file << checkpoint_perf_time("Invert") << std::endl;
 
@@ -595,33 +598,16 @@ int main(const int argc, const char * argv[]) {
         bool FINAL_TINY = True;
         bool UNWIND3 = True;
 
-        if (mp_read_files != "") {
-            std::cout << "Reading mate pair files" << std::endl;
-            MpData mp_data(mp_read_files);
-            //mp_data.read_binary("/Users/barrk/Documents/ecoli_dataset/", "");
-            std::cout << "Mate pair files read" << std::endl;
+        std::cout << "number of pe bases:" <<pe_data.bases.size() << " and quals: " << pe_data.quals.size() << std::endl;
+        vecbvec mp_dummy; // add this so we can pass abov one by reference
+        Simplify(out_dir, hbvr, inv, pathsr, pe_data.bases, pe_data.quals, MAX_SUPP_DEL, TAMP_EARLY_MIN, MIN_RATIO2,
+                 MAX_DEL2,
+                 ANALYZE_BRANCHES_VERBOSE2, TRACE_SEQ, DEGLOOP, EXT_FINAL, EXT_FINAL_MODE, PULL_APART_VERBOSE,
+                 PULL_APART_TRACE, DEGLOOP_MODE, DEGLOOP_MIN_DIST, IMPROVE_PATHS, IMPROVE_PATHS_LARGE, FINAL_TINY,
+                 UNWIND3, run_pathfinder, dump_pf);
+            BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".large_K.simplified.hbv", hbvr);
+            WriteReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".large_K.simplified.paths").c_str());
 
-            BinaryReader::readFile(out_dir + "/" + out_prefix + ".large_K.final.hbv", &hbvr);
-            LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".large_K.final.paths").c_str());
-            VecULongVec invPaths;
-            hbvr.Involution(inv);
-            invert(pathsr, invPaths, hbvr.EdgeObjectCount());
-            // HyperBasevector& hbv, vec<int>& inv, ReadPathVec& paths, VecULongVec& invPaths, HyperBasevector& lmp_data, int min_reads = 5
-            PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
-            // rhis segfaults when doing the dictionary lookup, again!
-            //pf.resolveComplexRegionsUsingLMPData();
-        } else {
-            std::cout << "number of pe bases:" <<pe_data.bases.size() << " and quals: " << pe_data.quals.size() << std::endl;
-            vecbvec mp_dummy; // add this so we can pass abov one by reference
-            Simplify(out_dir, hbvr, inv, pathsr, pe_data.bases, pe_data.quals, MAX_SUPP_DEL, TAMP_EARLY_MIN, MIN_RATIO2,
-                     MAX_DEL2,
-                     ANALYZE_BRANCHES_VERBOSE2, TRACE_SEQ, DEGLOOP, EXT_FINAL, EXT_FINAL_MODE, PULL_APART_VERBOSE,
-                     PULL_APART_TRACE, DEGLOOP_MODE, DEGLOOP_MIN_DIST, IMPROVE_PATHS, IMPROVE_PATHS_LARGE, FINAL_TINY,
-                     UNWIND3, run_pathfinder, dump_pf);
-                BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".large_K.simplified.hbv", hbvr);
-                WriteReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".large_K.simplified.paths").c_str());
-
-        }
 
         if (dump_perf) perf_file << checkpoint_perf_time("Simplify") << std::endl;
         // For now, fix paths and write the and their inverse
@@ -682,13 +668,25 @@ int main(const int argc, const char * argv[]) {
     }
     if (from_step==7){
         std::cout << "Reading contig graph and paths..." << std::endl;
+
+        MpData mp_data(mp_read_files);
+        std::cout << "Mate pair files read" << std::endl;
         BinaryReader::readFile(out_dir + "/" + out_prefix + ".contig.hbv", &hbvr);
         LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".contig.paths").c_str());
-        inv.clear();
+        std::cout << "paired end graph loaded" << std::endl;
+        VecULongVec invPaths;
         hbvr.Involution(inv);
-        paths_inv.clear();
-        invert(pathsr, paths_inv, hbvr.EdgeObjectCount());
-        std::cout << "   DONE!" << std::endl;
+        std::cout << "testing invlution after lmp pathing in step 7 init before lmp bit" << std::endl;
+        TestInvolution(hbvr, inv);
+        // involution here is fine using ifles r1sa and r2s
+        //std::cout << "testing invlution after calling Involution method from pe hbv only" << std::endl;
+        //TestInvolution(hbvr, inv);
+        invert(pathsr, invPaths, hbvr.EdgeObjectCount());
+        PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
+        pf.resolveRegionsUsingLMPData();
+
+        std::cout << "testing invlution after lmp pathing in step 7 init" << std::endl;
+        TestInvolution(hbvr, inv);
         if (dump_perf) perf_file << std::endl << checkpoint_perf_time("ContigGraphLoad") << std::endl;
     }
     if (from_step<=7 and to_step>=7) {
@@ -711,19 +709,20 @@ int main(const int argc, const char * argv[]) {
         //std::cout<<"all structures refreshed"<<std::endl;
         //PathFinder(hbvr,inv,pathsr,paths_inv).untangle_pins();
         //PathFinder(hbvr,inv,pathsr,paths_inv).untangle_complex_in_out_choices();
-        MpData mp_data(mp_read_files);
-        std::cout << "Mate pair files read" << std::endl;
-        PathFinderkb pf(hbvr, inv, pathsr, paths_inv, mp_data.bases);
-        pf.resolveRegionsUsingLMPData();
-        BinaryWriter::writeFile("/Users/barrk/Documents/ecoli_dataset/v1/after_pathfinder.hbv", hbvr);
-        WriteReadPathVec(pathsr, "/Users/barrk/Documents/ecoli_dataset/v1s/after+pathfinder.paths");
-        hbvr.Involution(inv);
+        //MpData mp_data(mp_read_files);
+        //std::cout << "Mate pair files read" << std::endl;
+
+        std::cout << "testing involution before MakeGaps" <<std::endl;
+
+        TestInvolution(hbvr, inv);
         MakeGaps(hbvr, inv, pathsr, paths_inv, MIN_LINE, MIN_LINK_COUNT, out_dir, out_prefix, SCAFFOLD_VERBOSE,
-                 GAP_CLEANUP);
+                 false);
         if (dump_perf) perf_file << checkpoint_perf_time("MakeGaps") << std::endl;
         std::cout << "--== PE-Scaffolding DONE!" << std::endl << std::endl << std::endl;
         // Carry out final analyses and write final assembly files.
 
+        // with r1s/r2s, passes all tests unti lthis one, so it gets broken in make gaps
+        hbvr.Involution(inv);
         vecbasevector G;
         FinalFiles(hbvr, inv, pathsr, subsam_names, subsam_starts, out_dir, out_prefix+ "_assembly", MAX_CELL_PATHS, MAX_DEPTH, G);
         GFADump(out_dir +"/"+ out_prefix + "_assembly", hbvr, inv, pathsr, MAX_CELL_PATHS, MAX_DEPTH, true);

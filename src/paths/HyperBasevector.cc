@@ -646,15 +646,15 @@ template
 void DistancesToEndArr<BaseVec>(digraphE<BaseVec> const&, vec<int, std::allocator<int> > const&, int, unsigned char, vec<int, std::allocator<int> >&);
 
 void HyperBasevector::Involution( vec<int>& inv )
-{    vecbasevector edges( EdgeObjectCount( ) );
+{    vecbasevector edges( EdgeObjectCount( ) ); // create a vector with an element for every edge
      for ( int e = 0; e < EdgeObjectCount( ); e++ )
-          edges[e] = EdgeObject(e);
-     vec<int> x1( E( ), vec<int>::IDENTITY ), x2( E( ), vec<int>::IDENTITY );
+          edges[e] = EdgeObject(e); // populate vector with edges from the hbv
+     vec<int> x1( E( ), vec<int>::IDENTITY ), x2( E( ), vec<int>::IDENTITY ); // initialise  2 vectors
      inv.resize( edges.size( ) );
-     ParallelSort( x1, [&edges](int i1, int i2){ return edges[i1] < edges[i2]; } );
+     ParallelSort( x1, [&edges](int i1, int i2){ return edges[i1] < edges[i2]; } ); // populate x1 with edges in ascending order
      #pragma omp parallel for
      for ( int i = 0; i < (int) edges.size( ); i++ )
           edges[i].ReverseComplement( );
-     ParallelSort( x2, [&edges](int i1, int i2){ return edges[i1] < edges[i2]; } );
+     ParallelSort( x2, [&edges](int i1, int i2){ return edges[i1] < edges[i2]; } ); // populate x2 with rc edges in ascending order
      for ( int i = 0; i < E( ); i++ )
-          inv[ x1[i] ] = x2[i];    }
+          inv[ x1[i] ] = x2[i];    } // the position of the reverse complement of x1 i is x2 i
