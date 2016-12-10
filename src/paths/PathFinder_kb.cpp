@@ -109,7 +109,6 @@ std::vector<uint64_t>  PathFinderkb::canonicalisePath(std::vector<uint64_t> path
     for (auto edge: path){
         if (involution_path){
             result.push_back(mInv[edge]);
-            std::reverse(result.begin(), result.end());
         } else {
             result.push_back(edge);
         }
@@ -117,6 +116,9 @@ std::vector<uint64_t>  PathFinderkb::canonicalisePath(std::vector<uint64_t> path
     //if (result.back() < result.front()){
     //    std::reverse(result.begin(), result.end());
     //}
+    if (involution_path) {
+        std::reverse(result.begin(), result.end());
+    }
     return result;
 
 }
@@ -236,19 +238,19 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
                             std::vector<uint64_t> path_out = mapped_lmp_out[edge_out].first;
                             std::vector<uint64_t> full_path;
                             full_path.push_back(edge_in);
-                            std::cout << path_str(full_path) << std::endl;
+                            std::cout << "edge in added;" << path_str(full_path) << std::endl;
                             for (auto e:path_in){
                                 full_path.push_back(e);
                             }
-                            std::cout << path_str(full_path) << std::endl;
+                            std::cout << "path in added;" << path_str(full_path) << std::endl;
                             full_path.push_back(edge_index);
                             std::cout << path_str(full_path) << std::endl;
                             for (auto e:path_out){
                                 full_path.push_back(e);
                             }
-                            std::cout << path_str(full_path) << std::endl;
+                            std::cout << "edge;" << path_str(full_path) << std::endl;
                             full_path.push_back(edge_out);
-                            std::cout << path_str(full_path) << std::endl;
+                            std::cout << "path out added;" << path_str(full_path) << std::endl;
                             std::vector<uint64_t> path_canonical = canonicalisePath(full_path);
                             std::vector<uint64_t> path_reversed;
                             path_reversed.resize(path_canonical.size());
@@ -264,6 +266,7 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
                                 if (inner_path_length < 12000) { // hardcoded something longer tha any lmp... insert size
                                     paths_seen.insert(path_canonical);
                                     std::cout << "path to separate: " << path_str(full_path) << std::endl;
+                                    std::cout << "path canonical: " << path_str(path_canonical) << std::endl;
                                     paths_to_separate.push_back(path_canonical);
                                     paths_separated += 1;
                                 }
