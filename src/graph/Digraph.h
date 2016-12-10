@@ -110,7 +110,8 @@ class digraph
      int N( ) const { return from_.size( ); } // number of vertices
 
      void CheckGoodVertex( int v ) const
-     {    AssertGe( v, 0 );
+     {    AssertGe( v, 0 ); // check the index of the vertex is neither
+          // negative nor larger than the number of vertices on the graph
           AssertLt( v, N( ) );    }
 
      const vec< vec<int> >& From( ) const { return from_; }

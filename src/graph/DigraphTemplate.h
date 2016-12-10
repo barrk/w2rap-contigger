@@ -2016,15 +2016,19 @@ template<class F> void digraphE<F>::AddVertices( int nadd )
      to_edge_obj_.resize( nvert + nadd );    }
 
 template<class F> void digraphE<F>::DeleteEdges( const vec<int>& to_delete )
-{    vec<int> to_delete_local;
+{
+     std::cout << to_delete.size() << " edges to delete " << std::endl;
+     vec<int> to_delete_local;
+     // order to dlete propr to searching it
      if ( !to_delete.UniqueOrdered( ) )
      {    to_delete_local = to_delete;
           UniqueSort(to_delete_local);    }
      const vec<int>& tod 
           = ( to_delete_local.nonempty( ) ? to_delete_local: to_delete );
-     for ( int v = 0; v < N( ); v++ )
-     {    for ( int j = From(v).isize( ) - 1; j >= 0; j-- )
-          {    int e = EdgeObjectIndexByIndexFrom( v, j );
+     for ( int v = 0; v < N( ); v++ ) // for each vertex
+     {    for ( int j = From(v).isize( ) - 1; j >= 0; j-- ) // for each edge from that ertex
+          {    int e = EdgeObjectIndexByIndexFrom( v, j ); // get the edge index
+               // if jth edge from vertex v is in to  delete, remove it,
                if ( BinMember( tod, e ) ) DeleteEdgeFrom( v, j );    }    }    }
 
 template<class F> void digraphE<F>::DeleteEdgesParallel( const vec<Bool>& to_delete )

@@ -256,6 +256,7 @@ int main(const int argc, const char * argv[]) {
             invert(pathsr, invPaths, hbvr.EdgeObjectCount());
             PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
             pf.resolveRegionsUsingLMPData();
+        hbvr.Involution(inv);
         // involution fine here
         std::cout << "testing invlution after lmp pathing" << std::endl;
         TestInvolution(hbvr, inv);
@@ -716,7 +717,7 @@ int main(const int argc, const char * argv[]) {
 
         TestInvolution(hbvr, inv);
         MakeGaps(hbvr, inv, pathsr, paths_inv, MIN_LINE, MIN_LINK_COUNT, out_dir, out_prefix, SCAFFOLD_VERBOSE,
-                 false);
+                 true);
         if (dump_perf) perf_file << checkpoint_perf_time("MakeGaps") << std::endl;
         std::cout << "--== PE-Scaffolding DONE!" << std::endl << std::endl << std::endl;
         // Carry out final analyses and write final assembly files.

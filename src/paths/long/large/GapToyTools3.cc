@@ -107,7 +107,7 @@ void RemoveUnneededVertices2( HyperBasevector& hbv, vec<int>& inv, ReadPathVec& 
     // this happening is a single, palindromic edge, but that would not
     // qualify for
 
-    vec<bool> vertex_kill( hbv.N(), false );
+    vec<bool> vertex_kill( hbv.N(), false ); // mask to be used to determine hich vertices to remve
     vec<int> vertex_queue;
     vec<int> to_left, to_right;
     hbv.ToLeft(to_left);
@@ -118,9 +118,9 @@ void RemoveUnneededVertices2( HyperBasevector& hbv, vec<int>& inv, ReadPathVec& 
     // v0   v1   v2   v3
     for ( int v = 0; v < hbv.N(); ++v )
         if ( hbv.FromSize(v) == 1 && hbv.ToSize(v) == 1
-                && hbv.From(v)[0] != hbv.To(v)[0] 
-                && hbv.Bases( hbv.IFrom( v, 0 ) ) > 0
-                && hbv.Bases( hbv.ITo( v, 0 ) ) > 0 ) {
+                && hbv.From(v)[0] != hbv.To(v)[0] // if its on a path and not a loop
+                && hbv.Bases( hbv.IFrom( v, 0 ) ) > 0 // and the 0th edge to/from vertex v
+                && hbv.Bases( hbv.ITo( v, 0 ) ) > 0 ) { // contains some vertices
             vertex_kill[v] = true;
             vertex_queue.push_back(v);
         }
@@ -486,8 +486,13 @@ void RemoveSmallComponents3( HyperBasevector& hb, const Bool remove_small_cycles
                                    v, t ) );    }    }    }    }    }
      LogTime( clock2, "removing small components 2" );
      double clock3 = WallClockTime( );
-     hb.DeleteEdges(e_to_delete);
-     LogTime( clock3, "removing small components 3" );    }
+    std::cout << "hb.DeleteEdges called with "<< e_to_delete.size() << " edges to delete " << std::endl;
+    std::cout << "hb has "<< hb.EdgeObjectCount() << " edges  " << std::endl;
+
+    hb.DeleteEdges(e_to_delete);
+    std::cout << "after deletion hb has "<< hb.EdgeObjectCount() << " edges  " << std::endl;
+
+    LogTime( clock3, "removing small components 3" );    }
 
 void Empty( const HyperBasevector& hb, const vec< std::pair<vec<int>,vec<int>> >& pairs, 
      const vec<int64_t>& pairs_pid, vec<vec<int>>& left_empty, 
