@@ -51,16 +51,12 @@ void PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & spanning_edges
      */
     std::vector<uint64_t> edges;
     if (direction=="right"){edges = prev_edges[e];
-        std::cout << "prev edges: " << path_str(prev_edges[e]) << " edge: " << e << std::endl;
 
     } else {
         edges = next_edges[e];
-        std::cout << "next edges: " << path_str(next_edges[e]) << " edge: " << e << std::endl;
 
     }
 
-    std::cout << "traversing edge: " << e << std::endl;
-    std::cout << "adjacent edges: " << path_str(edges) << std::endl;
     // edges between the start edge and the end edge are ones we traverse through in that recursion stack,
     // only want paths from beginning node, i.e. when recursion depth is 0, but paths can split at any time
     for (auto edge:edges){
@@ -73,15 +69,11 @@ void PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & spanning_edges
                 // i want to store edges between start edge and edge, this stores attached edges, stores the ones traversed before twice for some readon
                 traversed_edge_list.push_back(edge);
                 std::vector<uint64_t> temp_path;
-                std::cout << "temp path: " << path_str(temp_path) << std::endl;
 
                 for (auto intermediate_edge: intermediate_path){
                     temp_path.push_back(intermediate_edge);
                 }
                 paths_to_spanning_edges.push_back(temp_path);
-                std::cout << "edge called with: " << e << " current edge: " << edge << std::endl;
-                std::cout << "temp path: " << path_str(temp_path) << std::endl;
-                std::cout << "spanning path: " << path_str(paths_to_spanning_edges.back()) << std::endl;
                 temp_path.clear();
             } else { // if this edge does not take us far enough away, add its length to distance traversed go to next edge
                 if (direction=="left"){
@@ -154,17 +146,7 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
     std::vector<std::vector<uint64_t> > paths_to_separate;
 
     for (int edge_index = 0; edge_index < mHBV.EdgeObjectCount(); ++edge_index) {
-    //for (int edge_index = 320; edge_index < 335; ++edge_index) {
-        std::cout << "STARTING  edge " << edge_index << std::endl;
-        //if (edge_index == 337 || edge_index == 336 || edge_index == 320 || edge_index == 321){
-         //   std::cout << "traversing error edge " << std::endl;
-        //}
-        // e < mInv[e] checks that this is a forward directed edge? nope, canonical representation
             edges_beyond_distance(spanning_edges_in, paths_to_spanning_edges, intermediate_path, edge_index, traversed_edge_list, approximate_insert_size, 0, 0, "right");
-        std::cout << "spanning edges in: " << path_str(spanning_edges_in) << std::endl;
-        for (auto pin: paths_to_spanning_edges){
-            std::cout << path_str(pin) << std::endl;
-        }
             traversed_edge_list.clear();
             edges_beyond_distance(spanning_edges_out, paths_to_spanning_edges, intermediate_path, edge_index, traversed_edge_list, approximate_insert_size, 0, 0, "left");
 
@@ -232,25 +214,24 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
                         uint64_t edge_out = key.second;
                         int count = edge_pair_count.second;
                         std::cout << "count for pair:" << edge_pair_count.first.first <<  " " << edge_pair_count.first.second << " : " <<count <<std::endl;
-                        if (count > 2){
-                            std::cout << "count > 5, paths added size:" << paths_to_separate.size() << std::endl;
+                        if (count > 10){
                             std::vector<uint64_t> path_in = mapped_lmp_in[edge_in].first;
                             std::vector<uint64_t> path_out = mapped_lmp_out[edge_out].first;
                             std::vector<uint64_t> full_path;
                             full_path.push_back(edge_in);
-                            std::cout << "edge in added;" << path_str(full_path) << std::endl;
+                            //std::cout << "edge in added;" << path_str(full_path) << std::endl;
                             for (auto e:path_in){
                                 full_path.push_back(e);
                             }
-                            std::cout << "path in added;" << path_str(full_path) << std::endl;
+                            //std::cout << "path in added;" << path_str(full_path) << std::endl;
                             full_path.push_back(edge_index);
-                            std::cout << path_str(full_path) << std::endl;
+                            //std::cout << path_str(full_path) << std::endl;
                             for (auto e:path_out){
                                 full_path.push_back(e);
                             }
-                            std::cout << "edge;" << path_str(full_path) << std::endl;
+                            //std::cout << "edge;" << path_str(full_path) << std::endl;
                             full_path.push_back(edge_out);
-                            std::cout << "path out added;" << path_str(full_path) << std::endl;
+                            //std::cout << "path out added;" << path_str(full_path) << std::endl;
                             std::vector<uint64_t> path_canonical = canonicalisePath(full_path);
                             std::vector<uint64_t> path_reversed;
                             path_reversed.resize(path_canonical.size());
@@ -261,7 +242,6 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
                                 for (int i =1; i < path_canonical.size() -1; i++){
                                     auto edge = mHBV.EdgeObject(path_canonical[i]);
                                     inner_path_length += edge.size();
-                                    std::cout << "edge number: " << path_canonical[i] << " iner path length " << inner_path_length << std::endl;
                                 }
                                 if (inner_path_length < 12000) { // hardcoded something longer tha any lmp... insert size
                                     paths_seen.insert(path_canonical);
@@ -360,22 +340,13 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
                 end_edges_seen.insert(start_rc);
                 auto oen=separate_path(p, true);
                     if (oen.size() > 0) {
-                        std::cout << "Path separated: " << path_str(p) << std::endl;
-                        for (auto ep: p){
-                            auto n = oen[ep];
-                            std::cout << "edge: " << ep << " involution: " << mInv[ep] << " inv inv: " << mInv[mInv[ep]] << std::endl;
-                            std::cout << "new edge: " << path_str(n) << std::endl; // << "new edge involution " << mInv[n] << " inv inv" << mInv[mInv[ep]]<< std::endl;
-                        }
                         //mHBV.Involution(mInv);
                         //TestInvolution(mHBV, mInv);
 
-                        std::cout << "building old edges to new" << std::endl;
                         for (auto et:oen) {
-                            std::cout << "et: " << et.first << std::endl;
                             if (oen[et.first].size() > 0) { // absutely no idea why the start and end edges are ending up as keys in here, because they aren't there when you output oen in side separate paths
                                 if (old_edges_to_new.count(et.first) == 0) old_edges_to_new[et.first] = {};
                                 for (auto ne:oen[et.first]) {
-                                    std::cout << " ne " << ne << " ";
                                     old_edges_to_new[et.first].push_back(ne);
                                 }
                             }
@@ -386,23 +357,11 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
             }
         }
     }
-    for (auto p:old_edges_to_new){
-        std::cout << "p" << p.first <<std::endl;
-        for (auto l: p.second){
-            std::cout << l << " " << std::endl;
-        }
-        std::cout << std::endl;
-    }
+
     if (old_edges_to_new.size()>0) {
         migrate_readpaths(old_edges_to_new);
     }
     std::cout<<" "<<sep<<" paths separated!"<<std::endl;
-    //BinaryWriter::writeFile("/Users/barrk/Documents/ecoli_dataset/v1/all_paths_separated.hbv", mHBV);
-    //WriteReadPathVec(mPaths,"/Users/barrk/Documents/ecoli_dataset/v1/all__paths_separated.paths");
-    //std::cout << "Dumping gfa" << std::endl;
-    //int MAX_CELL_PATHS = 50;
-    //int MAX_DEPTH = 10;
-    //GFADump("/Users/barrk/Documents/ecoli_dataset/v1/all_paths_separated", mHBV, mInv, mPaths, MAX_CELL_PATHS, MAX_DEPTH, true);
 
 
 }
@@ -507,12 +466,10 @@ void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> ed
     std::ofstream edge_migrations;
     edge_migrations.open("/Users/barrk/Documents/ecoli_data/v1/edge_migrations.txt");
     for (auto &p:mPaths){
-        std::cout << "migrating paht:" << std::endl;
         std::vector<std::vector<uint64_t>> possible_new_edges;
         bool translated=false,ambiguous=false;
         for (auto i=0;i<p.size();++i){
             if (edgemap.count(p[i])) { // if edge i on path p has been translated
-                std::cout << p[i] << " ";
                 possible_new_edges.push_back(edgemap[p[i]]);
                 if (not translated) translated=true;
                 // if same edge is in multiple paths, this could occur

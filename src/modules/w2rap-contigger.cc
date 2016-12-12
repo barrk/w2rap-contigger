@@ -257,7 +257,7 @@ int main(const int argc, const char * argv[]) {
             PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
             pf.resolveRegionsUsingLMPData();
         std::cout << "exited lmp pathing" << std::endl;
-        hbvr.Involution(inv);
+        //hbvr.Involution(inv);
         // involution fine here
         std::cout << "testing invlution after lmp pathing" << std::endl;
         TestInvolution(hbvr, inv);
@@ -684,8 +684,8 @@ int main(const int argc, const char * argv[]) {
         //std::cout << "testing invlution after calling Involution method from pe hbv only" << std::endl;
         //TestInvolution(hbvr, inv);
         invert(pathsr, invPaths, hbvr.EdgeObjectCount());
-        PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
-        pf.resolveRegionsUsingLMPData();
+        //PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
+        //pf.resolveRegionsUsingLMPData();
 
         std::cout << "testing invlution after lmp pathing in step 7 init" << std::endl;
         TestInvolution(hbvr, inv);
