@@ -306,11 +306,11 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
     }
 
     std::vector<std::vector<uint64_t> > paths_to_separate_final;
-    for (auto path_to_use: path_length_edge_map){
+    /*for (auto path_to_use: path_length_edge_map){
         paths_to_separate_final.push_back(paths_to_separate[path_to_use.second.path_id]);
         std::cout << path_str(paths_to_separate[path_to_use.second.path_id]) << std::endl;
 
-    }
+    }*/
 
     std::cout << "Regions with same degree in and out:" << same_in_out_degree << std::endl;
     std::cout << "Complex regions with same degree in and out:" << same_in_out_degree_complex << std::endl;
@@ -350,8 +350,6 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
                                     old_edges_to_new[et.first].push_back(ne);
                                 }
                             }
-
-                            std::cout << std::endl;
                         }
                         sep++;
             }
@@ -401,7 +399,6 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
     //migrate connections (dangerous!!!)
     mHBV.GiveEdgeNewToVx(p[0],mToRight[p[0]],current_vertex_fw); // edit graph so edge p now goes to newly created vertex instead of old vertex
     mToRight[p[0]] = current_vertex_fw;
-    if (verbose_separation) std::cout<<"Migrating edge "<<mInv[p[0]]<<" From node old: "<<mToLeft[mInv[p[0]]]<<" new: "<<current_vertex_rev<<std::endl;
     mHBV.GiveEdgeNewFromVx(mInv[p[0]],mToLeft[mInv[p[0]]],current_vertex_rev);// erases old connection from old involution vertex, and connects edge to old
     mToLeft[mInv[p[0]]] = current_vertex_rev;
     std::map<uint64_t,std::vector<uint64_t>> old_edges_to_new;
@@ -416,14 +413,12 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
 
         //now, duplicate next edge for the FW and reverse path
         auto nef=mHBV.AddEdge(prev_vertex_fw,current_vertex_fw,mHBV.EdgeObject(p[ei]));// add an edge for each edge in path, with appropriate basevector
-        if (verbose_separation)  std::cout<<"Edge "<<nef<<": copy of "<<p[ei]<<": "<<prev_vertex_fw<<" - "<<current_vertex_fw<<std::endl;
         mToLeft.push_back(prev_vertex_fw);
         mToRight.push_back(current_vertex_fw);
         if (! old_edges_to_new.count(p[ei]))  old_edges_to_new[p[ei]]={};
         old_edges_to_new[p[ei]].push_back(nef);
 
         auto ner=mHBV.AddEdge(current_vertex_rev,prev_vertex_rev,mHBV.EdgeObject(mInv[p[ei]]));
-        if (verbose_separation) std::cout<<"Edge "<<ner<<": copy of "<<mInv[p[ei]]<<": "<<current_vertex_rev<<" - "<<prev_vertex_rev<<std::endl;
         mToLeft.push_back(current_vertex_rev);
         mToRight.push_back(prev_vertex_rev);
         if (! old_edges_to_new.count(mInv[p[ei]]))  old_edges_to_new[mInv[p[ei]]]={};
@@ -432,24 +427,13 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
         mInv.push_back(ner);
         mInv.push_back(nef);
         mEdgeToPathIds.resize(mEdgeToPathIds.size()+2);
-        std::cout << "old edges to new of " << p[ei] << " is " << path_str(old_edges_to_new[p[ei]]) <<std::endl;
-        std::cout << "old edges to new inv  " << mInv[p[ei]] << " is " << path_str(old_edges_to_new[mInv[p[ei]]]) << std::endl;
 
     }
-    if (verbose_separation) std::cout<<"Migrating edge "<<p[p.size()-1]<<" From node old: "<<mToLeft[p[p.size()-1]]<<" new: "<<current_vertex_fw<<std::endl;
     mHBV.GiveEdgeNewFromVx(p[p.size()-1],mToLeft[p[p.size()-1]],current_vertex_fw);// attach new edges back into graph at right position
     //mToLeft[p[p.size()-1]] = current_vertex_fw;
-    if (verbose_separation) std::cout<<"Migrating edge "<<mInv[p[p.size()-1]]<<" To node old: "<<mToRight[mInv[p[p.size()-1]]]<<" new: "<<current_vertex_rev<<std::endl;
     mHBV.GiveEdgeNewToVx(mInv[p[p.size()-1]],mToRight[mInv[p[p.size()-1]]],current_vertex_rev);
     //mToRight[mInv[p[p.size()-1]]] = current_vertex_rev;
 
-    for (auto p: old_edges_to_new){
-        std::cout << "in separate paths, old edges to new p:" << p.first << std::endl;
-        for (auto l:old_edges_to_new[p.first]){
-            std::cout << l << " " << std::endl;
-        }
-        std::cout << std::endl;
-    }
     //TODO: cleanup new isolated elements and leading-nowhere paths.
     //for (auto ei=1;ei<p.size()-1;++ei) mHBV.DeleteEdges({p[ei]});
     return old_edges_to_new;
@@ -476,13 +460,11 @@ void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> ed
                 if (possible_new_edges.back().size()>1) ambiguous=true; // if there is more than 1 edge mapping, its ambiguous
             }
             else possible_new_edges.push_back({p[i]});
-            std::cout << std::endl;
 
         }
         if (translated){
             if (not ambiguous){ //just straigh forward translation
                 for (auto i=0;i<p.size();++i) {
-                    std::cout << "Migrating edge: " << p[i] << " to edge " << path_str(possible_new_edges[i]) << std::endl;
                     //edge_migrations << "Migrating edge: " << p[i] << " to edge " << possible_new_edges[i][0] << std::endl;
                     p[i]=possible_new_edges[i][0];}
             }
