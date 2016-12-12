@@ -306,11 +306,11 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
     }
 
     std::vector<std::vector<uint64_t> > paths_to_separate_final;
-    /*for (auto path_to_use: path_length_edge_map){
+    for (auto path_to_use: path_length_edge_map){
         paths_to_separate_final.push_back(paths_to_separate[path_to_use.second.path_id]);
         std::cout << path_str(paths_to_separate[path_to_use.second.path_id]) << std::endl;
 
-    }*/
+    }
 
     std::cout << "Regions with same degree in and out:" << same_in_out_degree << std::endl;
     std::cout << "Complex regions with same degree in and out:" << same_in_out_degree_complex << std::endl;
@@ -340,6 +340,7 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
                 end_edges_seen.insert(start_rc);
                 auto oen=separate_path(p, true);
                     if (oen.size() > 0) {
+                        std::cout << "in loop" << std::endl;
                         //mHBV.Involution(mInv);
                         //TestInvolution(mHBV, mInv);
 
@@ -360,6 +361,7 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
         migrate_readpaths(old_edges_to_new);
     }
     std::cout<<" "<<sep<<" paths separated!"<<std::endl;
+    std::cout<<mHBV.EdgeObjectCount() << " edges in hbv"<<std::endl;
 
 
 }
