@@ -256,6 +256,7 @@ int main(const int argc, const char * argv[]) {
             invert(pathsr, invPaths, hbvr.EdgeObjectCount());
             PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
             pf.resolveRegionsUsingLMPData();
+        std::cout << "exited lmp pathing" << std::endl;
         hbvr.Involution(inv);
         // involution fine here
         std::cout << "testing invlution after lmp pathing" << std::endl;

@@ -153,12 +153,12 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
     std::vector<uint64_t>  spanning_edges_out;
     std::vector<std::vector<uint64_t> > paths_to_separate;
 
-    //for (int edge_index = 0; edge_index < mHBV.EdgeObjectCount(); ++edge_index) {
-    for (int edge_index = 320; edge_index < 335; ++edge_index) {
+    for (int edge_index = 0; edge_index < mHBV.EdgeObjectCount(); ++edge_index) {
+    //for (int edge_index = 320; edge_index < 335; ++edge_index) {
         std::cout << "STARTING  edge " << edge_index << std::endl;
-        if (edge_index == 337 || edge_index == 336 || edge_index == 320 || edge_index == 321){
-            std::cout << "traversing error edge " << std::endl;
-        }
+        //if (edge_index == 337 || edge_index == 336 || edge_index == 320 || edge_index == 321){
+         //   std::cout << "traversing error edge " << std::endl;
+        //}
         // e < mInv[e] checks that this is a forward directed edge? nope, canonical representation
             edges_beyond_distance(spanning_edges_in, paths_to_spanning_edges, intermediate_path, edge_index, traversed_edge_list, approximate_insert_size, 0, 0, "right");
         std::cout << "spanning edges in: " << path_str(spanning_edges_in) << std::endl;
@@ -361,19 +361,37 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
                 auto oen=separate_path(p, true);
                     if (oen.size() > 0) {
                         std::cout << "Path separated: " << path_str(p) << std::endl;
-                        mHBV.Involution(mInv);
-                        TestInvolution(mHBV, mInv);
+                        for (auto ep: p){
+                            auto n = oen[ep];
+                            std::cout << "edge: " << ep << " involution: " << mInv[ep] << " inv inv: " << mInv[mInv[ep]] << std::endl;
+                            std::cout << "new edge: " << path_str(n) << std::endl; // << "new edge involution " << mInv[n] << " inv inv" << mInv[mInv[ep]]<< std::endl;
+                        }
+                        //mHBV.Involution(mInv);
+                        //TestInvolution(mHBV, mInv);
 
+                        std::cout << "building old edges to new" << std::endl;
                         for (auto et:oen) {
-                            if (old_edges_to_new.count(et.first) == 0) old_edges_to_new[et.first] = {};
-                            for (auto ne:et.second) {
-                                old_edges_to_new[et.first].push_back(ne);
+                            std::cout << "et: " << et.first << std::endl;
+                            if (oen[et.first].size() > 0) { // absutely no idea why the start and end edges are ending up as keys in here, because they aren't there when you output oen in side separate paths
+                                if (old_edges_to_new.count(et.first) == 0) old_edges_to_new[et.first] = {};
+                                for (auto ne:oen[et.first]) {
+                                    std::cout << " ne " << ne << " ";
+                                    old_edges_to_new[et.first].push_back(ne);
+                                }
                             }
 
+                            std::cout << std::endl;
                         }
                         sep++;
             }
         }
+    }
+    for (auto p:old_edges_to_new){
+        std::cout << "p" << p.first <<std::endl;
+        for (auto l: p.second){
+            std::cout << l << " " << std::endl;
+        }
+        std::cout << std::endl;
     }
     if (old_edges_to_new.size()>0) {
         migrate_readpaths(old_edges_to_new);
@@ -455,6 +473,9 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
         mInv.push_back(ner);
         mInv.push_back(nef);
         mEdgeToPathIds.resize(mEdgeToPathIds.size()+2);
+        std::cout << "old edges to new of " << p[ei] << " is " << path_str(old_edges_to_new[p[ei]]) <<std::endl;
+        std::cout << "old edges to new inv  " << mInv[p[ei]] << " is " << path_str(old_edges_to_new[mInv[p[ei]]]) << std::endl;
+
     }
     if (verbose_separation) std::cout<<"Migrating edge "<<p[p.size()-1]<<" From node old: "<<mToLeft[p[p.size()-1]]<<" new: "<<current_vertex_fw<<std::endl;
     mHBV.GiveEdgeNewFromVx(p[p.size()-1],mToLeft[p[p.size()-1]],current_vertex_fw);// attach new edges back into graph at right position
@@ -463,6 +484,13 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
     mHBV.GiveEdgeNewToVx(mInv[p[p.size()-1]],mToRight[mInv[p[p.size()-1]]],current_vertex_rev);
     //mToRight[mInv[p[p.size()-1]]] = current_vertex_rev;
 
+    for (auto p: old_edges_to_new){
+        std::cout << "in separate paths, old edges to new p:" << p.first << std::endl;
+        for (auto l:old_edges_to_new[p.first]){
+            std::cout << l << " " << std::endl;
+        }
+        std::cout << std::endl;
+    }
     //TODO: cleanup new isolated elements and leading-nowhere paths.
     //for (auto ei=1;ei<p.size()-1;++ei) mHBV.DeleteEdges({p[ei]});
     return old_edges_to_new;
@@ -479,21 +507,25 @@ void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> ed
     std::ofstream edge_migrations;
     edge_migrations.open("/Users/barrk/Documents/ecoli_data/v1/edge_migrations.txt");
     for (auto &p:mPaths){
+        std::cout << "migrating paht:" << std::endl;
         std::vector<std::vector<uint64_t>> possible_new_edges;
         bool translated=false,ambiguous=false;
         for (auto i=0;i<p.size();++i){
             if (edgemap.count(p[i])) { // if edge i on path p has been translated
+                std::cout << p[i] << " ";
                 possible_new_edges.push_back(edgemap[p[i]]);
                 if (not translated) translated=true;
                 // if same edge is in multiple paths, this could occur
                 if (possible_new_edges.back().size()>1) ambiguous=true; // if there is more than 1 edge mapping, its ambiguous
             }
             else possible_new_edges.push_back({p[i]});
+            std::cout << std::endl;
+
         }
         if (translated){
             if (not ambiguous){ //just straigh forward translation
                 for (auto i=0;i<p.size();++i) {
-                    //std::cout << "Migrating edge: " << p[i] << " to edge " << possible_new_edges[i][0] << std::endl;
+                    std::cout << "Migrating edge: " << p[i] << " to edge " << path_str(possible_new_edges[i]) << std::endl;
                     //edge_migrations << "Migrating edge: " << p[i] << " to edge " << possible_new_edges[i][0] << std::endl;
                     p[i]=possible_new_edges[i][0];}
             }
@@ -519,7 +551,7 @@ void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> ed
                     p.resize(1);
                 }
                 else{
-                    std::srand (std::time(NULL));
+                    std::srand (std::time(NULL));// TODO: create either single seed for whole thing, or multiple seeds but keep track of them
                     //randomly choose a path
                     int r=std::rand()%possible_paths.size();
                     for (auto i=0;i<p.size();++i) p[i]=possible_paths[r][i];
