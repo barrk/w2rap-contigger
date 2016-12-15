@@ -120,7 +120,7 @@ void RemoveUnneededVertices2( HyperBasevector& hbv, vec<int>& inv, ReadPathVec& 
         if ( hbv.FromSize(v) == 1 && hbv.ToSize(v) == 1
                 && hbv.From(v)[0] != hbv.To(v)[0] // if its on a path and not a loop
                 && hbv.Bases( hbv.IFrom( v, 0 ) ) > 0 // and the 0th edge to/from vertex v
-                && hbv.Bases( hbv.ITo( v, 0 ) ) > 0 ) { // contains some vertices
+                && hbv.Bases( hbv.ITo( v, 0 ) ) > 0 ) { // contains some bases
             vertex_kill[v] = true;
             vertex_queue.push_back(v);
         }
@@ -588,7 +588,7 @@ void TestInvolution( const HyperBasevector& hb, const vec<int>& inv )
                std::cout << "Involution value not rc.\n" << "Abort." << std::endl;
                TracebackThisProcess( );    }
           if ( inv[inv[e]] != e )
-          {    std::cout << "EDGE BREAKING INVOLUTION: " << e << " inv " << inv[inv[e]] << std::endl;
+          {    std::cout << "EDGE BREAKING INVOLUTION: " << e << "inv" << inv[e] << " inv inv " << inv[inv[e]] << std::endl;
                          std::cout << "Involution is not an involution.\n" << "Abort." << std::endl;
                TracebackThisProcess( );    }    }
      for ( int v = 0; v < hb.N( ); v++ )

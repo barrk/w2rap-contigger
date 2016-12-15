@@ -15,13 +15,11 @@
 #include "Vec.h"
 #include "GFADump.h"
 #include <lmp/lmp_mapper.h>
+#include <paths/ComplexRegion.h>
 #include <fstream>
 #include <algorithm>
 #include <iostream>
 
-
-
-//using BigDict = HashSet<BigKMer<200>,typename BigKMer<200>::hasher>;
 
 class PathFinderkb {
 public:
@@ -53,6 +51,7 @@ public:
     std::tuple <std::vector<LMPPair >, std::vector<LMPPair >, std::map<uint64_t, std::vector<int> > > PathFinderkb::mapEdgesToLMPReads();//(std::vector<LMPPair > & lmp_pairs_for_scaffolding);
     void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> edgemap);
     std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector<uint64_t> p, bool verbose_separation);
+    void PathFinderkb::resolveComplexRegionsUsingLMPData();
 
 private:
     void PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & long_fronteirs, std::vector<std::vector<uint64_t> >  & paths_to_long_fronteirs, std::vector<uint64_t> &  intermediate_path, uint64_t e, vector<uint64_t > & traversed_edge_list, uint64_t large_frontier_size, int recursion_depth=0, int distance_traversed=0, std::string direction="right");

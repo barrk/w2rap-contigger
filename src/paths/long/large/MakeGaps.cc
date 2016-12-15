@@ -24,10 +24,12 @@ void MakeGaps( HyperBasevector& hb, vec<int>& inv, ReadPathVec& paths,
 {
      // Set up data structures.
 
+    std::cout << "starting MakeGaps, hbv size:" << hb.EdgeObjectCount() << std::endl;
      double clock = WallClockTime( );
      vec<int> to_left, to_right;
      hb.ToLeft(to_left), hb.ToRight(to_right);
      vec<vec<vec<vec<int>>>> lines;
+    std::cout << "loading: " << work_dir + "/" + FIN + ".fin.lines" << std::endl;
      BinaryReader::readFile( work_dir + "/" + FIN + ".fin.lines", &lines );
      vec<int> llens, npairs;
      GetLineLengths( hb, lines, llens );
