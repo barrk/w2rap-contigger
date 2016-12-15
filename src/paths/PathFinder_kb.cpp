@@ -144,8 +144,8 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
     std::vector<uint64_t> spanning_edges_in;
     std::vector<uint64_t> spanning_edges_out;
     std::vector<std::vector<uint64_t> > paths_to_separate;
-    //ComplexRegion complex_region;
-    //ComplexRegionCollection complex_regions;
+    ComplexRegion complex_region;
+    ComplexRegionCollection complex_regions(mInv);
 
     for (int edge_index = 0; edge_index < mHBV.EdgeObjectCount(); ++edge_index) {
         auto edge = mHBV.EdgeObject(edge_index).ToString();
@@ -158,15 +158,15 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
         edges_beyond_distance(spanning_edges_out, paths_to_spanning_edges, intermediate_path, edge_index,
                               traversed_edge_list, approximate_insert_size, 0, 0, "left");
 
-        /*if (spanning_edges_in.size() > 0 && (spanning_edges_in.size() == spanning_edges_out.size())) {
-            if (complex_regions.ContainsRegionWithEdgesIn(spanning_edges_in)){
+        if (spanning_edges_in.size() > 0 && (spanning_edges_in.size() == spanning_edges_out.size())) {
+            if (complex_regions.ContainsRegionWithEdges(spanning_edges_in, spanning_edges_out)){
                 // don't think this should happen, but we may have overlapping regions where we just want to selet one
-                complex_region = complex_regions.GetRegionWithEdgesIn(spanning_edges_in);
+                complex_region = complex_regions.GetRegionWithEdges(spanning_edges_in, spanning_edges_out);
+            } else {// if we have't already created this region, do so
+                complex_regions.AddRegion(spanning_edges_in, spanning_edges_out, mInv, approximate_insert_size);
+                complex_region = complex_regions.complex_regions.back();
             }
-            // if we have't already created this region, do so
-                ComplexRegion complex_region(spanning_edges_in, spanning_edges_out, approximate_insert_size);
-
-        }*/
+        }
     }
 }
 

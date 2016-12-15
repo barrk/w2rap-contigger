@@ -3,7 +3,6 @@
 //
 
 #include "ComplexRegion.h"
-using namespace LMPRegions;
 
 
 ComplexRegion::ComplexRegion(){};
@@ -26,6 +25,26 @@ void ComplexRegion::AddPath(ReadPath path){
 }
 
 
+void  ComplexRegion::canonicaliseEdgesInOut(){
+    // to avoid confusion and errors due to reverse completements, and order of read mapping, always deal with paths on the same strand, in the same direction
+    //first sort in/out edges
+    std::sort(edges_in.begin(), edges_in.end());
+    std::sort(edges_out.begin(), edges_out.end());
+    for (int i = 0; i < edges_in.size(); i++){
+        // in practise i think all edges in will be edges in canoical if one of them is, same for out
+        if (edges_in[i] < involution[edges_out[i]]){
+            edges_in_canonical.push_back(edges_in[i]);
+            edges_out_canonical.push_back(edges_out[i]);
+        } else {
+
+            edges_in_canonical.push_back(edges_out[i]);
+            edges_out_canonical.push_back(edges_in[i]);
+        }
+    }
+
+}
+
+
 std::vector<uint64_t>  ComplexRegion::canonicalisePath(ReadPath path){
     std::vector<uint64_t> result;
     bool involution_path = false;
@@ -44,5 +63,61 @@ std::vector<uint64_t>  ComplexRegion::canonicalisePath(ReadPath path){
         std::reverse(result.begin(), result.end());
     }
     return result;
+
+}
+
+
+ComplexRegionCollection::ComplexRegionCollection(vec<int>& involution): involution(involution){}
+
+
+
+std::pair< std::vector<uint64_t>, std::vector<uint64_t> > ComplexRegionCollection::canonicaliseEdgesInOut(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out){
+    std::sort(edges_in.begin(), edges_in.end());
+    std::sort(edges_out.begin(), edges_out.end());
+    std::vector<uint64_t> edges_in_canonical;
+    std::vector<uint64_t> edges_out_canonical;
+    for (int i = 0; i < edges_in.size(); i++){
+        // in practise i think all edges in will be edges in canoical if one of them is, same for out
+        if (edges_in[i] < involution[edges_out[i]]){
+            edges_in_canonical.push_back(edges_in[i]);
+            edges_out_canonical.push_back(edges_out[i]);
+        } else {
+
+            edges_in_canonical.push_back(edges_out[i]);
+            edges_out_canonical.push_back(edges_in[i]);
+        }
+    }
+    return std::make_pair(edges_in_canonical, edges_out_canonical);
+};
+
+void ComplexRegionCollection::AddRegion(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out,
+               vec<int> &involution, int insert_size = 5000){
+    //ComplexRegion complex_region(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out,
+                                 //vec<int> &involution, int insert_size = 5000);
+    complex_regions.push_back(ComplexRegion());
+    // this seems like a horrible way to do this!
+    auto complex_region = complex_regions.back();
+    complex_region.edges_in = edges_in;
+    complex_region.edges_out = edges_out;
+    complex_region.involution = involution;
+    complex_region.insert_size = insert_size;
+    complex_region.canonicaliseEdgesInOut();
+    auto key = std::make_pair(complex_region.edges_in_canonical, complex_region.edges_out_canonical);
+    edges_to_region_index[key] = complex_regions.size();
+}
+
+bool ComplexRegionCollection::ContainsRegionWithEdges(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out){
+    auto edges = canonicaliseEdgesInOut(edges_in, edges_out);
+    if (edges_to_region_index.count(edges) == 0){
+        return false;
+    } else {
+        return true;
+    }
+}
+
+ComplexRegion ComplexRegionCollection::GetRegionWithEdges(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out){
+    auto edges = canonicaliseEdgesInOut(edges_in, edges_out);
+    auto index = edges_to_region_index[edges];
+    return complex_regions[index];
 
 }
