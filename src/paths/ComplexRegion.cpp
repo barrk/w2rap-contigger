@@ -10,9 +10,50 @@ ComplexRegion::ComplexRegion(){};
 ComplexRegion::ComplexRegion(std::vector<uint64_t  > edges_in, std::vector<uint64_t  > edges_out, vec<int>& involution, int insert_size=5000):
     edges_in(edges_in), edges_out(edges_out), insert_size(insert_size), involution(involution)
 {
-    std::vector<int> pair_counts(edges_in.size());
+    edges_in_detailed.resize(edges_in.size());
+    edges_out_detailed.resize(edges_out.size());
+    std::map<uint64_t, std::vector<int> > pair_ids;
+    std::map<uint64_t, uint64_t>  edge_translations;
+
 };
 
+void ComplexRegion::AddPairId(int edge_index, int pair_id, bool in){
+    BoundingEdge e;
+    if (in){
+        e = edges_in_detailed[edge_index];
+    } else{
+        e = edges_out_detailed[edge_index];
+
+    }
+    e.pair_ids.push_back(pair_id);
+}
+
+void ComplexRegion::AddPathTo(int edge_index, bool in, std::vector<uint64_t> path_from_center){
+    BoundingEdge e;
+    if (in){
+        e = edges_in_detailed[edge_index];
+    } else{
+        e = edges_out_detailed[edge_index];
+
+    }
+    e.path_from_center = path_from_center;
+}
+
+void ComplexRegion::FindSolveablePairs(){
+    for (auto edge_in: edges_in_detailed) {
+        auto in_ids = edge_in.pair_ids;
+        for (auto in_id: in_ids){
+            for (auto edge_out: edges_out_detailed) {
+                auto out_ids = edge_out.pair_ids;
+                if ((std::find(out_ids.begin(), out_ids.end(), in_id) !=
+                        out_ids.end())) {
+                    combination_counts[std::make_pair(edge_in.edge_id, edge_out.edge_id)] += 1;
+
+                }
+            }
+        }
+    }
+}
 
 void ComplexRegion::AddPath(ReadPath path){
     std::vector<uint64_t> path_canonical = canonicalisePath(path);
@@ -37,15 +78,31 @@ void  ComplexRegion::canonicaliseEdgesInOut(){
         if (edges_in[i] < involution[edges_out[i]]){
             edges_in_canonical.push_back(edges_in[i]);
             edges_out_canonical.push_back(edges_out[i]);
+            edges_in_detailed[i].edge_id = edges_in[i];
+            edges_out_detailed[i].edge_id = edges_out[i];
         } else {
 
             edges_in_canonical.push_back(edges_out[i]);
             edges_out_canonical.push_back(edges_in[i]);
+            edges_in_detailed[i].edge_id = edges_out[i];
+            edges_out_detailed[i].edge_id = edges_in[i];
         }
     }
 
 }
 
+
+void ComplexRegion::isSolved(int min_count){
+    int number_solved_pairs = 0;
+    for (auto count:combination_counts){
+        if (count.second > min_count){
+            number_solved_pairs += 1;
+        }
+    }
+    if(number_solved_pairs == edges_in.size()){
+        solved = true;
+    }
+}
 
 std::vector<uint64_t>  ComplexRegion::canonicalisePath(ReadPath path){
     std::vector<uint64_t> result;

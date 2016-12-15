@@ -12,6 +12,14 @@
 #include <Vec.h>
 #include "paths/long/ReadPath.h"
 
+typedef struct {
+    uint64_t edge_id;
+    uint64_t translated_edge_id;
+    std::vector<int> pair_ids;
+    std::vector<uint64_t> path_from_center;
+    bool into; // true if this is an edge going into the region
+} BoundingEdge;
+
 /*
  * when a region which is solveable is found, create an object for it to hold the paths
  * then, consistency between regions can be validated before tying to separate,
@@ -37,9 +45,11 @@
         // to ensure all paths are on same part of the graph, in same direction
         std::vector<uint64_t> edges_in_canonical;
         std::vector<uint64_t> edges_out_canonical;
-        std::vector<int> pair_counts; // store number of reads mapping to each in/out combination
-        void ComplexRegion::canonicaliseEdgesInOut();
-
+        void canonicaliseEdgesInOut();
+        void AddPairId(int edge_index, int pair_id, bool in);
+        void AddPathTo(int edge_index, bool in, std::vector<uint64_t> path_from_center);
+        void FindSolveablePairs();
+        void isSolved(int min_count);
 
     private:
         std::vector<uint64_t> caonicalisePath(ReadPath &path);
@@ -47,7 +57,13 @@
         std::vector<std::vector<uint64_t> > candidate_paths;
         std::vector<std::vector<uint64_t> > selected_paths;
 
-        std::vector<uint64_t> ComplexRegion::canonicalisePath(ReadPath path);
+        std::vector<uint64_t> canonicalisePath(ReadPath path);
+
+        std::map<uint64_t, std::vector<int> > pair_ids;
+        std::map<uint64_t, uint64_t>  edge_translations;
+        std::vector<BoundingEdge> edges_in_detailed;
+        std::vector<BoundingEdge> edges_out_detailed;
+        std::map<std::pair<uint64_t, uint64_t>, int > combination_counts;
 
         //void ComplexRegion::canonicaliseEdgesInOut(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
 
@@ -56,7 +72,7 @@
 
 class ComplexRegionCollection {
 public:
-    ComplexRegionCollection::ComplexRegionCollection(vec<int> &involution);
+    ComplexRegionCollection(vec<int> &involution);
     vec<int> involution;
     //void AddRegion(ComplexRegion complex_region);
     void AddRegion(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out,
@@ -67,7 +83,7 @@ public:
 
 private:
     std::map<std::pair< std::vector<uint64_t>, std::vector<uint64_t> >, int> edges_to_region_index;
-    std::pair< std::vector<uint64_t>, std::vector<uint64_t> > ComplexRegionCollection::canonicaliseEdgesInOut(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
+    std::pair< std::vector<uint64_t>, std::vector<uint64_t> > canonicaliseEdgesInOut(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
     //bool OverlapsOtherRegions();
 
 

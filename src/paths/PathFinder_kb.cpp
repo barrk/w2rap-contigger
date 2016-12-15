@@ -135,7 +135,6 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
     int same_in_out_degree = 0;
     int same_in_out_degree_complex = 0;
     int solveable_regions_count = 0;
-    std::map<uint64_t, int> mapping_counts;
 
     vector<uint64_t> traversed_edge_list;
     std::vector<std::vector<uint64_t> > paths_to_spanning_edges;
@@ -170,39 +169,39 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
             std::map<uint64_t, std::pair< std::vector<uint64_t>, std::vector<int> > > mapped_lmp_in;
             std::map<uint64_t, std::pair< std::vector<uint64_t>, std::vector<int> > > mapped_lmp_out;
             int count = 0;
-            // find number of lmp reads mapping to each large fronteir edge
-            for (auto edge: spanning_edges_in) {
+            int edge_ind = 0;
+            for (auto edge_in: spanning_edges_in) {
                 std::vector<uint64_t> intermediate_edges;
                 for (auto int_edge: paths_to_spanning_edges[count]){
                     intermediate_edges.push_back(int_edge);
                 }
-                std::vector<int> pair_ids;
-                for (auto pair_id :  edge_id_to_pair_id_map[edge]) {
-                    pair_ids.push_back(pair_id);
-                    mapping_counts[edge] += 1;
+                intermediate_edges.push_back(edge_index);
+                complex_region.AddPathTo(edge_ind, true, intermediate_edges);
+                for (auto pair_id :  edge_id_to_pair_id_map[edge_in]) {
+                    complex_region.AddPairId(edge_index, pair_id, true);
                 }
                 count += 1;
-                std::pair< std::vector<uint64_t>, std::vector<int> > result = std::make_pair(intermediate_edges, pair_ids);
-                mapped_lmp_in[edge] = result;
+                edge_ind += 1;
             }
-            for (auto edge: spanning_edges_out) {
+            edge_ind = 0;
+            for (auto edge_out: spanning_edges_out) {
                 std::vector<uint64_t> intermediate_edges;
                 for (auto int_edge: paths_to_spanning_edges[count]){
                     intermediate_edges.push_back(int_edge);
                 }
-                std::vector<int> pair_ids;
-                for (auto pair_id :  edge_id_to_pair_id_map[mInv[edge]]) {
-                    mapping_counts[edge] += 1;
-                    pair_ids.push_back(pair_id);
-
+                complex_region.AddPathTo(edge_ind, false, intermediate_edges);
+                for (auto pair_id :  edge_id_to_pair_id_map[mInv[edge_out]]) {
+                    complex_region.AddPairId(edge_ind, pair_id, false);
                 }
                 count += 1;
-                std::pair< std::vector<uint64_t>, std::vector<int> > result = std::make_pair(intermediate_edges, pair_ids);
-                mapped_lmp_out[edge] = result;
+                edge_ind += 1;
 
             }
+            complex_region.FindSolveablePairs();
+            complex_region.isSolved(10);
         }
     }
+    // can now compare regions, select ones which are solved, track paths to ensure ends don't meet
 }
 
 void PathFinderkb::resolveRegionsUsingLMPData() {
@@ -243,34 +242,34 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
                     std::map<uint64_t, std::pair< std::vector<uint64_t>, std::vector<int> > > mapped_lmp_out;
                     int count = 0;
                     // find number of lmp reads mapping to each large fronteir edge
-                    for (auto edge: spanning_edges_in) {
+                    for (auto edge_in: spanning_edges_in) {
                         std::vector<uint64_t> intermediate_edges;
                         for (auto int_edge: paths_to_spanning_edges[count]){
                             intermediate_edges.push_back(int_edge);
                         }
                         std::vector<int> pair_ids;
-                        for (auto pair_id :  edge_id_to_pair_id_map[edge]) {
+                        for (auto pair_id :  edge_id_to_pair_id_map[edge_in]) {
                             pair_ids.push_back(pair_id);
-                            mapping_counts[edge] += 1;
+                            mapping_counts[edge_in] += 1;
                         }
                         count += 1;
                         std::pair< std::vector<uint64_t>, std::vector<int> > result = std::make_pair(intermediate_edges, pair_ids);
-                        mapped_lmp_in[edge] = result;
+                        mapped_lmp_in[edge_in] = result;
                     }
-                    for (auto edge: spanning_edges_out) {
+                    for (auto edge_out: spanning_edges_out) {
                         std::vector<uint64_t> intermediate_edges;
                         for (auto int_edge: paths_to_spanning_edges[count]){
                             intermediate_edges.push_back(int_edge);
                         }
                         std::vector<int> pair_ids;
-                        for (auto pair_id :  edge_id_to_pair_id_map[mInv[edge]]) {
-                            mapping_counts[edge] += 1;
+                        for (auto pair_id :  edge_id_to_pair_id_map[mInv[edge_out]]) {
+                            mapping_counts[edge_out] += 1;
                             pair_ids.push_back(pair_id);
 
                         }
                         count += 1;
                         std::pair< std::vector<uint64_t>, std::vector<int> > result = std::make_pair(intermediate_edges, pair_ids);
-                        mapped_lmp_out[edge] = result;
+                        mapped_lmp_out[edge_out] = result;
 
                     }
                     std::map<std::pair<uint64_t, uint64_t>, int > counts_for_each_solveabe_pair;
@@ -465,6 +464,23 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
     }
     std::cout<<" "<<sep<<" paths separated!"<<std::endl;
     std::cout<<mHBV.EdgeObjectCount() << " edges in hbv"<<std::endl;
+    // cleanup needs both PE and LMP paths, but then won't know whether its a PE or LMP read- i don't think this matters
+    /*std::vector<std::vector<ReadPath> > lmp_paths;
+    for (auto path: paths_to_separate_final){
+        std::vector<ReadPath>  path_read_path;
+        for (auto edge: path){
+            path_read_path.push_back(edge);
+        }
+        lmp_paths.push_back(path_read_path);
+
+    }
+    std::vector<std::vector<uint64_t> > all_paths;
+    all_paths.insert(all_paths.begin(), mPaths.begin(), mPaths.end());
+    all_paths.insert(all_paths.end(), lmp_paths.begin(), lmp_paths.end());*/
+    mHBV.Involution(mInv);
+    TestInvolution(mHBV, mInv);
+    //TODO: work out how to convert these paths into read paths!
+    Cleanup(mHBV, mInv, mPaths);
 
 
 }
