@@ -37,6 +37,7 @@
         // to ensure all paths are on same part of the graph, in same direction
         std::vector<uint64_t> edges_in_canonical;
         std::vector<uint64_t> edges_out_canonical;
+        std::vector<int> pair_counts; // store number of reads mapping to each in/out combination
         void ComplexRegion::canonicaliseEdgesInOut();
 
 

@@ -9,7 +9,9 @@ ComplexRegion::ComplexRegion(){};
 
 ComplexRegion::ComplexRegion(std::vector<uint64_t  > edges_in, std::vector<uint64_t  > edges_out, vec<int>& involution, int insert_size=5000):
     edges_in(edges_in), edges_out(edges_out), insert_size(insert_size), involution(involution)
-{};
+{
+    std::vector<int> pair_counts(edges_in.size());
+};
 
 
 void ComplexRegion::AddPath(ReadPath path){
