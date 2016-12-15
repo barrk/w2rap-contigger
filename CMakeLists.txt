@@ -203,7 +203,7 @@ add_library(base_libs OBJECT
         src/util/TextTable.cc
         src/util/w2rap_timers.h
         src/paths/long/ReadPath.cc
-        src/lmp/lmp_mapper.cpp src/paths/ComplexRegion.cpp src/paths/ComplexRegion.h)
+        src/lmp/lmp_mapper.cpp)
 
 add_library(hb_base_libs OBJECT
         src/Alignment.cc
