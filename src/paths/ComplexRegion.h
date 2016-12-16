@@ -85,7 +85,7 @@ public:
 private:
     std::map<std::pair< std::vector<uint64_t>, std::vector<uint64_t> >, int> edges_to_region_index;
     std::pair< std::vector<uint64_t>, std::vector<uint64_t> > canonicaliseEdgesInOut(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
-    bool ComplexRegionCollection::CheckNoPathsClash(std::vector<std::vector<uint64_t > > all_in_edges, std::vector<std::vector<uint64_t > > all_out_edges);
+    int ComplexRegionCollection::CheckNoPathsClash(std::vector<std::vector<uint64_t > > all_edges);
     //bool OverlapsOtherRegions();
 
 

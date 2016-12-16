@@ -207,15 +207,52 @@ ComplexRegion ComplexRegionCollection::GetRegionWithEdges(std::vector<uint64_t> 
 
 void ComplexRegionCollection::SelectRegionsForPathSeparation(){
     std::vector<ComplexRegion> solved_regions;
+    std::vector<std::vector<uint64_t > > solved_region_in;
+    std::vector<std::vector<uint64_t > > solved_region_out;
     for (auto region:complex_regions){
         if (region.solved){
             solved_regions.push_back(region);
+            solved_region_in.push_back(region.edges_in_canonical);
+            solved_region_out.push_back(region.edges_out_canonical);
         }
     }
-
+    std::cout << "Number of potential solved regions: " << solved_regions.size() << std::endl;
+    auto distinct_in_edge_sets = CheckNoPathsClash(solved_region_in);
+    auto distinct_out_edge_sets = CheckNoPathsClash(solved_region_out);
+    if (distinct_in_edge_sets != solved_region_in.size() || distinct_out_edge_sets != solved_region_out.size()){
+        std::cout << "Region clash!!" << std::endl; // i really hope this doesn't happen
+        // just remove the one that clashes, until none clash
+        while (distinct_in_edge_sets != solved_region_in.size()){
+            solved_region_in.erase(solved_region_in.begin() + distinct_in_edge_sets);
+            solved_region_out.erase(solved_region_out.begin() + distinct_in_edge_sets);
+            solved_regions.erase(solved_regions.begin() + distinct_in_edge_sets);
+            distinct_in_edge_sets = CheckNoPathsClash(solved_region_in);
+        }
+        while (distinct_out_edge_sets != solved_region_out.size()){
+            solved_region_in.erase(solved_region_in.begin() + distinct_out_edge_sets);
+            solved_region_out.erase(solved_region_out.begin() + distinct_out_edge_sets);
+            solved_regions.erase(solved_regions.begin() + distinct_out_edge_sets);
+            distinct_out_edge_sets = CheckNoPathsClash(solved_region_out);
+        }
+    }
+    std::cout << "Number of potential solved regions after removing clashing ones: " << solved_regions.size() << std::endl;
 }
 
-bool ComplexRegionCollection::CheckNoPathsClash(std::vector<std::vector<uint64_t > > all_in_edges, std::vector<std::vector<uint64_t > > all_out_edges){
-    std::vector<uint64_t > seen_in_edges;
-    //std
+int ComplexRegionCollection::CheckNoPathsClash(std::vector<std::vector<uint64_t > > all_edges){
+    std::set<uint64_t > seen_edges;
+    auto seen_count = seen_edges.size();
+    int region_index = 0;
+    for (auto edges: all_edges){
+        for (auto edge:edges){
+            seen_edges.insert(edge);
+            if (seen_edges.size() == (seen_count + 1)){
+                seen_count += 1;
+            } else{
+                return region_index;
+            }
+        }
+        region_index += 1;
+    }
+    // this gives us the index at which one solved region clashes with another
+    return region_index;
 }

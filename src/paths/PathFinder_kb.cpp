@@ -210,6 +210,7 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
         }
     }
     // can now compare regions, select ones which are solved, track paths to ensure ends don't meet
+    complex_regions.SelectRegionsForPathSeparation();
 }
 
 void PathFinderkb::resolveRegionsUsingLMPData() {
