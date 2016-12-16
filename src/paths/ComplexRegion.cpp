@@ -16,6 +16,7 @@ ComplexRegion::ComplexRegion(std::vector<uint64_t  > edges_in, std::vector<uint6
     std::cout << "edges out detailed size constructor: " << edges_out_detailed.size() << std::endl;
     std::map<uint64_t, std::vector<int> > pair_ids;
     std::map<uint64_t, uint64_t>  edge_translations;
+    canonicaliseEdgesInOut();
 
 };
 
@@ -28,6 +29,12 @@ void ComplexRegion::AddPairId(int edge_index, int pair_id, bool in){
 
     }
     e.pair_ids.push_back(pair_id);
+    if (in){
+        edges_in_detailed[edge_index] = e;
+    } else{
+        edges_out_detailed[edge_index] = e;
+
+    }
 }
 
 void ComplexRegion::AddPathTo(int edge_index, bool in, std::vector<uint64_t> path_from_center){
@@ -39,13 +46,22 @@ void ComplexRegion::AddPathTo(int edge_index, bool in, std::vector<uint64_t> pat
 
     }
     e.path_from_center = path_from_center;
+    if (in){
+        edges_in_detailed[edge_index] = e;
+    } else{
+        edges_out_detailed[edge_index] = e;
+
+    }
 }
 
 void ComplexRegion::FindSolveablePairs(){
+    std::cout << "finding solveable pairs" << std::endl;
     for (auto edge_in: edges_in_detailed) {
+        std::cout << "Edge in: " << edge_in.edge_id << "pair_ids size: " << edge_in.pair_ids.size() << std::endl;
         auto in_ids = edge_in.pair_ids;
         for (auto in_id: in_ids){
             for (auto edge_out: edges_out_detailed) {
+                std::cout << "Edge out: " << edge_out.edge_id << std::endl;
                 auto out_ids = edge_out.pair_ids;
                 if ((std::find(out_ids.begin(), out_ids.end(), in_id) !=
                         out_ids.end())) {
@@ -79,7 +95,7 @@ void  ComplexRegion::canonicaliseEdgesInOut(){
     std::cout << "edges out detailed size: " << edges_out_detailed.size() << std::endl;
     for (int i = 0; i < edges_in.size(); i++){
         // in practise i think all edges in will be edges in canonical if one of them is, same for out
-        if (edges_in[i] < involution[edges_out[i]]){
+        if (edges_in[i] < involution[edges_out[i]]){// nb edge in i and edge out i may not be together finally, but the purpose of this is to ensure internal consistency
             std::cout << "edge:" << edges_in[i] << " is canonical " << std::endl;
             // possibly don't need the canonical edges
             edges_in_canonical.push_back(edges_in[i]);
@@ -99,18 +115,24 @@ void  ComplexRegion::canonicaliseEdgesInOut(){
 
 
 void ComplexRegion::isSolved(int min_count){
-    // this assumes there is exactly one path per in/out combination- is this always the case?
+    // this assumes there is exactly one path per in/out combination- is this always the case? if there are fewer, region is not solved, if there are more over min count, region is not unambiguously solved, though in practise if one in/out pair had much more support than the other, we'd want that
     int number_solved_pairs = 0;
+    //std::set<uint64_t > in_edges_solved;
+    //std::set<>
     for (auto count:combination_counts){
+        std::cout << "combination: " << count.first.first << ", " << count.first.second << std::endl;
         if (count.second > min_count){
             number_solved_pairs += 1;
+            std::cout << "solved" << std::endl;
         }
     }
     if(number_solved_pairs == edges_in.size()){
         solved = true;
+        std::cout << "Region solved" << std::endl;
     }
 }
 
+// this is baed on paths to original edges in/out
 std::vector<uint64_t>  ComplexRegion::canonicalisePath(ReadPath path){
     std::vector<uint64_t> result;
     bool involution_path = false;
@@ -158,16 +180,9 @@ std::pair< std::vector<uint64_t>, std::vector<uint64_t> > ComplexRegionCollectio
 
 void ComplexRegionCollection::AddRegion(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out,
                vec<int> &involution, int insert_size = 5000){
-    complex_regions.push_back(ComplexRegion(edges_in, edges_out, involution,  insert_size));
-    //complex_regions.push_back(ComplexRegion());
-    // this seems like a horrible way to do this!
-    //auto complex_region = complex_regions.back();
-    //complex_region.edges_in = edges_in;
-    //complex_region.edges_out = edges_out;
-    //complex_region.involution = involution;
-    //complex_region.insert_size = insert_size;
-    //complex_region.canonicaliseEdgesInOut();
-    auto key = std::make_pair(complex_regions.back().edges_in_canonical, complex_regions.back().edges_out_canonical);
+    ComplexRegion complex_region(edges_in, edges_out, involution,  insert_size);
+    complex_regions.push_back(complex_region);
+    auto key = std::make_pair(complex_region.edges_in_canonical, complex_region.edges_out_canonical);
     edges_to_region_index[key] = complex_regions.size();
 }
 
@@ -185,4 +200,20 @@ ComplexRegion ComplexRegionCollection::GetRegionWithEdges(std::vector<uint64_t> 
     auto index = edges_to_region_index[edges];
     return complex_regions[index];
 
+}
+
+
+void ComplexRegionCollection::SelectRegionsForPathSeparation(){
+    std::vector<ComplexRegion> solved_regions;
+    for (auto region:complex_regions){
+        if (region.solved){
+            solved_regions.push_back(region);
+        }
+    }
+
+}
+
+bool ComplexRegionCollection::CheckNoPathsClash(std::vector<std::vector<uint64_t > > all_in_edges, std::vector<std::vector<uint64_t > > all_out_edges){
+    std::vector<uint64_t > seen_in_edges;
+    //std
 }

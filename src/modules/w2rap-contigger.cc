@@ -256,7 +256,7 @@ int main(const int argc, const char * argv[]) {
         // involution here is fine using ifles r1sa and r2s
             //std::cout << "testing invlution after calling Involution method from pe hbv only" << std::endl;
             //TestInvolution(hbvr, inv);
-        std::cout << "before pathfinding, hbv has" << hbvr.EdgeObjectCount() << "edges" <<  std::endl;
+        std::cout << "before pathfinding, hbv has " << hbvr.EdgeObjectCount() << "edges" <<  std::endl;
         invert(pathsr, invPaths, hbvr.EdgeObjectCount());
             PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
             pf.resolveComplexRegionsUsingLMPData();
@@ -265,9 +265,9 @@ int main(const int argc, const char * argv[]) {
         // involution fine here
         std::cout << "testing invlution after lmp pathing" << std::endl;
         TestInvolution(hbvr, inv);
-        std::cout << "hbv has" << hbvr.EdgeObjectCount() << "edges" <<  std::endl;
-        BinaryWriter::writeFile("/Users/barrk/Documents/ecoli_dataset/v1/check_inv.hbv", hbvr);
-        WriteReadPathVec(pathsr,"/Users/barrk/Documents/ecoli_dataset/v1/check_inv.paths");
+        std::cout << "hbv has " << hbvr.EdgeObjectCount() << "edges" <<  std::endl;
+        //BinaryWriter::writeFile("/Users/barrk/Documents/ecoli_dataset/v1/check_inv.hbv", hbvr);
+        //WriteReadPathVec(pathsr,"/Users/barrk/Documents/ecoli_dataset/v1/check_inv.paths");
         /*std::cout << "reading in just written file" <<std::endl;
         hbvr.Clear();
         pathsr.clear();
@@ -677,8 +677,10 @@ int main(const int argc, const char * argv[]) {
 
         MpData mp_data(mp_read_files);
         std::cout << "Mate pair files read" << std::endl;
-        BinaryReader::readFile(out_dir + "/" + out_prefix + ".contig.hbv", &hbvr);
-        LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".contig.paths").c_str());
+        //BinaryReader::readFile(out_dir + "/" + out_prefix + ".contig.hbv", &hbvr);
+        //LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".contig.paths").c_str());
+        BinaryReader::readFile("/Users/barrk/Documents/ecoli_dataset/v1_canonical/ecoli_v1.contig.hbv", &hbvr);
+        LoadReadPathVec(pathsr,"/Users/barrk/Documents/ecoli_dataset/v1_canonical/ecoli_v1.contig.paths");
         //std::cout << "paired end graph loaded" << std::endl;
         VecULongVec invPaths;
         hbvr.Involution(inv);

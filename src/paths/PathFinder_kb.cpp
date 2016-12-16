@@ -182,6 +182,7 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
                 intermediate_edges.push_back(edge_ind);
                 std::cout << "Path for edge: " << complex_region.edges_in[edge_ind] << " " <<  path_str(intermediate_edges) << std::endl;
                 complex_region.AddPathTo(edge_ind, true, intermediate_edges);
+                //std::cout << "Ids of mapping pairs: " << path_str(edge_id_to_pair_id_map[edge_in]) << std::endl;
                 for (auto pair_id :  edge_id_to_pair_id_map[edge_in]) {
                     complex_region.AddPairId(edge_ind, pair_id, true);
                 }
@@ -196,6 +197,7 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
                 }
                 complex_region.AddPathTo(edge_ind, false, intermediate_edges);
                 std::cout << "Path for edge: " << complex_region.edges_in[edge_ind] << " " <<  path_str(intermediate_edges) << std::endl;
+                //std::cout << "Ids of mapping pairs: " << path_str(edge_id_to_pair_id_map[edge_out]) << std::endl;
                 for (auto pair_id :  edge_id_to_pair_id_map[mInv[edge_out]]) {
                     complex_region.AddPairId(edge_ind, pair_id, false);
                 }
@@ -204,7 +206,7 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
 
             }
             complex_region.FindSolveablePairs();
-            complex_region.isSolved(10);
+            complex_region.isSolved(3);
         }
     }
     // can now compare regions, select ones which are solved, track paths to ensure ends don't meet
@@ -483,10 +485,10 @@ void PathFinderkb::resolveRegionsUsingLMPData() {
     std::vector<std::vector<uint64_t> > all_paths;
     all_paths.insert(all_paths.begin(), mPaths.begin(), mPaths.end());
     all_paths.insert(all_paths.end(), lmp_paths.begin(), lmp_paths.end());*/
-    mHBV.Involution(mInv);
-    TestInvolution(mHBV, mInv);
+    //mHBV.Involution(mInv);
+    //TestInvolution(mHBV, mInv);
     //TODO: work out how to convert these paths into read paths!
-    Cleanup(mHBV, mInv, mPaths);
+    //Cleanup(mHBV, mInv, mPaths);
 
 
 }

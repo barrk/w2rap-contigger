@@ -79,11 +79,13 @@ public:
                    vec<int> &involution, int insert_size = 5000);
     bool ContainsRegionWithEdges(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
     ComplexRegion GetRegionWithEdges(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
+    void SelectRegionsForPathSeparation();
     std::vector<ComplexRegion> complex_regions;
 
 private:
     std::map<std::pair< std::vector<uint64_t>, std::vector<uint64_t> >, int> edges_to_region_index;
     std::pair< std::vector<uint64_t>, std::vector<uint64_t> > canonicaliseEdgesInOut(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
+    bool ComplexRegionCollection::CheckNoPathsClash(std::vector<std::vector<uint64_t > > all_in_edges, std::vector<std::vector<uint64_t > > all_out_edges);
     //bool OverlapsOtherRegions();
 
 
