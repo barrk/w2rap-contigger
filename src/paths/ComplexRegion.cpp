@@ -117,16 +117,18 @@ void  ComplexRegion::canonicaliseEdgesInOut(){
 void ComplexRegion::isSolved(int min_count){
     // this assumes there is exactly one path per in/out combination- is this always the case? if there are fewer, region is not solved, if there are more over min count, region is not unambiguously solved, though in practise if one in/out pair had much more support than the other, we'd want that
     int number_solved_pairs = 0;
-    //std::set<uint64_t > in_edges_solved;
-    //std::set<>
+    std::set<uint64_t > in_edges_solved;
+    std::set<uint64_t > out_edges_solved;
     for (auto count:combination_counts){
         std::cout << "combination: " << count.first.first << ", " << count.first.second << std::endl;
         if (count.second > min_count){
+            in_edges_solved.insert(count.first.first);
+            out_edges_solved.insert(count.first.second);
             number_solved_pairs += 1;
             std::cout << "solved" << std::endl;
         }
     }
-    if(number_solved_pairs == edges_in.size()){
+    if(in_edges_solved.size() == edges_in.size() && out_edges_solved.size() == edges_out.size()){
         solved = true;
         std::cout << "Region solved" << std::endl;
     }
