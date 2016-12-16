@@ -12,6 +12,8 @@ ComplexRegion::ComplexRegion(std::vector<uint64_t  > edges_in, std::vector<uint6
 {
     edges_in_detailed.resize(edges_in.size());
     edges_out_detailed.resize(edges_out.size());
+    std::cout << "edges in detailed size constructor: " << edges_in_detailed.size() << std::endl;
+    std::cout << "edges out detailed size constructor: " << edges_out_detailed.size() << std::endl;
     std::map<uint64_t, std::vector<int> > pair_ids;
     std::map<uint64_t, uint64_t>  edge_translations;
 
@@ -69,19 +71,23 @@ void ComplexRegion::AddPath(ReadPath path){
 
 
 void  ComplexRegion::canonicaliseEdgesInOut(){
-    // to avoid confusion and errors due to reverse completements, and order of read mapping, always deal with paths on the same strand, in the same direction
-    //first sort in/out edges
+    // to avoid confusion and errors due to reverse complements, and order of read mapping, always deal with paths on the same strand, in the same direction
+    //first sort in/out edges- actually maybe should do this at the end
     std::sort(edges_in.begin(), edges_in.end());
     std::sort(edges_out.begin(), edges_out.end());
+    std::cout << "edges in detailed size: " << edges_in_detailed.size() << std::endl;
+    std::cout << "edges out detailed size: " << edges_out_detailed.size() << std::endl;
     for (int i = 0; i < edges_in.size(); i++){
-        // in practise i think all edges in will be edges in canoical if one of them is, same for out
+        // in practise i think all edges in will be edges in canonical if one of them is, same for out
         if (edges_in[i] < involution[edges_out[i]]){
+            std::cout << "edge:" << edges_in[i] << " is canonical " << std::endl;
+            // possibly don't need the canonical edges
             edges_in_canonical.push_back(edges_in[i]);
             edges_out_canonical.push_back(edges_out[i]);
             edges_in_detailed[i].edge_id = edges_in[i];
             edges_out_detailed[i].edge_id = edges_out[i];
         } else {
-
+            std::cout << "edge:" << edges_in[i] << " canonical version " << edges_out[i] << std::endl;
             edges_in_canonical.push_back(edges_out[i]);
             edges_out_canonical.push_back(edges_in[i]);
             edges_in_detailed[i].edge_id = edges_out[i];
@@ -93,6 +99,7 @@ void  ComplexRegion::canonicaliseEdgesInOut(){
 
 
 void ComplexRegion::isSolved(int min_count){
+    // this assumes there is exactly one path per in/out combination- is this always the case?
     int number_solved_pairs = 0;
     for (auto count:combination_counts){
         if (count.second > min_count){
@@ -151,17 +158,16 @@ std::pair< std::vector<uint64_t>, std::vector<uint64_t> > ComplexRegionCollectio
 
 void ComplexRegionCollection::AddRegion(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out,
                vec<int> &involution, int insert_size = 5000){
-    //ComplexRegion complex_region(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out,
-                                 //vec<int> &involution, int insert_size = 5000);
-    complex_regions.push_back(ComplexRegion());
+    complex_regions.push_back(ComplexRegion(edges_in, edges_out, involution,  insert_size));
+    //complex_regions.push_back(ComplexRegion());
     // this seems like a horrible way to do this!
-    auto complex_region = complex_regions.back();
-    complex_region.edges_in = edges_in;
-    complex_region.edges_out = edges_out;
-    complex_region.involution = involution;
-    complex_region.insert_size = insert_size;
-    complex_region.canonicaliseEdgesInOut();
-    auto key = std::make_pair(complex_region.edges_in_canonical, complex_region.edges_out_canonical);
+    //auto complex_region = complex_regions.back();
+    //complex_region.edges_in = edges_in;
+    //complex_region.edges_out = edges_out;
+    //complex_region.involution = involution;
+    //complex_region.insert_size = insert_size;
+    //complex_region.canonicaliseEdgesInOut();
+    auto key = std::make_pair(complex_regions.back().edges_in_canonical, complex_regions.back().edges_out_canonical);
     edges_to_region_index[key] = complex_regions.size();
 }
 

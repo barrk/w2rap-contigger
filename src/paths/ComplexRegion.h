@@ -55,7 +55,7 @@ typedef struct {
         std::vector<uint64_t> caonicalisePath(ReadPath &path);
 
         std::vector<std::vector<uint64_t> > candidate_paths;
-        std::vector<std::vector<uint64_t> > selected_paths;
+        std::vector<std::vector<uint64_t> > selected_paths;// think this will actually happen at the collection level
 
         std::vector<uint64_t> canonicalisePath(ReadPath path);
 

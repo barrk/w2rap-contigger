@@ -245,17 +245,21 @@ int main(const int argc, const char * argv[]) {
             std::cout << "Reading mate pair files:" << mp_read_files << std::endl;
             MpData mp_data(mp_read_files);
             std::cout << "Mate pair files read" << std::endl;
-            BinaryReader::readFile(out_dir + "/" + out_prefix + ".contig.hbv", &hbvr);
-            LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".contig.paths").c_str());
+            BinaryReader::readFile("/Users/barrk/Documents/ecoli_dataset/v1_canonical/ecoli_v1.contig.hbv", &hbvr);
+            LoadReadPathVec(pathsr,"/Users/barrk/Documents/ecoli_dataset/v1_canonical/ecoli_v1.contig.paths");
+
+        //BinaryReader::readFile(out_dir + "/" + out_prefix + ".large_K.hbv", &hbvr);
+            //LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".large_K.paths").c_str());
             std::cout << "paired end graph loaded" << std::endl;
             VecULongVec invPaths;
             hbvr.Involution(inv);
         // involution here is fine using ifles r1sa and r2s
             //std::cout << "testing invlution after calling Involution method from pe hbv only" << std::endl;
             //TestInvolution(hbvr, inv);
-            invert(pathsr, invPaths, hbvr.EdgeObjectCount());
+        std::cout << "before pathfinding, hbv has" << hbvr.EdgeObjectCount() << "edges" <<  std::endl;
+        invert(pathsr, invPaths, hbvr.EdgeObjectCount());
             PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
-            pf.resolveRegionsUsingLMPData();
+            pf.resolveComplexRegionsUsingLMPData();
         std::cout << "exited lmp pathing" << std::endl;
         //hbvr.Involution(inv);
         // involution fine here

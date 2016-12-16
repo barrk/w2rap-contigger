@@ -146,7 +146,9 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
     ComplexRegion complex_region;
     ComplexRegionCollection complex_regions(mInv);
 
-    for (int edge_index = 0; edge_index < mHBV.EdgeObjectCount(); ++edge_index) {
+    std::vector<int> edges = {320, 390, 336, 463};
+    //for (int edge_index = 0; edge_index < mHBV.EdgeObjectCount(); ++edge_index) {
+    for (int edge_index:edges) {
         auto edge = mHBV.EdgeObject(edge_index).ToString();
         if (edge == mHBV.EdgeObject(mInv[edge_index]).ToString()) {
             continue;
@@ -156,8 +158,12 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
         traversed_edge_list.clear();
         edges_beyond_distance(spanning_edges_out, paths_to_spanning_edges, intermediate_path, edge_index,
                               traversed_edge_list, approximate_insert_size, 0, 0, "left");
-
-        if ((spanning_edges_in.size() > 0) && (spanning_edges_in.size() == spanning_edges_out.size())) {
+        std::cout << "in" << path_str(spanning_edges_in) << std::endl;
+        std::cout << "out " <<  path_str(spanning_edges_out) << std::endl;
+        // take regions with less than 5 in/out edges- ideally would make graph traversal give up if it finds too many
+        if ((spanning_edges_in.size() > 0) && (spanning_edges_in.size() == spanning_edges_out.size()) && spanning_edges_in.size() < 5) {
+            std::cout << "in" << path_str(spanning_edges_in) << std::endl;
+            std::cout << "out " <<  path_str(spanning_edges_out) << std::endl;
             if (complex_regions.ContainsRegionWithEdges(spanning_edges_in, spanning_edges_out)){
                 // don't think this should happen, but we may have overlapping regions where we just want to selet one
                 complex_region = complex_regions.GetRegionWithEdges(spanning_edges_in, spanning_edges_out);
@@ -166,8 +172,6 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
                 complex_region = complex_regions.complex_regions.back();
             }
             same_in_out_degree_complex += 1;
-            std::map<uint64_t, std::pair< std::vector<uint64_t>, std::vector<int> > > mapped_lmp_in;
-            std::map<uint64_t, std::pair< std::vector<uint64_t>, std::vector<int> > > mapped_lmp_out;
             int count = 0;
             int edge_ind = 0;
             for (auto edge_in: spanning_edges_in) {
@@ -175,10 +179,11 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
                 for (auto int_edge: paths_to_spanning_edges[count]){
                     intermediate_edges.push_back(int_edge);
                 }
-                intermediate_edges.push_back(edge_index);
+                intermediate_edges.push_back(edge_ind);
+                std::cout << "Path for edge: " << complex_region.edges_in[edge_ind] << " " <<  path_str(intermediate_edges) << std::endl;
                 complex_region.AddPathTo(edge_ind, true, intermediate_edges);
                 for (auto pair_id :  edge_id_to_pair_id_map[edge_in]) {
-                    complex_region.AddPairId(edge_index, pair_id, true);
+                    complex_region.AddPairId(edge_ind, pair_id, true);
                 }
                 count += 1;
                 edge_ind += 1;
@@ -190,6 +195,7 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
                     intermediate_edges.push_back(int_edge);
                 }
                 complex_region.AddPathTo(edge_ind, false, intermediate_edges);
+                std::cout << "Path for edge: " << complex_region.edges_in[edge_ind] << " " <<  path_str(intermediate_edges) << std::endl;
                 for (auto pair_id :  edge_id_to_pair_id_map[mInv[edge_out]]) {
                     complex_region.AddPairId(edge_ind, pair_id, false);
                 }
