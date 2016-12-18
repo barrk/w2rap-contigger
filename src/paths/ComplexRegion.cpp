@@ -63,7 +63,7 @@ void ComplexRegion::FindSolveablePairs(){
         auto in_ids = edge_in.pair_ids;
         for (auto in_id: in_ids){
             for (auto edge_out: edges_out_detailed) {
-                std::cout << "Edge out: " << edge_out.edge_id << std::endl;
+                std::cout << "Edge out: " << edge_out.edge_id << " in id: " << in_id << std::endl;
                 auto out_ids = edge_out.pair_ids;
                 if ((std::find(out_ids.begin(), out_ids.end(), in_id) !=
                         out_ids.end())) {
@@ -92,18 +92,22 @@ void  ComplexRegion::canonicaliseEdgesInOut(){
     // this needs to be based on direction of flow through graph
     // to avoid confusion and errors due to reverse complements, and order of read mapping, always deal with paths on the same strand, in the same direction
     //first sort in/out edges- actually maybe should do this at the end
-    CanonicaliseEdgeList(edges_in, edges_in_canonical, edges_in_detailed);
-    CanonicaliseEdgeList(edges_out, edges_out_canonical, edges_out_detailed);
+    std::pair<std::vector<uint64_t>, std::vector<BoundingEdge> > in = CanonicaliseEdgeList(edges_in, edges_in_canonical, edges_in_detailed);
+    edges_in_canonical = in.first;
+    edges_in_detailed = in.second;
+    std::pair<std::vector<uint64_t>, std::vector<BoundingEdge> > out = CanonicaliseEdgeList(edges_out, edges_out_canonical, edges_out_detailed);
+    edges_out_canonical = out.first;
+    edges_out_detailed = out.second;
 }
 
-void ComplexRegion::CanonicaliseEdgeList(std::vector<uint64_t> edges, std::vector<uint64_t> edges_canonical, std::vector<BoundingEdge>  detailed_edge_list){
+std::pair<std::vector<uint64_t>, std::vector<BoundingEdge> > ComplexRegion::CanonicaliseEdgeList(std::vector<uint64_t> edges, std::vector<uint64_t> edges_canonical, std::vector<BoundingEdge>  detailed_edge_list){
     std::sort(edges.begin(), edges.end());
     for (int i = 0; i < edges.size(); i++){
         auto edge = edges[i];
         BoundingEdge edge_details = detailed_edge_list[i];
         // in practise i think all edges in will be edges in canonical if one of them is, same for out
         if (edge < involution[edge]){// nb edge in i and edge out i may not be together finally, but the purpose of this is to ensure internal consistency
-            std::cout << "edge:" << edge << " is canonical " << std::endl;
+            std::cout << "edge:" << edge << " is canonical, involution: " << involution[edge] << std::endl;
             edge_details.edge_id = edge;
             edge_details.forward = true;
             edges_canonical[i] = edge;
@@ -114,7 +118,9 @@ void ComplexRegion::CanonicaliseEdgeList(std::vector<uint64_t> edges, std::vecto
             edges_canonical[i] = involution[edge];
 
         }
+        detailed_edge_list[i] = edge_details;
     }
+    return std::make_pair(edges_canonical, detailed_edge_list);
 }
 
 

@@ -62,7 +62,7 @@ typedef struct {
         std::vector<BoundingEdge> edges_in_detailed;
         std::vector<BoundingEdge> edges_out_detailed;
         std::map<std::pair<uint64_t, uint64_t>, int > combination_counts;
-        void CanonicaliseEdgeList(std::vector<uint64_t> edges, std::vector<uint64_t> edges_canonical, std::vector<BoundingEdge>  detailed_edge_list);
+        std::pair<std::vector<uint64_t>, std::vector<BoundingEdge> > CanonicaliseEdgeList(std::vector<uint64_t> edges, std::vector<uint64_t> edges_canonical, std::vector<BoundingEdge>  detailed_edge_list);
 
         bool SanityCheckPath(std::vector<uint64_t> path);
         void canonicaliseEdgesInOut(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
