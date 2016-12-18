@@ -174,10 +174,21 @@ ComplexRegionCollection::ComplexRegionCollection(vec<int>& involution): involuti
 
 void ComplexRegionCollection::AddRegion(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out,
                vec<int> &involution, int insert_size = 5000){
-    ComplexRegion complex_region(edges_in, edges_out, involution,  insert_size);
-    complex_regions.push_back(complex_region);
-    auto key = std::make_pair(complex_region.edges_in, complex_region.edges_out);
-    edges_to_region_index[key] = complex_regions.size();
+    std::set<uint64_t > check_edges_distinct;
+    for (auto edge: edges_in){
+        check_edges_distinct.insert(edge);
+    }
+    for (auto edge: edges_out){
+        check_edges_distinct.insert(edge);
+    }
+    if (check_edges_distinct.size() == (edges_in.size() + edges_out.size())) {
+        ComplexRegion complex_region(edges_in, edges_out, involution, insert_size);
+        complex_regions.push_back(complex_region);
+        auto key = std::make_pair(complex_region.edges_in, complex_region.edges_out);
+        edges_to_region_index[key] = complex_regions.size();
+    } else {
+        std::cout << "In/Out edges do not define a valid region" << std::endl;
+    }
 }
 
 bool ComplexRegionCollection::ContainsRegionWithEdges(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out){
