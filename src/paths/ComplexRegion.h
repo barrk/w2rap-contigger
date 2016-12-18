@@ -18,6 +18,8 @@ typedef struct {
     std::vector<int> pair_ids;
     std::vector<uint64_t> path_from_center;
     bool into; // true if this is an edge going into the region
+    bool forward; //TODO check that edge in forward direction, if not a palindrome, always has a smaller id than the reverse.
+    // as rc edge is always created straigt  after original edge, all originals are even, and rcs are odd- but again, not sure i can depend on this
 } BoundingEdge;
 
 /*
@@ -52,20 +54,18 @@ typedef struct {
         void isSolved(int min_count);
 
     private:
-        std::vector<uint64_t> caonicalisePath(ReadPath &path);
 
+        std::vector<uint64_t>  BuildPath(BoundingEdge edge_in, BoundingEdge edge_out);
         std::vector<std::vector<uint64_t> > candidate_paths;
         std::vector<std::vector<uint64_t> > selected_paths;// think this will actually happen at the collection level
 
-        std::vector<uint64_t> canonicalisePath(ReadPath path);
-
-        std::map<uint64_t, std::vector<int> > pair_ids;
-        std::map<uint64_t, uint64_t>  edge_translations;
         std::vector<BoundingEdge> edges_in_detailed;
         std::vector<BoundingEdge> edges_out_detailed;
         std::map<std::pair<uint64_t, uint64_t>, int > combination_counts;
+        void CanonicaliseEdgeList(std::vector<uint64_t> edges, std::vector<uint64_t> edges_canonical, std::vector<BoundingEdge>  detailed_edge_list);
 
-        //void ComplexRegion::canonicaliseEdgesInOut(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
+        bool SanityCheckPath(std::vector<uint64_t> path);
+        void canonicaliseEdgesInOut(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
 
     };
 
@@ -73,19 +73,21 @@ typedef struct {
 class ComplexRegionCollection {
 public:
     ComplexRegionCollection(vec<int> &involution);
-    vec<int> involution;
     //void AddRegion(ComplexRegion complex_region);
     void AddRegion(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out,
                    vec<int> &involution, int insert_size = 5000);
     bool ContainsRegionWithEdges(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
     ComplexRegion GetRegionWithEdges(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
     void SelectRegionsForPathSeparation();
+    std::vector<std::vector<uint64_t> > GetPathsToSeparate();
     std::vector<ComplexRegion> complex_regions;
 
 private:
+    std::vector<ComplexRegion> solved_regions;
     std::map<std::pair< std::vector<uint64_t>, std::vector<uint64_t> >, int> edges_to_region_index;
     std::pair< std::vector<uint64_t>, std::vector<uint64_t> > canonicaliseEdgesInOut(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
     int ComplexRegionCollection::CheckNoPathsClash(std::vector<std::vector<uint64_t > > all_edges);
+    vec<int> involution;
     //bool OverlapsOtherRegions();
 
 

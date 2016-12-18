@@ -12,6 +12,8 @@ ComplexRegion::ComplexRegion(std::vector<uint64_t  > edges_in, std::vector<uint6
 {
     edges_in_detailed.resize(edges_in.size());
     edges_out_detailed.resize(edges_out.size());
+    edges_in_canonical.resize(edges_in.size());
+    edges_out_canonical.resize(edges_out.size());
     std::cout << "edges in detailed size constructor: " << edges_in_detailed.size() << std::endl;
     std::cout << "edges out detailed size constructor: " << edges_out_detailed.size() << std::endl;
     std::map<uint64_t, std::vector<int> > pair_ids;
@@ -73,44 +75,46 @@ void ComplexRegion::FindSolveablePairs(){
     }
 }
 
-void ComplexRegion::AddPath(ReadPath path){
-    std::vector<uint64_t> path_canonical = canonicalisePath(path);
+bool ComplexRegion::SanityCheckPath(std::vector<uint64_t> path){
     // sanity check path, ensure its not a cycle, and is in this region
     if (path.front() != path.back() &&
-            std::find(edges_in_canonical.begin(), edges_in_canonical.end(), path_canonical.front()) != edges_in_canonical.end()
-            && std::find(edges_out_canonical.begin(), edges_out_canonical.end(), path_canonical.back()) != edges_out_canonical.end()){
-        candidate_paths.push_back(path_canonical);
+            std::find(edges_in_canonical.begin(), edges_in_canonical.end(), path.front()) != edges_in_canonical.end()
+            && std::find(edges_out_canonical.begin(), edges_out_canonical.end(), path.back()) != edges_out_canonical.end()){
+        return true; // the path is not a cycle, it starts and ends at the bounds of this region- ask Bernardo what else I should check
     } else {
-        std::cout << "Path cannot be added to region" << std::endl;
+        std::cout << "Path is not valid in this region" << std::endl;
+        return false;
     }
 }
 
 
 void  ComplexRegion::canonicaliseEdgesInOut(){
+    // this needs to be based on direction of flow through graph
     // to avoid confusion and errors due to reverse complements, and order of read mapping, always deal with paths on the same strand, in the same direction
     //first sort in/out edges- actually maybe should do this at the end
-    std::sort(edges_in.begin(), edges_in.end());
-    std::sort(edges_out.begin(), edges_out.end());
-    std::cout << "edges in detailed size: " << edges_in_detailed.size() << std::endl;
-    std::cout << "edges out detailed size: " << edges_out_detailed.size() << std::endl;
-    for (int i = 0; i < edges_in.size(); i++){
+    CanonicaliseEdgeList(edges_in, edges_in_canonical, edges_in_detailed);
+    CanonicaliseEdgeList(edges_out, edges_out_canonical, edges_out_detailed);
+}
+
+void ComplexRegion::CanonicaliseEdgeList(std::vector<uint64_t> edges, std::vector<uint64_t> edges_canonical, std::vector<BoundingEdge>  detailed_edge_list){
+    std::sort(edges.begin(), edges.end());
+    for (int i = 0; i < edges.size(); i++){
+        auto edge = edges[i];
+        BoundingEdge edge_details = detailed_edge_list[i];
         // in practise i think all edges in will be edges in canonical if one of them is, same for out
-        if (edges_in[i] < involution[edges_out[i]]){// nb edge in i and edge out i may not be together finally, but the purpose of this is to ensure internal consistency
-            std::cout << "edge:" << edges_in[i] << " is canonical " << std::endl;
-            // possibly don't need the canonical edges
-            edges_in_canonical.push_back(edges_in[i]);
-            edges_out_canonical.push_back(edges_out[i]);
-            edges_in_detailed[i].edge_id = edges_in[i];
-            edges_out_detailed[i].edge_id = edges_out[i];
+        if (edge < involution[edge]){// nb edge in i and edge out i may not be together finally, but the purpose of this is to ensure internal consistency
+            std::cout << "edge:" << edge << " is canonical " << std::endl;
+            edge_details.edge_id = edge;
+            edge_details.forward = true;
+            edges_canonical[i] = edge;
         } else {
-            std::cout << "edge:" << edges_in[i] << " canonical version " << edges_out[i] << std::endl;
-            edges_in_canonical.push_back(edges_out[i]);
-            edges_out_canonical.push_back(edges_in[i]);
-            edges_in_detailed[i].edge_id = edges_out[i];
-            edges_out_detailed[i].edge_id = edges_in[i];
+            std::cout << "edge:" << edge << " canonical version " << edge<< std::endl;
+            edge_details.edge_id = involution[edge];
+            edge_details.forward = false;
+            edges_canonical[i] = involution[edge];
+
         }
     }
-
 }
 
 
@@ -135,23 +139,24 @@ void ComplexRegion::isSolved(int min_count){
 }
 
 // this is baed on paths to original edges in/out
-std::vector<uint64_t>  ComplexRegion::canonicalisePath(ReadPath path){
+std::vector<uint64_t>  ComplexRegion::BuildPath(BoundingEdge edge_in, BoundingEdge edge_out){
     std::vector<uint64_t> result;
-    bool involution_path = false;
-    // if first edge is on involution, all will be
-    if (path[0] > involution[path[0]]){
-        involution_path = true;
-    }
-    for (auto edge: path){
-        if (involution_path){
-            result.push_back(involution[edge]);
-        } else {
-            result.push_back(edge);
+    if (edge_in.forward){
+        for (auto e:edge_in.path_from_center){
+            result.push_back(e);
+        }
+        for (auto e:edge_out.path_from_center){
+            result.push_back(e);
+        }
+    } else { // really not sure this is correct
+        for (auto e:edge_in.path_from_center){
+            result.push_back(involution[e]);
+        }
+        for (auto e:edge_out.path_from_center){
+            result.push_back(involution[e]);
         }
     }
-    if (involution_path || result.back() < result.front()) {
-        std::reverse(result.begin(), result.end());
-    }
+
     return result;
 
 }
@@ -161,52 +166,26 @@ ComplexRegionCollection::ComplexRegionCollection(vec<int>& involution): involuti
 
 
 
-std::pair< std::vector<uint64_t>, std::vector<uint64_t> > ComplexRegionCollection::canonicaliseEdgesInOut(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out){
-    std::sort(edges_in.begin(), edges_in.end());
-    std::sort(edges_out.begin(), edges_out.end());
-    std::vector<uint64_t> edges_in_canonical;
-    std::vector<uint64_t> edges_out_canonical;
-    for (int i = 0; i < edges_in.size(); i++){
-        // in practise i think all edges in will be edges in canoical if one of them is, same for out
-        if (edges_in[i] < involution[edges_out[i]]){
-            edges_in_canonical.push_back(edges_in[i]);
-            edges_out_canonical.push_back(edges_out[i]);
-        } else {
-
-            edges_in_canonical.push_back(edges_out[i]);
-            edges_out_canonical.push_back(edges_in[i]);
-        }
-    }
-    return std::make_pair(edges_in_canonical, edges_out_canonical);
-};
-
 void ComplexRegionCollection::AddRegion(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out,
                vec<int> &involution, int insert_size = 5000){
     ComplexRegion complex_region(edges_in, edges_out, involution,  insert_size);
     complex_regions.push_back(complex_region);
-    auto key = std::make_pair(complex_region.edges_in_canonical, complex_region.edges_out_canonical);
+    auto key = std::make_pair(complex_region.edges_in, complex_region.edges_out);
     edges_to_region_index[key] = complex_regions.size();
 }
 
 bool ComplexRegionCollection::ContainsRegionWithEdges(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out){
-    auto edges = canonicaliseEdgesInOut(edges_in, edges_out);
-    if (edges_to_region_index.count(edges) == 0){
-        return false;
-    } else {
-        return true;
-    }
+    return edges_to_region_index.count(std::make_pair(edges_in, edges_out)) != 0;
 }
 
 ComplexRegion ComplexRegionCollection::GetRegionWithEdges(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out){
-    auto edges = canonicaliseEdgesInOut(edges_in, edges_out);
-    auto index = edges_to_region_index[edges];
+    auto index = edges_to_region_index[std::make_pair(edges_in, edges_out)];
     return complex_regions[index];
 
 }
 
 
 void ComplexRegionCollection::SelectRegionsForPathSeparation(){
-    std::vector<ComplexRegion> solved_regions;
     std::vector<std::vector<uint64_t > > solved_region_in;
     std::vector<std::vector<uint64_t > > solved_region_out;
     for (auto region:complex_regions){
@@ -238,8 +217,23 @@ void ComplexRegionCollection::SelectRegionsForPathSeparation(){
     std::cout << "Number of potential solved regions after removing clashing ones: " << solved_regions.size() << std::endl;
 }
 
+
+std::vector<std::vector<uint64_t> > ComplexRegionCollection::GetPathsToSeparate(){
+    // for each solved region, get each path in the right direction (so from in to out), on the main graph, not the involution
+
+}
+
+
+/*
+std::vector<std::vector<uint64_t> > ComplexRegionCollection::BuildPathsForSeparation(){
+    for (auto region:solved_regions){
+        //region.
+    }
+}*/
+
 int ComplexRegionCollection::CheckNoPathsClash(std::vector<std::vector<uint64_t > > all_edges){
     std::set<uint64_t > seen_edges;
+
     auto seen_count = seen_edges.size();
     int region_index = 0;
     for (auto edges: all_edges){

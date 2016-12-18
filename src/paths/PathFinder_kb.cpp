@@ -48,6 +48,12 @@ std::tuple <std::vector<LMPPair >, std::vector<LMPPair >, std::map<uint64_t, std
 void PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & spanning_edges, std::vector<std::vector<uint64_t> >  & paths_to_spanning_edges, std::vector<uint64_t> & intermediate_path, uint64_t e, std::vector<uint64_t > & traversed_edge_list, uint64_t approximate_insert_size, int recursion_depth=0, int distance_traversed=0, std::string direction="right") {
     /*
      * to find edges in region lmp pairs might solve, we want to traverse graph until we're large_frontier_size away from e
+        looking at some of the thins returned from this for larger test datasets, i'm not covinced it does exactly what we want
+        as it quite often returns lots and lots of paths
+        maybe if we did something like detected if we've traversed several forks, which would make the region too coplex to solve,
+        or moved ont othe RC graph, we could have it return something to indicate that this region is too complex
+        though to be fair, returning a massive list does indicate that!!
+        for time being just return edges which are long enough to be exiting a complex region- like bernardo's long frontier size
      */
     std::vector<uint64_t> edges;
     if (direction=="right"){edges = prev_edges[e];
@@ -64,7 +70,7 @@ void PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & spanning_edges
         // if we haven't traversed this edge, traverse it
         if (std::find(traversed_edge_list.begin(), traversed_edge_list.end(), edge) == traversed_edge_list.end()) {
             // if this edge takes us far enough away, add it to long fronteirs
-            if (edge_length > (approximate_insert_size - distance_traversed)){
+            if ((edge_length > (approximate_insert_size - distance_traversed))){// && (edge_length > 10000)){ segfaults if i add this!
                 spanning_edges.push_back(edge);
                 // i want to store edges between start edge and edge, this stores attached edges, stores the ones traversed before twice for some readon
                 traversed_edge_list.push_back(edge);
@@ -142,7 +148,6 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
     std::vector<uint64_t> intermediate_path;
     std::vector<uint64_t> spanning_edges_in;
     std::vector<uint64_t> spanning_edges_out;
-    std::vector<std::vector<uint64_t> > paths_to_separate;
     ComplexRegion complex_region;
     ComplexRegionCollection complex_regions(mInv);
 
@@ -211,6 +216,8 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
     }
     // can now compare regions, select ones which are solved, track paths to ensure ends don't meet
     complex_regions.SelectRegionsForPathSeparation();
+    std::vector<std::vector<uint64_t> > paths_to_separate;
+    paths_to_separate = complex_regions.GetPathsToSeparate();
 }
 
 void PathFinderkb::resolveRegionsUsingLMPData() {
