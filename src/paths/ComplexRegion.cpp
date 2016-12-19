@@ -59,15 +59,16 @@ void ComplexRegion::AddPathTo(int edge_index, bool in, std::vector<uint64_t> pat
 void ComplexRegion::FindSolveablePairs(){
     std::cout << "finding solveable pairs" << std::endl;
     for (auto edge_in: edges_in_detailed) {
-        std::cout << "Edge in: " << edge_in.edge_id << "pair_ids size: " << edge_in.pair_ids.size() << std::endl;
+        //std::cout << "Edge in: " << edge_in.edge_id << "pair_ids size: " << edge_in.pair_ids.size() << std::endl;
         auto in_ids = edge_in.pair_ids;
         for (auto in_id: in_ids){
             for (auto edge_out: edges_out_detailed) {
-                std::cout << "Edge out: " << edge_out.edge_id << " in id: " << in_id << std::endl;
+                //std::cout << "Edge out: " << edge_out.edge_id << " in id: " << in_id << std::endl;
                 auto out_ids = edge_out.pair_ids;
                 if ((std::find(out_ids.begin(), out_ids.end(), in_id) !=
                         out_ids.end())) {
-                    combination_counts[std::make_pair(edge_in.edge_id, edge_out.edge_id)] += 1;
+                    auto key = std::make_pair(edge_in.edge_id, edge_out.edge_id);
+                    combination_counts[key] += 1;
 
                 }
             }
@@ -75,8 +76,9 @@ void ComplexRegion::FindSolveablePairs(){
     }
 }
 
+// actually, this would be too late, these can be checked earlier- may still ned to do other things to validate after path is built
 bool ComplexRegion::SanityCheckPath(std::vector<uint64_t> path){
-    // sanity check path, ensure its not a cycle, and is in this region
+    // sanity check path, ensure its not a cycle (regions with equal in/out edges shouldn't be added), and is in this region
     if (path.front() != path.back() &&
             std::find(edges_in_canonical.begin(), edges_in_canonical.end(), path.front()) != edges_in_canonical.end()
             && std::find(edges_out_canonical.begin(), edges_out_canonical.end(), path.back()) != edges_out_canonical.end()){
@@ -127,8 +129,6 @@ std::pair<std::vector<uint64_t>, std::vector<BoundingEdge> > ComplexRegion::Cano
 void ComplexRegion::isSolved(int min_count){
     // this assumes there is exactly one path per in/out combination- is this always the case? if there are fewer, region is not solved, if there are more over min count, region is not unambiguously solved, though in practise if one in/out pair had much more support than the other, we'd want that
     int number_solved_pairs = 0;
-    std::set<uint64_t > in_edges_solved;
-    std::set<uint64_t > out_edges_solved;
     for (auto count:combination_counts){
         std::cout << "combination: " << count.first.first << ", " << count.first.second << std::endl;
         if (count.second > min_count){
@@ -144,23 +144,52 @@ void ComplexRegion::isSolved(int min_count){
     }
 }
 
+std::vector<std::vector<uint64_t> >  ComplexRegion::BuildPaths(){
+    /*
+     * determine which in/out pairs to use and build th associated paths
+    */
+    std::vector<std::vector<uint64_t> > paths;
+    // combination counts contains pairs of in/out edge ids,
+    for (auto in_out_pair: combination_counts){
+        auto in_edge_id = in_out_pair.first.first;
+        auto out_edge_id = in_out_pair.first.second;
+        std::cout << "Looing for path between " << in_edge_id << " and " << out_edge_id << std::endl;
+        for (auto in_edge: edges_in_detailed){
+            if (in_edge.edge_id == in_edge_id) {
+                for (auto out_edge: edges_in_detailed) {
+                    if (out_edge.edge_id == out_edge_id){
+                        auto path = BuildPath(in_edge, out_edge);
+                        paths.push_back(path);
+                    }
+                }
+            }
+        }
+
+    }
+    return paths;
+}
 // this is baed on paths to original edges in/out
 std::vector<uint64_t>  ComplexRegion::BuildPath(BoundingEdge edge_in, BoundingEdge edge_out){
+    std::cout << "builng path between: "<< edge_in.edge_id <<" and " <<edge_out.edge_id << std::endl;
     std::vector<uint64_t> result;
     if (edge_in.forward){
+        result.push_back(edge_in.translated_edge_id); // should be same as edge id- if this is on inv, all others should be?
         for (auto e:edge_in.path_from_center){
             result.push_back(e);
         }
         for (auto e:edge_out.path_from_center){
             result.push_back(e);
         }
+        result.push_back(edge_out.translated_edge_id);
     } else { // really not sure this is correct
+        result.push_back(edge_in.translated_edge_id);
         for (auto e:edge_in.path_from_center){
             result.push_back(involution[e]);
         }
         for (auto e:edge_out.path_from_center){
             result.push_back(involution[e]);
         }
+        result.push_back(edge_out.translated_edge_id);
     }
 
     return result;
@@ -237,16 +266,17 @@ void ComplexRegionCollection::SelectRegionsForPathSeparation(){
 
 std::vector<std::vector<uint64_t> > ComplexRegionCollection::GetPathsToSeparate(){
     // for each solved region, get each path in the right direction (so from in to out), on the main graph, not the involution
-
+    std::vector<std::vector<uint64_t> > paths_to_separate;
+    for (auto region:solved_regions){
+        auto paths = region.BuildPaths();
+        for (auto path:paths){
+            paths_to_separate.push_back(path);
+        }
+    }
+    return paths_to_separate;
 }
 
 
-/*
-std::vector<std::vector<uint64_t> > ComplexRegionCollection::BuildPathsForSeparation(){
-    for (auto region:solved_regions){
-        //region.
-    }
-}*/
 
 int ComplexRegionCollection::CheckNoPathsClash(std::vector<std::vector<uint64_t > > all_edges){
     std::set<uint64_t > seen_edges;

@@ -216,8 +216,33 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
     }
     // can now compare regions, select ones which are solved, track paths to ensure ends don't meet
     complex_regions.SelectRegionsForPathSeparation();
-    std::vector<std::vector<uint64_t> > paths_to_separate;
-    paths_to_separate = complex_regions.GetPathsToSeparate();
+    auto paths_to_separate = complex_regions.GetPathsToSeparate();
+    // last bit hsould be same as before
+    uint64_t sep=0;
+    std::map<uint64_t,std::vector<uint64_t>> old_edges_to_new;
+    for (auto p:paths_to_separate){
+        std::cout << "separating path: " << path_str(p) << std::endl;
+        if (old_edges_to_new.count(p.front()) > 0 or old_edges_to_new.count(p.back()) > 0) {
+            std::cout<<"WARNING: path starts or ends in an already modified edge, skipping"<<std::endl;
+            continue;
+        }
+            auto oen=separate_path(p, true);
+            if (oen.size() > 0) {
+                for (auto et:oen) {
+                        if (old_edges_to_new.count(et.first) == 0) old_edges_to_new[et.first] = {};
+                        for (auto ne:oen[et.first]) {
+                            old_edges_to_new[et.first].push_back(ne);
+                        }
+                }
+                sep++;
+            }
+        }
+
+    if (old_edges_to_new.size()>0) {
+        migrate_readpaths(old_edges_to_new);
+    }
+    std::cout<<" "<<sep<<" paths separated!"<<std::endl;
+    std::cout<<mHBV.EdgeObjectCount() << " edges in hbv"<<std::endl;
 }
 
 void PathFinderkb::resolveRegionsUsingLMPData() {

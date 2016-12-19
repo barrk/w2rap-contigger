@@ -40,7 +40,7 @@ typedef struct {
         std::vector<std::vector<uint64_t> > paths;
         vec<int> involution;// would be nicer to have the region 'know' its in a collection, and use involution from there
 
-        void AddPath(ReadPath path);
+        std::vector < std::vector<uint64_t> >  BuildPaths();
 
         bool solved;
         int insert_size;
@@ -54,14 +54,17 @@ typedef struct {
         void isSolved(int min_count);
 
     private:
-
         std::vector<uint64_t>  BuildPath(BoundingEdge edge_in, BoundingEdge edge_out);
+
+        std::set<uint64_t > in_edges_solved;
+        std::set<uint64_t > out_edges_solved;
         std::vector<std::vector<uint64_t> > candidate_paths;
         std::vector<std::vector<uint64_t> > selected_paths;// think this will actually happen at the collection level
 
         std::vector<BoundingEdge> edges_in_detailed;
         std::vector<BoundingEdge> edges_out_detailed;
         std::map<std::pair<uint64_t, uint64_t>, int > combination_counts;
+        //std::map<std::pair<uint64_t, uint64_t>,  std::pair<BoundingEdge, BoundingEdge > > combination_edge_map;
         std::pair<std::vector<uint64_t>, std::vector<BoundingEdge> > CanonicaliseEdgeList(std::vector<uint64_t> edges, std::vector<uint64_t> edges_canonical, std::vector<BoundingEdge>  detailed_edge_list);
 
         bool SanityCheckPath(std::vector<uint64_t> path);
@@ -86,7 +89,7 @@ private:
     std::vector<ComplexRegion> solved_regions;
     std::map<std::pair< std::vector<uint64_t>, std::vector<uint64_t> >, int> edges_to_region_index;
     std::pair< std::vector<uint64_t>, std::vector<uint64_t> > canonicaliseEdgesInOut(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
-    int ComplexRegionCollection::CheckNoPathsClash(std::vector<std::vector<uint64_t > > all_edges);
+    int CheckNoPathsClash(std::vector<std::vector<uint64_t > > all_edges);
     vec<int> involution;
     //bool OverlapsOtherRegions();
 
