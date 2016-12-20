@@ -18,14 +18,14 @@ typedef struct {
     std::vector<int> pair_ids;
     std::vector<uint64_t> path_from_center;
     bool into; // true if this is an edge going into the region
-    bool forward; //TODO check that edge in forward direction, if not a palindrome, always has a smaller id than the reverse.
-    // as rc edge is always created straigt  after original edge, all originals are even, and rcs are odd- but again, not sure i can depend on this
+    bool forward;
+    // as rc edge is always created straigt  after original edge, all originals are even, and rcs are odd- but again, not sure i can depend on this, things get shuffled
 } BoundingEdge;
 
 /*
  * when a region which is solveable is found, create an object for it to hold the paths
  * then, consistency between regions can be validated before tying to separate,
- * and paths which resolve a regin can be selected over ones that don't
+ * and paths which resolve a region can be selected over ones that don't
  */
 
     class ComplexRegion {
@@ -64,7 +64,6 @@ typedef struct {
 
         std::vector<BoundingEdge> edges_in_detailed;
         std::vector<BoundingEdge> edges_out_detailed;
-        //std::map<std::pair<uint64_t, uint64_t>,  std::pair<BoundingEdge, BoundingEdge > > combination_edge_map;
         std::pair<std::vector<uint64_t>, std::vector<BoundingEdge> > CanonicaliseEdgeList(std::vector<uint64_t> edges, std::vector<uint64_t> edges_canonical, std::vector<BoundingEdge>  detailed_edge_list);
 
         bool SanityCheckPath(std::vector<uint64_t> path);
@@ -91,8 +90,6 @@ private:
     std::pair< std::vector<uint64_t>, std::vector<uint64_t> > canonicaliseEdgesInOut(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
     int CheckNoPathsClash(std::vector<std::vector<uint64_t > > all_edges);
     vec<int> involution;
-    //bool OverlapsOtherRegions();
-
 
 };
 

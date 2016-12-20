@@ -114,13 +114,13 @@ std::pair<std::vector<uint64_t>, std::vector<BoundingEdge> > ComplexRegion::Cano
         BoundingEdge edge_details = detailed_edge_list[i];
         // in practise i think all edges in will be edges in canonical if one of them is, same for out
         if (edge < involution[edge]){// nb edge in i and edge out i may not be together finally, but the purpose of this is to ensure internal consistency
-            std::cout << "edge:" << edge << " is canonical, involution: " << involution[edge] << std::endl;
+            //std::cout << "edge:" << edge << " is canonical, involution: " << involution[edge] << std::endl;
             edge_details.edge_id = edge;
             edge_details.forward = true;
             edge_details.translated_edge_id = edge;
             edges_canonical[i] = edge;
         } else {
-            std::cout << "edge:" << edge << " canonical version " << edge<< std::endl;
+            //std::cout << "edge:" << edge << " canonical version " << edge<< std::endl;
             edge_details.edge_id = involution[edge];
             edge_details.forward = false;
             edge_details.translated_edge_id = involution[edge];

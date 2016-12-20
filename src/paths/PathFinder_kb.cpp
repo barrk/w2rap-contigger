@@ -151,9 +151,8 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
     ComplexRegion complex_region;
     ComplexRegionCollection complex_regions(mInv);
 
-    std::vector<int> edges = {320, 390, 336, 463};
-    //for (int edge_index = 0; edge_index < mHBV.EdgeObjectCount(); ++edge_index) {
-    for (int edge_index:edges) {
+    //std::vector<int> edges = {8, 9, 320, 390, 336, 463};
+    for (int edge_index = 0; edge_index < mHBV.EdgeObjectCount(); ++edge_index) {
         auto edge = mHBV.EdgeObject(edge_index).ToString();
         if (edge == mHBV.EdgeObject(mInv[edge_index]).ToString()) {
             continue;
@@ -166,7 +165,7 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
         std::cout << "in" << path_str(spanning_edges_in) << std::endl;
         std::cout << "out " <<  path_str(spanning_edges_out) << std::endl;
         // take regions with less than 5 in/out edges- ideally would make graph traversal give up if it finds too many
-        if ((spanning_edges_in.size() > 0) && (spanning_edges_in.size() == spanning_edges_out.size()) && spanning_edges_in.size() < 5) {
+        if ((spanning_edges_in.size() > 1) && (spanning_edges_in.size() == spanning_edges_out.size()) && spanning_edges_in.size() < 5) {
             std::cout << "in" << path_str(spanning_edges_in) << std::endl;
             std::cout << "out " <<  path_str(spanning_edges_out) << std::endl;
             if (complex_regions.ContainsRegionWithEdges(spanning_edges_in, spanning_edges_out)){
@@ -215,6 +214,9 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
             complex_region.isSolved(3);
             complex_regions.complex_regions.back() = complex_region;
         }
+        paths_to_spanning_edges.clear();
+        spanning_edges_in.clear();
+        spanning_edges_out.clear();
     }
     // can now compare regions, select ones which are solved, track paths to ensure ends don't meet
     complex_regions.SelectRegionsForPathSeparation();
@@ -231,13 +233,13 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
             auto oen=separate_path(p, true);
             if (oen.size() > 0) {
                 for (auto et:oen) {
-                    std::cout << "Edge to migrate: " << et.first;
+                    //std::cout << "Edge to migrate: " << et.first;
                         if (old_edges_to_new.count(et.first) == 0) old_edges_to_new[et.first] = {};
                         for (auto ne:et.second) {
                             old_edges_to_new[et.first].push_back(ne);
-                            std::cout << " " << ne;
+                            //std::cout << " " << ne;
                         }
-                    std::cout << std::endl;
+                    //std::cout << std::endl;
                 }
                 sep++;
             }
@@ -597,13 +599,13 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
         if (! old_edges_to_new.count(p[ei]))  old_edges_to_new[p[ei]]={};
         old_edges_to_new[p[ei]].push_back(nef);
 
-        std::cout << "Separating: " << p[ei] << " new edge: " << nef << std::endl;
+        //std::cout << "Separating: " << p[ei] << " new edge: " << nef << std::endl;
         auto ner=mHBV.AddEdge(current_vertex_rev,prev_vertex_rev,mHBV.EdgeObject(mInv[p[ei]]));
         mToLeft.push_back(current_vertex_rev);
         mToRight.push_back(prev_vertex_rev);
         if (! old_edges_to_new.count(mInv[p[ei]]))  old_edges_to_new[mInv[p[ei]]]={};
         old_edges_to_new[mInv[p[ei]]].push_back(ner);
-        std::cout << "Separating: " << mInv[p[ei]] << " new edge: " << ner << std::endl;
+        //std::cout << "Separating: " << mInv[p[ei]] << " new edge: " << ner << std::endl;
 
         mInv.push_back(ner);
         mInv.push_back(nef);
