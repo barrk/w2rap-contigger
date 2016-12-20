@@ -55,7 +55,8 @@ typedef struct {
 
     private:
         std::vector<uint64_t>  BuildPath(BoundingEdge edge_in, BoundingEdge edge_out);
-
+        std::map<std::pair<uint64_t, uint64_t>, int > combination_counts;
+        std::vector<std::pair<uint64_t, uint64_t> > combinations_to_use;
         std::set<uint64_t > in_edges_solved;
         std::set<uint64_t > out_edges_solved;
         std::vector<std::vector<uint64_t> > candidate_paths;
@@ -63,7 +64,6 @@ typedef struct {
 
         std::vector<BoundingEdge> edges_in_detailed;
         std::vector<BoundingEdge> edges_out_detailed;
-        std::map<std::pair<uint64_t, uint64_t>, int > combination_counts;
         //std::map<std::pair<uint64_t, uint64_t>,  std::pair<BoundingEdge, BoundingEdge > > combination_edge_map;
         std::pair<std::vector<uint64_t>, std::vector<BoundingEdge> > CanonicaliseEdgeList(std::vector<uint64_t> edges, std::vector<uint64_t> edges_canonical, std::vector<BoundingEdge>  detailed_edge_list);
 

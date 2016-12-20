@@ -588,7 +588,7 @@ void TestInvolution( const HyperBasevector& hb, const vec<int>& inv )
                std::cout << "Involution value not rc.\n" << "Abort." << std::endl;
                TracebackThisProcess( );    }
           if ( inv[inv[e]] != e )
-          {    std::cout << "EDGE BREAKING INVOLUTION: " << e << "inv" << inv[e] << " inv inv " << inv[inv[e]] << std::endl;
+          {    std::cout << "EDGE BREAKING INVOLUTION: " << e << "inv" << inv[e] << " inv inv " << inv[inv[e]] << " inv inv inv" << inv[inv[inv[e]]] << " inv inv inv inv" << inv[inv[inv[inv[e]]]] << " inv inv inv inv inv" << inv[inv[inv[inv[inv[e]]]]] << std::endl;
                          std::cout << "Involution is not an involution.\n" << "Abort." << std::endl;
                TracebackThisProcess( );    }    }
      for ( int v = 0; v < hb.N( ); v++ )

@@ -258,6 +258,8 @@ int main(const int argc, const char * argv[]) {
             //TestInvolution(hbvr, inv);
         std::cout << "before pathfinding, hbv has " << hbvr.EdgeObjectCount() << "edges" <<  std::endl;
         invert(pathsr, invPaths, hbvr.EdgeObjectCount());
+        //PathFinder pf(hbvr, inv, pathsr, invPaths);
+        //pf.untangle_complex_in_out_choices(1000)
             PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
             pf.resolveComplexRegionsUsingLMPData();
         std::cout << "exited lmp pathing" << std::endl;

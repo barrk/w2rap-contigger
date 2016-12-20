@@ -640,6 +640,11 @@ void PathFinder::untangle_complex_in_out_choices(uint64_t large_frontier_size, b
         migrate_readpaths(old_edges_to_new);
     }
     std::cout<<" "<<sep<<" paths separated!"<<std::endl;
+    // would be interesting to check if this breaks things, but on e coli it finds nothing to separate so does nothing
+    TestInvolution(mHBV, mInv);
+    mHBV.Involution(mInv);
+    TestInvolution(mHBV, mInv);
+
 }
 
 std::vector<std::vector<uint64_t>> PathFinder::AllPathsFromTo(std::vector<uint64_t> in_edges, std::vector<uint64_t> out_edges, uint64_t max_length) {
