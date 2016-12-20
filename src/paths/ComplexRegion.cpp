@@ -148,6 +148,7 @@ void ComplexRegion::isSolved(int min_count){
             std::cout << "solved" << std::endl;
         }
     }
+    // think about if this is actually the case....
     if(in_edges_solved.size() == edges_in.size() && out_edges_solved.size() == edges_out.size()){
         solved = true;
         std::cout << "Region solved" << std::endl;
@@ -162,6 +163,8 @@ std::vector<std::vector<uint64_t> >  ComplexRegion::BuildPaths(){
     std::vector<std::vector<uint64_t> > paths;
     // in edges solved also has nothing in it by here!
     std::cout << "Number of elements in combination counts, build paths: " << combination_counts.size() << std::endl;
+    int in_counter = 0;
+    int out_counter = 0;
     // combination counts contains pairs of in/out edge ids,
     for (auto in_out_pair:combinations_to_use){
         auto in_edge_id = in_out_pair.first;
@@ -173,18 +176,22 @@ std::vector<std::vector<uint64_t> >  ComplexRegion::BuildPaths(){
                 std::cout << "found in edge " << std::endl;
                 for (auto out_edge: edges_out_detailed) {
                     if (out_edge.edge_id == out_edge_id){
-                        auto path = BuildPath(in_edge, out_edge);
+                        auto path = BuildPath(in_edge, out_edge, in_counter, out_counter);
                         paths.push_back(path);
                     }
+                    out_counter += 1;
                 }
+                out_counter = 0;
             }
+            in_counter += 1;
         }
+        in_counter = 0;
 
     }
     return paths;
 }
 // this is baed on paths to original edges in/out
-std::vector<uint64_t>  ComplexRegion::BuildPath(BoundingEdge edge_in, BoundingEdge edge_out){
+std::vector<uint64_t>  ComplexRegion::BuildPath(BoundingEdge edge_in, BoundingEdge edge_out, int in_counter, int out_counter){
     std::cout << "builng path between: "<< edge_in.edge_id <<" and " <<edge_out.edge_id << std::endl;
     std::vector<uint64_t> result;
     if (edge_in.forward){
@@ -200,6 +207,14 @@ std::vector<uint64_t>  ComplexRegion::BuildPath(BoundingEdge edge_in, BoundingEd
             std::cout << e << std::endl;
         }
         result.push_back(edge_out.translated_edge_id);
+        if (edge_in.translated_edge_id > edge_out.translated_edge_id){
+            std::reverse(result.begin(), result.end());
+            edges_in_canonical[in_counter] = edge_out.edge_id;
+            edges_out_canonical[out_counter] = edge_in.edge_id;
+
+            edges_in_detailed[in_counter] = edge_out;
+            edges_out_detailed[out_counter] = edge_in;
+        }
     } else { // really not sure this is correct
         result.push_back(edge_in.translated_edge_id);
         for (auto e:edge_in.path_from_center){
@@ -208,7 +223,18 @@ std::vector<uint64_t>  ComplexRegion::BuildPath(BoundingEdge edge_in, BoundingEd
         for (auto e:edge_out.path_from_center){
             result.push_back(involution[e]);
         }
+        if (edge_in.translated_edge_id > edge_out.translated_edge_id){
+            std::reverse(result.begin(), result.end());
+        }
         result.push_back(edge_out.translated_edge_id);
+        if (edge_in.translated_edge_id > edge_out.translated_edge_id){
+            std::reverse(result.begin(), result.end());
+            edges_in_canonical[in_counter] = edge_out.edge_id;
+            edges_out_canonical[out_counter] = edge_in.edge_id;
+
+            edges_in_detailed[in_counter] = edge_out;
+            edges_out_detailed[out_counter] = edge_in;
+        }
     }
 
     return result;
@@ -220,22 +246,27 @@ ComplexRegionCollection::ComplexRegionCollection(vec<int>& involution): involuti
 
 
 
-void ComplexRegionCollection::AddRegion(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out,
+bool ComplexRegionCollection::AddRegion(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out,
                vec<int> &involution, int insert_size = 5000){
     std::set<uint64_t > check_edges_distinct;
     for (auto edge: edges_in){
         check_edges_distinct.insert(edge);
+        check_edges_distinct.insert(involution[edge]);
     }
     for (auto edge: edges_out){
         check_edges_distinct.insert(edge);
+        check_edges_distinct.insert(involution[edge]);
     }
-    if (check_edges_distinct.size() == (edges_in.size() + edges_out.size())) {
+    // in[457:456 313:312 ], this fails
+    if (check_edges_distinct.size() == (2*edges_in.size() + 2*edges_out.size())) { // this allows regions with same in/out edges, but reversed, to be created
         ComplexRegion complex_region(edges_in, edges_out, involution, insert_size);
         complex_regions.push_back(complex_region);
         auto key = std::make_pair(complex_region.edges_in, complex_region.edges_out);
         edges_to_region_index[key] = complex_regions.size();
+        return true;
     } else {
         std::cout << "In/Out edges do not define a valid region" << std::endl;
+        return false;
     }
 }
 
@@ -263,6 +294,7 @@ void ComplexRegionCollection::SelectRegionsForPathSeparation(){
     std::cout << "Number of potential solved regions: " << solved_regions.size() << std::endl;
     auto distinct_in_edge_sets = CheckNoPathsClash(solved_region_in);
     auto distinct_out_edge_sets = CheckNoPathsClash(solved_region_out);
+    // getting clashes between edges in and edges out, this is exactly what shouldn't happen!!
     if (distinct_in_edge_sets != solved_region_in.size() || distinct_out_edge_sets != solved_region_out.size()){
         std::cout << "Region clash!!" << std::endl; // i really hope this doesn't happen
         // just remove the one that clashes, until none clash

@@ -173,9 +173,14 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
                 complex_region = complex_regions.GetRegionWithEdges(spanning_edges_in, spanning_edges_out);
             } else {// if we have't already created this region, do so
                 // try to move this further down- or keep index from beginning- i.e. add counter to for
-                complex_regions.AddRegion(spanning_edges_in, spanning_edges_out, mInv, approximate_insert_size);
-                complex_region = complex_regions.complex_regions.back();
+                bool region_added = complex_regions.AddRegion(spanning_edges_in, spanning_edges_out, mInv, approximate_insert_size);
+                if (region_added) {
+                    complex_region = complex_regions.complex_regions.back();
+                } else {
+                    continue;
+                }
             }
+
             same_in_out_degree_complex += 1;
             int count = 0;
             int edge_ind = 0;
@@ -212,12 +217,16 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
             }
             complex_region.FindSolveablePairs();
             complex_region.isSolved(3);
+            if (complex_region.solved){
+                solveable_regions_count += 1;
+            }
             complex_regions.complex_regions.back() = complex_region;
         }
         paths_to_spanning_edges.clear();
         spanning_edges_in.clear();
         spanning_edges_out.clear();
     }
+    std::cout << "Solveable regions: " << solveable_regions_count << std::endl;
     // can now compare regions, select ones which are solved, track paths to ensure ends don't meet
     complex_regions.SelectRegionsForPathSeparation();
     auto paths_to_separate = complex_regions.GetPathsToSeparate();

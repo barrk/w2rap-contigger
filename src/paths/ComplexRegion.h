@@ -54,7 +54,7 @@ typedef struct {
         void isSolved(int min_count);
 
     private:
-        std::vector<uint64_t>  BuildPath(BoundingEdge edge_in, BoundingEdge edge_out);
+        std::vector<uint64_t>  BuildPath(BoundingEdge edge_in, BoundingEdge edge_out, int in_counter, int out_counter);
         std::map<std::pair<uint64_t, uint64_t>, int > combination_counts;
         std::vector<std::pair<uint64_t, uint64_t> > combinations_to_use;
         std::set<uint64_t > in_edges_solved;
@@ -76,7 +76,7 @@ class ComplexRegionCollection {
 public:
     ComplexRegionCollection(vec<int> &involution);
     //void AddRegion(ComplexRegion complex_region);
-    void AddRegion(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out,
+    bool AddRegion(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out,
                    vec<int> &involution, int insert_size = 5000);
     bool ContainsRegionWithEdges(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
     ComplexRegion GetRegionWithEdges(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
