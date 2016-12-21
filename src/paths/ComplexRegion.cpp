@@ -141,8 +141,8 @@ void ComplexRegion::isSolved(int min_count){
         if (count.second > min_count){
             auto in = count.first.first;
             auto out = count.first.second;
-            in_edges_solved.insert(in);
-            out_edges_solved.insert(out); //TODO: think about removing duplication of data
+            in_edges_solved.push_back(in);
+            out_edges_solved.push_back(out); //TODO: think about removing duplication of data
             combinations_to_use.push_back(std::make_pair(in, out));
             number_solved_pairs += 1;
             std::cout << "solved" << std::endl;
@@ -250,15 +250,21 @@ bool ComplexRegionCollection::AddRegion(std::vector<uint64_t> edges_in, std::vec
                vec<int> &involution, int insert_size = 5000){
     std::set<uint64_t > check_edges_distinct;
     for (auto edge: edges_in){
+        std::cout << "adding edge: " << edge << std::endl;
         check_edges_distinct.insert(edge);
         check_edges_distinct.insert(involution[edge]);
+        std::cout << "size of set: " << check_edges_distinct.size() << std::endl;
     }
     for (auto edge: edges_out){
+        std::cout << "adding edge: " << edge << "size of set: " << check_edges_distinct.size() << std::endl;
         check_edges_distinct.insert(edge);
         check_edges_distinct.insert(involution[edge]);
+        std::cout << "size of set: " << check_edges_distinct.size() << std::endl;
+
     }
     // in[457:456 313:312 ], this fails
     if (check_edges_distinct.size() == (2*edges_in.size() + 2*edges_out.size())) { // this allows regions with same in/out edges, but reversed, to be created
+        std::cout << "creating region " << std::endl;
         ComplexRegion complex_region(edges_in, edges_out, involution, insert_size);
         complex_regions.push_back(complex_region);
         auto key = std::make_pair(complex_region.edges_in, complex_region.edges_out);
@@ -289,11 +295,15 @@ void ComplexRegionCollection::SelectRegionsForPathSeparation(){
             solved_regions.push_back(region);
             solved_region_in.push_back(region.edges_in_canonical);
             solved_region_out.push_back(region.edges_out_canonical);
+            std::cout << "Solved region edges in: " << path_str(region.edges_in) << std::endl;
+            std::cout << "Solved region edges out: " << path_str(region.edges_out) << std::endl;
         }
     }
     std::cout << "Number of potential solved regions: " << solved_regions.size() << std::endl;
     auto distinct_in_edge_sets = CheckNoPathsClash(solved_region_in);
+    std::cout << "distinct regions in: " << distinct_in_edge_sets << std::endl;
     auto distinct_out_edge_sets = CheckNoPathsClash(solved_region_out);
+    std::cout << "distinct regions out: " << distinct_in_edge_sets << std::endl;
     // getting clashes between edges in and edges out, this is exactly what shouldn't happen!!
     if (distinct_in_edge_sets != solved_region_in.size() || distinct_out_edge_sets != solved_region_out.size()){
         std::cout << "Region clash!!" << std::endl; // i really hope this doesn't happen
@@ -310,6 +320,10 @@ void ComplexRegionCollection::SelectRegionsForPathSeparation(){
             solved_regions.erase(solved_regions.begin() + distinct_out_edge_sets);
             distinct_out_edge_sets = CheckNoPathsClash(solved_region_out);
         }
+    }
+    for (auto region:solved_regions){
+        std::cout << "Solved region edges in: " << path_str(region.edges_in) << std::endl;
+        std::cout << "Solved region edges out: " << path_str(region.edges_out) << std::endl;
     }
     std::cout << "Number of potential solved regions after removing clashing ones: " << solved_regions.size() << std::endl;
 }
@@ -330,6 +344,17 @@ std::vector<std::vector<uint64_t> > ComplexRegionCollection::GetPathsToSeparate(
 
 
 
+std::string ComplexRegionCollection::path_str(std::vector<uint64_t> path) {
+    std::string s="[";
+    for (auto p:path){
+        // output edge id on hbv and involution
+        s+=std::to_string(p)+":"+std::to_string(involution[p])+" ";//+" ("+std::to_string(mHBV.EdgeObject(p).size())+"bp "+std::to_string(paths_per_kbp(p))+"ppk)  ";
+    }
+    s+="]";
+    return s;
+}
+
+
 int ComplexRegionCollection::CheckNoPathsClash(std::vector<std::vector<uint64_t > > all_edges){
     std::set<uint64_t > seen_edges;
 
@@ -338,6 +363,7 @@ int ComplexRegionCollection::CheckNoPathsClash(std::vector<std::vector<uint64_t 
     for (auto edges: all_edges){
         for (auto edge:edges){
             seen_edges.insert(edge);
+            std::cout << "edge: " << edge << " Region index: " << region_index << " seen count: " << seen_count << " seen edges sixe" << seen_edges.size() << std::endl;
             if (seen_edges.size() == (seen_count + 1)){
                 seen_count += 1;
             } else{

@@ -57,8 +57,8 @@ typedef struct {
         std::vector<uint64_t>  BuildPath(BoundingEdge edge_in, BoundingEdge edge_out, int in_counter, int out_counter);
         std::map<std::pair<uint64_t, uint64_t>, int > combination_counts;
         std::vector<std::pair<uint64_t, uint64_t> > combinations_to_use;
-        std::set<uint64_t > in_edges_solved;
-        std::set<uint64_t > out_edges_solved;
+        std::vector<uint64_t > in_edges_solved;
+        std::vector<uint64_t > out_edges_solved;
         std::vector<std::vector<uint64_t> > candidate_paths;
         std::vector<std::vector<uint64_t> > selected_paths;// think this will actually happen at the collection level
 
@@ -85,6 +85,7 @@ public:
     std::vector<ComplexRegion> complex_regions;
 
 private:
+    std::string path_str(std::vector<uint64_t> path);
     std::vector<ComplexRegion> solved_regions;
     std::map<std::pair< std::vector<uint64_t>, std::vector<uint64_t> >, int> edges_to_region_index;
     std::pair< std::vector<uint64_t>, std::vector<uint64_t> > canonicaliseEdgesInOut(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);

@@ -146,6 +146,7 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
     std::vector<std::vector<uint64_t> > paths_to_spanning_edges;
     std::set<std::vector<uint64_t> > paths_seen;
     std::vector<uint64_t> intermediate_path;
+    std::vector<uint64_t> involutions_of_edges_in_solved_regions;
     std::vector<uint64_t> spanning_edges_in;
     std::vector<uint64_t> spanning_edges_out;
     ComplexRegion complex_region;
@@ -153,80 +154,91 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
 
     //std::vector<int> edges = {8, 9, 320, 390, 336, 463};
     for (int edge_index = 0; edge_index < mHBV.EdgeObjectCount(); ++edge_index) {
-        auto edge = mHBV.EdgeObject(edge_index).ToString();
-        if (edge == mHBV.EdgeObject(mInv[edge_index]).ToString()) {
-            continue;
-        }
-        edges_beyond_distance(spanning_edges_in, paths_to_spanning_edges, intermediate_path, edge_index,
-                              traversed_edge_list, approximate_insert_size, 0, 0, "right");
-        traversed_edge_list.clear();
-        edges_beyond_distance(spanning_edges_out, paths_to_spanning_edges, intermediate_path, edge_index,
-                              traversed_edge_list, approximate_insert_size, 0, 0, "left");
-        std::cout << "in" << path_str(spanning_edges_in) << std::endl;
-        std::cout << "out " <<  path_str(spanning_edges_out) << std::endl;
-        // take regions with less than 5 in/out edges- ideally would make graph traversal give up if it finds too many
-        if ((spanning_edges_in.size() > 1) && (spanning_edges_in.size() == spanning_edges_out.size()) && spanning_edges_in.size() < 5) {
-            std::cout << "in" << path_str(spanning_edges_in) << std::endl;
-            std::cout << "out " <<  path_str(spanning_edges_out) << std::endl;
-            if (complex_regions.ContainsRegionWithEdges(spanning_edges_in, spanning_edges_out)){
-                // don't think this should happen, but we may have overlapping regions where we just want to selet one
-                complex_region = complex_regions.GetRegionWithEdges(spanning_edges_in, spanning_edges_out);
-            } else {// if we have't already created this region, do so
-                // try to move this further down- or keep index from beginning- i.e. add counter to for
-                bool region_added = complex_regions.AddRegion(spanning_edges_in, spanning_edges_out, mInv, approximate_insert_size);
-                if (region_added) {
-                    complex_region = complex_regions.complex_regions.back();
-                } else {
-                    continue;
-                }
+        // if we have already seen the involution of this edge, then leave it
+        if (std::find(involutions_of_edges_in_solved_regions.begin(), involutions_of_edges_in_solved_regions.end(), edge_index) == involutions_of_edges_in_solved_regions.end()) {
+            auto edge = mHBV.EdgeObject(edge_index).ToString();
+            if (edge == mHBV.EdgeObject(mInv[edge_index]).ToString()) {
+                continue;
             }
+            edges_beyond_distance(spanning_edges_in, paths_to_spanning_edges, intermediate_path, edge_index,
+                                  traversed_edge_list, approximate_insert_size, 0, 0, "right");
+            traversed_edge_list.clear();
+            edges_beyond_distance(spanning_edges_out, paths_to_spanning_edges, intermediate_path, edge_index,
+                                  traversed_edge_list, approximate_insert_size, 0, 0, "left");
+            //std::cout << "in" << path_str(spanning_edges_in) << std::endl;
+            //std::cout << "out " <<  path_str(spanning_edges_out) << std::endl;
+            // take regions with less than 5 in/out edges- ideally would make graph traversal give up if it finds too many
+            if ((spanning_edges_in.size() > 1) && (spanning_edges_in.size() == spanning_edges_out.size()) &&
+                spanning_edges_in.size() < 5) {
+                std::cout << "in" << path_str(spanning_edges_in) << std::endl;
+                std::cout << "out " << path_str(spanning_edges_out) << std::endl;
+                std::cout << "complex regions size: " << complex_regions.complex_regions.size() << std::endl;
+                if (complex_regions.ContainsRegionWithEdges(spanning_edges_in, spanning_edges_out)) {
+                    // don't think this should happen, but we may have overlapping regions where we just want to selet one
+                    complex_region = complex_regions.GetRegionWithEdges(spanning_edges_in, spanning_edges_out);
+                } else {// if we have't already created this region, do so
+                    // try to move this further down- or keep index from beginning- i.e. add counter to for
+                    bool region_added = complex_regions.AddRegion(spanning_edges_in, spanning_edges_out, mInv,
+                                                                  approximate_insert_size);
+                    if (region_added) {
+                        complex_region = complex_regions.complex_regions.back();
+                    } else {
+                        continue;
+                    }
+                }
+                std::cout << "complex region created" << std::endl;
+                same_in_out_degree_complex += 1;
+                int count = 0;
+                int edge_ind = 0;
+                for (auto edge_in: spanning_edges_in) {
+                    std::vector<uint64_t> intermediate_edges;
+                    for (auto int_edge: paths_to_spanning_edges[count]) {
+                        intermediate_edges.push_back(int_edge);
+                    }
+                    intermediate_edges.push_back(edge_index);
+                    //std::cout << "Path for edge: " << complex_region.edges_in[edge_ind] << " " <<  path_str(intermediate_edges) << std::endl;
+                    complex_region.AddPathTo(edge_ind, true, intermediate_edges);
+                    //std::cout << "Ids of mapping pairs: " << path_str(edge_id_to_pair_id_map[edge_in]) << std::endl;
+                    for (auto pair_id :  edge_id_to_pair_id_map[edge_in]) {
+                        complex_region.AddPairId(edge_ind, pair_id, true);
+                    }
+                    count += 1;
+                    edge_ind += 1;
+                }
+                edge_ind = 0;
+                for (auto edge_out: spanning_edges_out) {
+                    std::vector<uint64_t> intermediate_edges;
+                    for (auto int_edge: paths_to_spanning_edges[count]) {
+                        intermediate_edges.push_back(int_edge);
+                    }
+                    complex_region.AddPathTo(edge_ind, false, intermediate_edges);
+                    //std::cout << "Path for edge: " << complex_region.edges_in[edge_ind] << " " <<  path_str(intermediate_edges) << std::endl;
+                    //std::cout << "Ids of mapping pairs: " << path_str(edge_id_to_pair_id_map[edge_out]) << std::endl;
+                    for (auto pair_id :  edge_id_to_pair_id_map[mInv[edge_out]]) {
+                        complex_region.AddPairId(edge_ind, pair_id, false);
+                    }
+                    count += 1;
+                    edge_ind += 1;
 
-            same_in_out_degree_complex += 1;
-            int count = 0;
-            int edge_ind = 0;
-            for (auto edge_in: spanning_edges_in) {
-                std::vector<uint64_t> intermediate_edges;
-                for (auto int_edge: paths_to_spanning_edges[count]){
-                    intermediate_edges.push_back(int_edge);
                 }
-                intermediate_edges.push_back(edge_ind);
-                std::cout << "Path for edge: " << complex_region.edges_in[edge_ind] << " " <<  path_str(intermediate_edges) << std::endl;
-                complex_region.AddPathTo(edge_ind, true, intermediate_edges);
-                //std::cout << "Ids of mapping pairs: " << path_str(edge_id_to_pair_id_map[edge_in]) << std::endl;
-                for (auto pair_id :  edge_id_to_pair_id_map[edge_in]) {
-                    complex_region.AddPairId(edge_ind, pair_id, true);
+                complex_region.FindSolveablePairs();
+                complex_region.isSolved(5);
+                if (complex_region.solved) {
+                    solveable_regions_count += 1;
+                    involutions_of_edges_in_solved_regions.push_back(mInv[edge_index]);
                 }
-                count += 1;
-                edge_ind += 1;
+                complex_regions.complex_regions.back() = complex_region;
             }
-            edge_ind = 0;
-            for (auto edge_out: spanning_edges_out) {
-                std::vector<uint64_t> intermediate_edges;
-                for (auto int_edge: paths_to_spanning_edges[count]){
-                    intermediate_edges.push_back(int_edge);
-                }
-                complex_region.AddPathTo(edge_ind, false, intermediate_edges);
-                std::cout << "Path for edge: " << complex_region.edges_in[edge_ind] << " " <<  path_str(intermediate_edges) << std::endl;
-                //std::cout << "Ids of mapping pairs: " << path_str(edge_id_to_pair_id_map[edge_out]) << std::endl;
-                for (auto pair_id :  edge_id_to_pair_id_map[mInv[edge_out]]) {
-                    complex_region.AddPairId(edge_ind, pair_id, false);
-                }
-                count += 1;
-                edge_ind += 1;
-
-            }
-            complex_region.FindSolveablePairs();
-            complex_region.isSolved(3);
-            if (complex_region.solved){
-                solveable_regions_count += 1;
-            }
-            complex_regions.complex_regions.back() = complex_region;
+            paths_to_spanning_edges.clear();
+            spanning_edges_in.clear();
+            spanning_edges_out.clear();
+            /*
+            if (mInv[edge_index + 1] == edge_index){
+                edge_index += 1; // if the next edge will be involution of current one, skip it
+            } = actually better to properly check */
         }
-        paths_to_spanning_edges.clear();
-        spanning_edges_in.clear();
-        spanning_edges_out.clear();
     }
-    std::cout << "Solveable regions: " << solveable_regions_count << std::endl;
+    std::cout << "Solveable regions: " << solveable_regions_count << " of: " << complex_regions.complex_regions.size() << std::endl;
     // can now compare regions, select ones which are solved, track paths to ensure ends don't meet
     complex_regions.SelectRegionsForPathSeparation();
     auto paths_to_separate = complex_regions.GetPathsToSeparate();
