@@ -10,6 +10,8 @@ ComplexRegion::ComplexRegion(){};
 ComplexRegion::ComplexRegion(std::vector<uint64_t  > edges_in, std::vector<uint64_t  > edges_out, vec<int>& involution, int insert_size=5000):
     edges_in(edges_in), edges_out(edges_out), insert_size(insert_size), involution(involution)
 {
+    std::sort(edges_in.begin(), edges_in.end());
+    std::sort(edges_out.begin(), edges_out.end());
     edges_in_detailed.resize(edges_in.size());
     edges_out_detailed.resize(edges_out.size());
     edges_in_canonical.resize(edges_in.size());
@@ -207,14 +209,6 @@ std::vector<uint64_t>  ComplexRegion::BuildPath(BoundingEdge edge_in, BoundingEd
             std::cout << e << std::endl;
         }
         result.push_back(edge_out.translated_edge_id);
-        if (edge_in.translated_edge_id > edge_out.translated_edge_id){
-            std::reverse(result.begin(), result.end());
-            edges_in_canonical[in_counter] = edge_out.edge_id;
-            edges_out_canonical[out_counter] = edge_in.edge_id;
-
-            edges_in_detailed[in_counter] = edge_out;
-            edges_out_detailed[out_counter] = edge_in;
-        }
     } else { // really not sure this is correct
         result.push_back(edge_in.translated_edge_id);
         for (auto e:edge_in.path_from_center){
@@ -227,14 +221,6 @@ std::vector<uint64_t>  ComplexRegion::BuildPath(BoundingEdge edge_in, BoundingEd
             std::reverse(result.begin(), result.end());
         }
         result.push_back(edge_out.translated_edge_id);
-        if (edge_in.translated_edge_id > edge_out.translated_edge_id){
-            std::reverse(result.begin(), result.end());
-            edges_in_canonical[in_counter] = edge_out.edge_id;
-            edges_out_canonical[out_counter] = edge_in.edge_id;
-
-            edges_in_detailed[in_counter] = edge_out;
-            edges_out_detailed[out_counter] = edge_in;
-        }
     }
 
     return result;
@@ -288,44 +274,31 @@ ComplexRegion ComplexRegionCollection::GetRegionWithEdges(std::vector<uint64_t> 
 
 
 void ComplexRegionCollection::SelectRegionsForPathSeparation(){
-    std::vector<std::vector<uint64_t > > solved_region_in;
-    std::vector<std::vector<uint64_t > > solved_region_out;
     for (auto region:complex_regions){
         if (region.solved){
             solved_regions.push_back(region);
-            solved_region_in.push_back(region.edges_in_canonical);
-            solved_region_out.push_back(region.edges_out_canonical);
             std::cout << "Solved region edges in: " << path_str(region.edges_in) << std::endl;
             std::cout << "Solved region edges out: " << path_str(region.edges_out) << std::endl;
         }
     }
-    std::cout << "Number of potential solved regions: " << solved_regions.size() << std::endl;
-    auto distinct_in_edge_sets = CheckNoPathsClash(solved_region_in);
-    std::cout << "distinct regions in: " << distinct_in_edge_sets << std::endl;
-    auto distinct_out_edge_sets = CheckNoPathsClash(solved_region_out);
-    std::cout << "distinct regions out: " << distinct_in_edge_sets << std::endl;
-    // getting clashes between edges in and edges out, this is exactly what shouldn't happen!!
-    if (distinct_in_edge_sets != solved_region_in.size() || distinct_out_edge_sets != solved_region_out.size()){
-        std::cout << "Region clash!!" << std::endl; // i really hope this doesn't happen
-        // just remove the one that clashes, until none clash
-        while (distinct_in_edge_sets != solved_region_in.size()){
-            solved_region_in.erase(solved_region_in.begin() + distinct_in_edge_sets);
-            solved_region_out.erase(solved_region_out.begin() + distinct_in_edge_sets);
-            solved_regions.erase(solved_regions.begin() + distinct_in_edge_sets);
-            distinct_in_edge_sets = CheckNoPathsClash(solved_region_in);
-        }
-        while (distinct_out_edge_sets != solved_region_out.size()){
-            solved_region_in.erase(solved_region_in.begin() + distinct_out_edge_sets);
-            solved_region_out.erase(solved_region_out.begin() + distinct_out_edge_sets);
-            solved_regions.erase(solved_regions.begin() + distinct_out_edge_sets);
-            distinct_out_edge_sets = CheckNoPathsClash(solved_region_out);
+    std::vector<ComplexRegion> solved_regions_final;
+    for (int i = 0; i < solved_regions.size(); i++){
+        auto region = solved_regions[i];
+        auto edges_in = region.edges_in;
+        for (int j = i + 1; j < solved_regions.size(); j++){
+            auto region_2 = solved_regions[j];
+            for (auto edge: edges_in) {
+                if (std::find(region_2.edges_in.begin(), region_2.edges_in.end(), edge) != region_2.edges_in.end()){
+                        solved_regions_final.push_back(FindBestSolvedRegion(region, region_2));
+                }
+            }
         }
     }
-    for (auto region:solved_regions){
+    for (auto region:solved_regions_final){
         std::cout << "Solved region edges in: " << path_str(region.edges_in) << std::endl;
         std::cout << "Solved region edges out: " << path_str(region.edges_out) << std::endl;
     }
-    std::cout << "Number of potential solved regions after removing clashing ones: " << solved_regions.size() << std::endl;
+    std::cout << "Number of potential solved regions after removing clashing ones: " << solved_regions_final.size() << std::endl;
 }
 
 
@@ -352,6 +325,15 @@ std::string ComplexRegionCollection::path_str(std::vector<uint64_t> path) {
     }
     s+="]";
     return s;
+}
+
+// instead of doing it like this, find pairs of clashing regions and select one which solves most paths
+ComplexRegion ComplexRegionCollection::FindBestSolvedRegion(ComplexRegion region_1, ComplexRegion region_2){
+    if (region_1.edges_in.size() > region_2.edges_in.size()){
+        return region_1;
+    } else {
+        return region_2;
+    }
 }
 
 

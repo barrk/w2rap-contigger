@@ -85,8 +85,10 @@ public:
     std::vector<ComplexRegion> complex_regions;
 
 private:
+    ComplexRegion ComplexRegionCollection::FindBestSolvedRegion(ComplexRegion region_1, ComplexRegion region_2);
     std::string path_str(std::vector<uint64_t> path);
     std::vector<ComplexRegion> solved_regions;
+    std::vector<ComplexRegion> solved_regions_final;
     std::map<std::pair< std::vector<uint64_t>, std::vector<uint64_t> >, int> edges_to_region_index;
     std::pair< std::vector<uint64_t>, std::vector<uint64_t> > canonicaliseEdgesInOut(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
     int CheckNoPathsClash(std::vector<std::vector<uint64_t > > all_edges);
