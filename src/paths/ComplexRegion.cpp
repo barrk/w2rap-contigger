@@ -250,9 +250,9 @@ bool ComplexRegionCollection::ContainsRegionWithEdges(std::vector<uint64_t> edge
     return edges_to_region_index.count(std::make_pair(edges_in, edges_out)) != 0;
 }
 
-ComplexRegion ComplexRegionCollection::GetRegionWithEdges(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out){
+std::pair<ComplexRegion, int> ComplexRegionCollection::GetRegionWithEdges(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out){
     auto index = edges_to_region_index[std::make_pair(edges_in, edges_out)];
-    return complex_regions[index];
+    return std::make_pair(complex_regions[index], index);
 
 }
 

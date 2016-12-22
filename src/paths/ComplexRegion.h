@@ -73,7 +73,7 @@ public:
     bool AddRegion(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out,
                    vec<int> &involution, int insert_size = 5000);
     bool ContainsRegionWithEdges(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
-    ComplexRegion GetRegionWithEdges(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
+    std::pair<ComplexRegion, int> GetRegionWithEdges(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
     void SelectRegionsForPathSeparation();
     std::vector<std::vector<uint64_t> > GetPathsToSeparate();
     std::vector<ComplexRegion> complex_regions;

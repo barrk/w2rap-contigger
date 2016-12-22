@@ -149,6 +149,7 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
     std::vector<uint64_t> involutions_of_edges_in_solved_regions;
     std::vector<uint64_t> spanning_edges_in;
     std::vector<uint64_t> spanning_edges_out;
+    int index_of_region_to_add = 0;
     ComplexRegion complex_region;
     ComplexRegionCollection complex_regions(mInv);
 
@@ -175,12 +176,15 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
                 std::cout << "complex regions size: " << complex_regions.complex_regions.size() << std::endl;
                 if (complex_regions.ContainsRegionWithEdges(spanning_edges_in, spanning_edges_out)) {
                     // don't think this should happen, but we may have overlapping regions where we just want to selet one
-                    complex_region = complex_regions.GetRegionWithEdges(spanning_edges_in, spanning_edges_out);
+                    auto result = complex_regions.GetRegionWithEdges(spanning_edges_in, spanning_edges_out);
+                    complex_region = result.first;
+                    index_of_region_to_add = result.second;
                 } else {// if we have't already created this region, do so
                     // try to move this further down- or keep index from beginning- i.e. add counter to for
                     bool region_added = complex_regions.AddRegion(spanning_edges_in, spanning_edges_out, mInv,
                                                                   approximate_insert_size);
                     if (region_added) {
+                        index_of_region_to_add = complex_regions.complex_regions.size() - 1;
                         std::cout << "comple regions size" << complex_regions.complex_regions.size() << std::endl;
                         complex_region = complex_regions.complex_regions.back();
                         std::cout << "egdes in of region added: " << path_str(complex_region.edges_in) << std::endl;
@@ -234,7 +238,7 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
                     solveable_regions_count += 1;
                     involutions_of_edges_in_solved_regions.push_back(mInv[edge_index]);
                 }
-                complex_regions.complex_regions.back() = complex_region;
+                complex_regions.complex_regions[index_of_region_to_add] = complex_region;
             }
             if (edge_index ==321 || edge_index ==322 || edge_index ==323 || edge_index ==324 || (edge_index > mHBV.EdgeObjectCount() -3)) {
 
