@@ -54,7 +54,7 @@ typedef struct {
         void isSolved(int min_count);
 
     private:
-        std::vector<uint64_t>  BuildPath(BoundingEdge edge_in, BoundingEdge edge_out, int in_counter, int out_counter);
+        std::vector<uint64_t>  BuildPath(BoundingEdge edge_in, BoundingEdge edge_out);
         std::map<std::pair<uint64_t, uint64_t>, int > combination_counts;
         std::vector<std::pair<uint64_t, uint64_t> > combinations_to_use;
         std::vector<uint64_t > in_edges_solved;

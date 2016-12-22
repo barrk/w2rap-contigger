@@ -133,17 +133,18 @@ void ComplexRegion::isSolved(int min_count){
             auto out = count.first.second;
             in_edges_solved.push_back(in);
             out_edges_solved.push_back(out); //TODO: think about removing duplication of data
-            combinations_to_use.push_back(std::make_pair(in, out));
             number_solved_pairs += 1;
             std::cout << "solved" << std::endl;
         }
     }
     // think about if this is actually the case....
     if(in_edges_solved.size() == edges_in.size() && out_edges_solved.size() == edges_out.size()){
+        for (int i = 0; i < in_edges_solved.size(); i++){
+            combinations_to_use.push_back(std::make_pair(in_edges_solved[i], out_edges_solved[i]));
+        }
         solved = true;
         std::cout << "Region solved" << std::endl;
     }
-    std::cout << "Number of elements in combination counts: " << combination_counts.size() << std::endl;
 }
 
 std::vector<std::vector<uint64_t> >  ComplexRegion::BuildPaths(){
@@ -151,10 +152,6 @@ std::vector<std::vector<uint64_t> >  ComplexRegion::BuildPaths(){
      * determine which in/out pairs to use and build th associated paths
     */
     std::vector<std::vector<uint64_t> > paths;
-    // in edges solved also has nothing in it by here!
-    std::cout << "Number of elements in combination counts, build paths: " << combination_counts.size() << std::endl;
-    int in_counter = 0;
-    int out_counter = 0;
     // combination counts contains pairs of in/out edge ids,
     for (auto in_out_pair:combinations_to_use){
         auto in_edge_id = in_out_pair.first;
@@ -166,22 +163,17 @@ std::vector<std::vector<uint64_t> >  ComplexRegion::BuildPaths(){
                 std::cout << "found in edge " << std::endl;
                 for (auto out_edge: edges_out_detailed) {
                     if (out_edge.edge_id == out_edge_id){
-                        auto path = BuildPath(in_edge, out_edge, in_counter, out_counter);
+                        auto path = BuildPath(in_edge, out_edge);
                         paths.push_back(path);
                     }
-                    out_counter += 1;
                 }
-                out_counter = 0;
             }
-            in_counter += 1;
         }
-        in_counter = 0;
-
     }
     return paths;
 }
 // this is baed on paths to original edges in/out
-std::vector<uint64_t>  ComplexRegion::BuildPath(BoundingEdge edge_in, BoundingEdge edge_out, int in_counter, int out_counter){
+std::vector<uint64_t>  ComplexRegion::BuildPath(BoundingEdge edge_in, BoundingEdge edge_out){
     std::cout << "builng path between: "<< edge_in.edge_id <<" and " <<edge_out.edge_id << std::endl;
     std::vector<uint64_t> result;
     if (edge_in.forward){
@@ -221,20 +213,14 @@ bool ComplexRegionCollection::AddRegion(std::vector<uint64_t> edges_in, std::vec
                vec<int> &involution, int insert_size = 5000){
     std::set<uint64_t > check_edges_distinct;
     for (auto edge: edges_in){
-        //std::cout << "adding edge: " << edge << std::endl;
         check_edges_distinct.insert(edge);
         check_edges_distinct.insert(involution[edge]);
-        //std::cout << "size of set: " << check_edges_distinct.size() << std::endl;
     }
     for (auto edge: edges_out){
-        //std::cout << "adding edge: " << edge << "size of set: " << check_edges_distinct.size() << std::endl;
         check_edges_distinct.insert(edge);
         check_edges_distinct.insert(involution[edge]);
-        //std::cout << "size of set: " << check_edges_distinct.size() << std::endl;
-
     }
     if (check_edges_distinct.size() == (2*edges_in.size() + 2*edges_out.size())) {
-        //std::cout << "creating region " << std::endl;
         ComplexRegion complex_region(edges_in, edges_out, involution, insert_size);
         complex_regions.push_back(complex_region);
         auto key = std::make_pair(complex_region.edges_in, complex_region.edges_out);
@@ -259,7 +245,6 @@ std::pair<ComplexRegion, int> ComplexRegionCollection::GetRegionWithEdges(std::v
 
 void ComplexRegionCollection::SelectRegionsForPathSeparation(){
     for (auto region:complex_regions){
-        std::cout << "Considering region "<< path_str(region.edges_in) << std::endl;
         if (region.solved){
             solved_regions.push_back(region);
         }
@@ -268,45 +253,35 @@ void ComplexRegionCollection::SelectRegionsForPathSeparation(){
         auto region = solved_regions[i];
         bool region_clashed = false;
         auto edges_in = region.edges_in;
-        std::cout << "edges in: " << path_str(edges_in) << " i: " << i << std::endl;
         for (int j = i + 1; j < solved_regions.size(); j++){
             auto region_2 = solved_regions[j];
             for (auto edge: edges_in) {
-                std::cout << "Looking for edge: " << edge << " j: " << j << std::endl;
                 if (std::find(region_2.edges_in.begin(), region_2.edges_in.end(), edge) != region_2.edges_in.end()
                         || std::find(region_2.edges_in.begin(), region_2.edges_in.end(), involution[edge]) != region_2.edges_in.end()){
-                        std::cout << "edge found: " << path_str(region_2.edges_in) << std::endl;
                         solved_regions_final.push_back(FindBestSolvedRegion(region, region_2));
                         region_clashed = true;
-                    std::cout << "region chosen:" << path_str(solved_regions_final[solved_regions_final.size()- 1].edges_in) << std::endl;
                 }
             }
         }
         if (!region_clashed){
             //even through this gets hit by a breakpoint, solved regions final size doesn't go up
             solved_regions_final.push_back(region);
-            std::cout << "Added solved rgeion: " << solved_regions_final.size() << std::endl;
         }
     }
-    std::cout << "Added: " << solved_regions_final.size() << "solved regions"  <<std::endl;
     if (solved_regions_final.size() > 1) {
         for (int i = 0; i < solved_regions_final.size(); i++) {
             bool region_removed = false;
             auto region = solved_regions_final[i];
             auto edges_out = region.edges_out;
-            std::cout << "checking edges out: " << path_str(edges_out) << " number solved regions:" <<  solved_regions_final.size() << " i: " << i << " i+1: " << i+1 << std::endl;
             for (int j = i + 1; j < solved_regions_final.size() -1; j++) { // ok somehow j gets to 262149
                 auto region_2 = solved_regions_final[j];
                 for (auto edge: edges_out) {
                     if (std::find(region_2.edges_out.begin(), region_2.edges_out.end(), edge) != region_2.edges_out.end()
                         || std::find(region_2.edges_out.begin(), region_2.edges_out.end(), involution[edge]) !=
                            region_2.edges_out.end()) {
-                        std::cout << "edge found: " << path_str(region_2.edges_in) << std::endl;
                         if (region.edges_in.size() > region_2.edges_in.size()){ //TODO define proper = operator so we cna ue the select best region function here tooo
-                            std::cout << "Removing: " << path_str(solved_regions_final[j].edges_out) << std::endl;
                             solved_regions_final.erase(solved_regions_final.begin() + j);
                         } else {
-                            std::cout << "Removing: " << path_str(solved_regions_final[i].edges_out) << std::endl;
                             solved_regions_final.erase(solved_regions_final.begin() + i);
                             region_removed = true; // start from next region if we've removed the region we are currently looping over
                             continue;
@@ -322,10 +297,6 @@ void ComplexRegionCollection::SelectRegionsForPathSeparation(){
                 continue;
             }
         }
-    }
-    for (auto region:solved_regions_final){
-        std::cout << "Solved region edges in: " << path_str(region.edges_in) << std::endl;
-        std::cout << "Solved region edges out: " << path_str(region.edges_out) << std::endl;
     }
     std::cout << "Number of potential solved regions after removing clashing ones: " << solved_regions_final.size() << std::endl;
 }

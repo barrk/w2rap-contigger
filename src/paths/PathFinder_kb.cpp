@@ -185,16 +185,11 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
                                                                   approximate_insert_size);
                     if (region_added) {
                         index_of_region_to_add = complex_regions.complex_regions.size() - 1;
-                        std::cout << "comple regions size" << complex_regions.complex_regions.size() << std::endl;
                         complex_region = complex_regions.complex_regions.back();
-                        std::cout << "egdes in of region added: " << path_str(complex_region.edges_in) << std::endl;
-                        std::cout << "edges out of region added: " << path_str(complex_region.edges_out) << std::endl;
-                        std::cout << "comple regions size" << complex_regions.complex_regions.size() << std::endl;
-                    } else {
+                   } else {
                         continue;
                     }
                 }
-                std::cout << "complex region created" << std::endl;
                 same_in_out_degree_complex += 1;
                 int count = 0;
                 int edge_ind = 0;
@@ -240,13 +235,7 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
                 }
                 complex_regions.complex_regions[index_of_region_to_add] = complex_region;
             }
-            if (edge_index ==321 || edge_index ==322 || edge_index ==323 || edge_index ==324 || (edge_index > mHBV.EdgeObjectCount() -3)) {
 
-                for (auto region: complex_regions.complex_regions) {
-                    std::cout << "during loop, edge index " << edge_index <<" region with in edges: " << path_str(region.edges_in)
-                              << " solved boolean " << region.solved << std::endl;
-                }
-            }
             paths_to_spanning_edges.clear();
             spanning_edges_in.clear();
             spanning_edges_out.clear();
@@ -255,9 +244,6 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
                 edge_index += 1; // if the next edge will be involution of current one, skip it
             } = actually better to properly check */
         }
-    }
-    for (auto region: complex_regions.complex_regions){
-        std::cout << "region with in edges: " << path_str(region.edges_in) << " solved boolean " <<region.solved << std::endl;
     }
     std::cout << "Solveable regions: " << solveable_regions_count << " of: " << complex_regions.complex_regions.size() << std::endl;
     // can now compare regions, select ones which are solved, track paths to ensure ends don't meet
