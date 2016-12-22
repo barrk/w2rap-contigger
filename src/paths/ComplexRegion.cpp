@@ -262,15 +262,9 @@ void ComplexRegionCollection::SelectRegionsForPathSeparation(){
         std::cout << "Considering region "<< path_str(region.edges_in) << std::endl;
         if (region.solved){
             solved_regions.push_back(region);
-            std::cout << "Solved region edges in: " << path_str(region.edges_in) << std::endl;
-            std::cout << "Solved region edges out: " << path_str(region.edges_out) << std::endl;
-        } else {
-            std::cout << "Region not solved edges in: " << path_str(region.edges_in) << std::endl;
-            std::cout << "Region not solved edges out: " << path_str(region.edges_out) << std::endl;
         }
     }
-    std::vector<ComplexRegion> solved_regions_final;
-    for (int i = 0; i < solved_regions.size() -1 ; i++){
+    for (int i = 0; i < solved_regions.size() ; i++){
         auto region = solved_regions[i];
         bool region_clashed = false;
         auto edges_in = region.edges_in;
@@ -281,8 +275,10 @@ void ComplexRegionCollection::SelectRegionsForPathSeparation(){
                 std::cout << "Looking for edge: " << edge << " j: " << j << std::endl;
                 if (std::find(region_2.edges_in.begin(), region_2.edges_in.end(), edge) != region_2.edges_in.end()
                         || std::find(region_2.edges_in.begin(), region_2.edges_in.end(), involution[edge]) != region_2.edges_in.end()){
+                        std::cout << "edge found: " << path_str(region_2.edges_in) << std::endl;
                         solved_regions_final.push_back(FindBestSolvedRegion(region, region_2));
                         region_clashed = true;
+                    std::cout << "region chosen:" << path_str(solved_regions_final[solved_regions_final.size()- 1].edges_in) << std::endl;
                 }
             }
         }
@@ -294,7 +290,7 @@ void ComplexRegionCollection::SelectRegionsForPathSeparation(){
     }
     std::cout << "Added: " << solved_regions_final.size() << "solved regions"  <<std::endl;
     if (solved_regions_final.size() > 1) {
-        for (int i = 0; i < solved_regions_final.size() - 1; i++) {
+        for (int i = 0; i < solved_regions_final.size(); i++) {
             bool region_removed = false;
             auto region = solved_regions_final[i];
             auto edges_out = region.edges_out;
@@ -305,9 +301,12 @@ void ComplexRegionCollection::SelectRegionsForPathSeparation(){
                     if (std::find(region_2.edges_out.begin(), region_2.edges_out.end(), edge) != region_2.edges_out.end()
                         || std::find(region_2.edges_out.begin(), region_2.edges_out.end(), involution[edge]) !=
                            region_2.edges_out.end()) {
+                        std::cout << "edge found: " << path_str(region_2.edges_in) << std::endl;
                         if (region.edges_in.size() > region_2.edges_in.size()){ //TODO define proper = operator so we cna ue the select best region function here tooo
+                            std::cout << "Removing: " << path_str(solved_regions_final[j].edges_out) << std::endl;
                             solved_regions_final.erase(solved_regions_final.begin() + j);
                         } else {
+                            std::cout << "Removing: " << path_str(solved_regions_final[i].edges_out) << std::endl;
                             solved_regions_final.erase(solved_regions_final.begin() + i);
                             region_removed = true; // start from next region if we've removed the region we are currently looping over
                             continue;
