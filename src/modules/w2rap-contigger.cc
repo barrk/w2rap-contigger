@@ -694,7 +694,7 @@ int main(const int argc, const char * argv[]) {
         //invert(pathsr, invPaths, hbvr.EdgeObjectCount());
         //std::cout << "HBV edge number before pf: " << hbvr.EdgeObjectCount() << std::endl;
         PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
-        pf.resolveRegionsUsingLMPData();
+        pf.resolveComplexRegionsUsingLMPData();
 
         //BinaryReader::readFile("/Users/barrk/Documents/ecoli_dataset/v1/after_pathfinder.hbv", &hbvr);
         //LoadReadPathVec(pathsr,"/Users/barrk/Documents/ecoli_dataset/v1/after_pathfinder.paths");

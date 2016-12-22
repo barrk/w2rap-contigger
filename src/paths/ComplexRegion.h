@@ -79,7 +79,7 @@ public:
     std::vector<ComplexRegion> complex_regions;
 
 private:
-    ComplexRegion ComplexRegionCollection::FindBestSolvedRegion(ComplexRegion region_1, ComplexRegion region_2);
+    ComplexRegion FindBestSolvedRegion(ComplexRegion region_1, ComplexRegion region_2);
     std::string path_str(std::vector<uint64_t> path);
     std::vector<ComplexRegion> solved_regions;
     std::vector<ComplexRegion> solved_regions_final;

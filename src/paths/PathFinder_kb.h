@@ -35,23 +35,18 @@ public:
     {
         hbv.ToLeft(mToLeft);
         hbv.ToRight(mToRight);
-        //std::cout << "first read: " << lmp_data[0] << std::endl;
     }
-
-
-    //Graph-related methods
-    //std::vector<std::vector<uint64_t>> AllPathsFromTo(std::vector<uint64_t> in_edges, std::vector<uint64_t> out_edges, uint64_t max_length);
 
 
     //ReadPath-related methods
 
-    void PathFinderkb::resolveRegionsUsingLMPData();
+    void resolveRegionsUsingLMPData();
     void init_prev_next_vectors();
     std::string path_str(std::vector<uint64_t> e);
     std::tuple <std::vector<LMPPair >, std::vector<LMPPair >, std::map<uint64_t, std::vector<int> > > PathFinderkb::mapEdgesToLMPReads();//(std::vector<LMPPair > & lmp_pairs_for_scaffolding);
-    void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> edgemap);
-    std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector<uint64_t> p, bool verbose_separation);
-    void PathFinderkb::resolveComplexRegionsUsingLMPData();
+    void migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> edgemap);
+    std::map<uint64_t,std::vector<uint64_t>> separate_path(std::vector<uint64_t> p, bool verbose_separation);
+    void resolveComplexRegionsUsingLMPData();
 
 private:
     void PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & long_fronteirs, std::vector<std::vector<uint64_t> >  & paths_to_long_fronteirs, std::vector<uint64_t> &  intermediate_path, uint64_t e, vector<uint64_t > & traversed_edge_list, uint64_t large_frontier_size, int recursion_depth=0, int distance_traversed=0, std::string direction="right");

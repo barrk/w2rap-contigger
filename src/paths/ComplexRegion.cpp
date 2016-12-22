@@ -16,10 +16,6 @@ ComplexRegion::ComplexRegion(std::vector<uint64_t  > edges_in, std::vector<uint6
     edges_out_detailed.resize(edges_out.size());
     edges_in_canonical.resize(edges_in.size());
     edges_out_canonical.resize(edges_out.size());
-    std::cout << "edges in detailed size constructor: " << edges_in_detailed.size() << std::endl;
-    std::cout << "edges out detailed size constructor: " << edges_out_detailed.size() << std::endl;
-    std::map<uint64_t, std::vector<int> > pair_ids;
-    std::map<uint64_t, uint64_t>  edge_translations;
     canonicaliseEdgesInOut();
 
 };
@@ -42,11 +38,6 @@ void ComplexRegion::AddPairId(int edge_index, int pair_id, bool in){
 }
 
 void ComplexRegion::AddPathTo(int edge_index, bool in, std::vector<uint64_t> path_from_center){
-    std::cout << "Adding path: " << std::endl;
-    for (auto edge: path_from_center){
-        std::cout << " edge " << edge;
-    }
-    std::cout << std::endl;
     BoundingEdge e;
     if (in){
         e = edges_in_detailed[edge_index];
@@ -64,13 +55,10 @@ void ComplexRegion::AddPathTo(int edge_index, bool in, std::vector<uint64_t> pat
 }
 
 void ComplexRegion::FindSolveablePairs(){
-    std::cout << "finding solveable pairs" << std::endl;
     for (auto edge_in: edges_in_detailed) {
-        //std::cout << "Edge in: " << edge_in.edge_id << "pair_ids size: " << edge_in.pair_ids.size() << std::endl;
         auto in_ids = edge_in.pair_ids;
         for (auto in_id: in_ids){
             for (auto edge_out: edges_out_detailed) {
-                //std::cout << "Edge out: " << edge_out.edge_id << " in id: " << in_id << std::endl;
                 auto out_ids = edge_out.pair_ids;
                 if ((std::find(out_ids.begin(), out_ids.end(), in_id) !=
                         out_ids.end())) {
@@ -104,13 +92,11 @@ std::pair<std::vector<uint64_t>, std::vector<BoundingEdge> > ComplexRegion::Cano
         BoundingEdge edge_details = detailed_edge_list[i];
         // in practise i think all edges in will be edges in canonical if one of them is, same for out
         if (edge < involution[edge]){// nb edge in i and edge out i may not be together finally, but the purpose of this is to ensure internal consistency
-            //std::cout << "edge:" << edge << " is canonical, involution: " << involution[edge] << std::endl;
             edge_details.edge_id = edge;
             edge_details.forward = true;
             edge_details.translated_edge_id = edge;
             edges_canonical[i] = edge;
         } else {
-            //std::cout << "edge:" << edge << " canonical version " << edge<< std::endl;
             edge_details.edge_id = involution[edge];
             edge_details.forward = false;
             edge_details.translated_edge_id = involution[edge];
@@ -127,14 +113,12 @@ void ComplexRegion::isSolved(int min_count){
     // this assumes there is exactly one path per in/out combination- is this always the case? if there are fewer, region is not solved, if there are more over min count, region is not unambiguously solved, though in practise if one in/out pair had much more support than the other, we'd want that
     int number_solved_pairs = 0;
     for (auto count:combination_counts){
-        std::cout << "combination: " << count.first.first << ", " << count.first.second << std::endl;
         if (count.second > min_count){
             auto in = count.first.first;
             auto out = count.first.second;
             in_edges_solved.push_back(in);
             out_edges_solved.push_back(out); //TODO: think about removing duplication of data
             number_solved_pairs += 1;
-            std::cout << "solved" << std::endl;
         }
     }
     // think about if this is actually the case....
@@ -157,10 +141,8 @@ std::vector<std::vector<uint64_t> >  ComplexRegion::BuildPaths(){
         auto in_edge_id = in_out_pair.first;
         auto out_edge_id = in_out_pair.second;
         // doesn't print this
-        std::cout << "Looing for path between " << in_edge_id << " and " << out_edge_id << std::endl;
         for (auto in_edge: edges_in_detailed){
             if (in_edge.edge_id == in_edge_id) {
-                std::cout << "found in edge " << std::endl;
                 for (auto out_edge: edges_out_detailed) {
                     if (out_edge.edge_id == out_edge_id){
                         auto path = BuildPath(in_edge, out_edge);
@@ -174,16 +156,13 @@ std::vector<std::vector<uint64_t> >  ComplexRegion::BuildPaths(){
 }
 // this is baed on paths to original edges in/out
 std::vector<uint64_t>  ComplexRegion::BuildPath(BoundingEdge edge_in, BoundingEdge edge_out){
-    std::cout << "builng path between: "<< edge_in.edge_id <<" and " <<edge_out.edge_id << std::endl;
     std::vector<uint64_t> result;
     if (edge_in.forward){
         result.push_back(edge_in.translated_edge_id); // should be same as edge id- if this is on inv, all others should be?
-        std::cout << "edge in: " << edge_in.edge_id << "translated id: " << edge_in.translated_edge_id << " path to edge in: " << std::endl;
         for (auto e:edge_in.path_from_center){
             result.push_back(e);
             std::cout << e << std::endl;
         }
-        std::cout << "edge out: " << edge_out.edge_id << "translated id: " << edge_out.translated_edge_id << " path to edge out: " << std::endl;
         for (auto e:edge_out.path_from_center){
             result.push_back(e);
             std::cout << e << std::endl;
@@ -306,7 +285,6 @@ std::vector<std::vector<uint64_t> > ComplexRegionCollection::GetPathsToSeparate(
     // for each solved region, get each path in the right direction (so from in to out), on the main graph, not the involution
     std::vector<std::vector<uint64_t> > paths_to_separate;
     for (auto region:solved_regions_final){
-        std::cout << "trying to solve region" << std::endl; // this is printed out, so issue is below here-
         auto paths = region.BuildPaths();
         for (auto path:paths){
             paths_to_separate.push_back(path);

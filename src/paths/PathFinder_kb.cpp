@@ -111,9 +111,6 @@ std::vector<uint64_t>  PathFinderkb::canonicalisePath(std::vector<uint64_t> path
             result.push_back(edge);
         }
     }
-    //if (result.back() < result.front()){
-    //    std::reverse(result.begin(), result.end());
-    //}
     if (involution_path || result.back() < result.front()) {
         std::reverse(result.begin(), result.end());
     }
@@ -153,7 +150,6 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
     ComplexRegion complex_region;
     ComplexRegionCollection complex_regions(mInv);
 
-    //std::vector<int> edges = {8, 9, 320, 390, 336, 463};
     for (int edge_index = 0; edge_index < mHBV.EdgeObjectCount(); ++edge_index) {
         // if we have already seen the involution of this edge, then leave it
         if (std::find(involutions_of_edges_in_solved_regions.begin(), involutions_of_edges_in_solved_regions.end(), edge_index) == involutions_of_edges_in_solved_regions.end()) {
@@ -166,9 +162,6 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
             traversed_edge_list.clear();
             edges_beyond_distance(spanning_edges_out, paths_to_spanning_edges, intermediate_path, edge_index,
                                   traversed_edge_list, approximate_insert_size, 0, 0, "left");
-            //std::cout << "in" << path_str(spanning_edges_in) << std::endl;
-            //std::cout << "out " <<  path_str(spanning_edges_out) << std::endl;
-            // take regions with less than 5 in/out edges- ideally would make graph traversal give up if it finds too many
             if ((spanning_edges_in.size() > 1) && (spanning_edges_in.size() == spanning_edges_out.size()) &&
                 spanning_edges_in.size() < 5) {
                 std::cout << "in" << path_str(spanning_edges_in) << std::endl;
@@ -199,9 +192,7 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
                         intermediate_edges.push_back(int_edge);
                     }
                     intermediate_edges.push_back(edge_index);
-                    //std::cout << "Path for edge: " << complex_region.edges_in[edge_ind] << " " <<  path_str(intermediate_edges) << std::endl;
                     complex_region.AddPathTo(edge_ind, true, intermediate_edges);
-                    //std::cout << "Ids of mapping pairs: " << path_str(edge_id_to_pair_id_map[edge_in]) << std::endl;
                     for (auto pair_id :  edge_id_to_pair_id_map[edge_in]) {
                         complex_region.AddPairId(edge_ind, pair_id, true);
                     }
@@ -215,8 +206,6 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
                         intermediate_edges.push_back(int_edge);
                     }
                     complex_region.AddPathTo(edge_ind, false, intermediate_edges);
-                    //std::cout << "Path for edge: " << complex_region.edges_in[edge_ind] << " " <<  path_str(intermediate_edges) << std::endl;
-                    //std::cout << "Ids of mapping pairs: " << path_str(edge_id_to_pair_id_map[edge_out]) << std::endl;
                     for (auto pair_id :  edge_id_to_pair_id_map[mInv[edge_out]]) {
                         complex_region.AddPairId(edge_ind, pair_id, false);
                     }
@@ -225,11 +214,8 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
 
                 }
                 complex_region.FindSolveablePairs();
-                complex_region.isSolved(5);
+                complex_region.isSolved(12);
                 if (complex_region.solved) {
-                    std::cout << "egdes in of region solved: " << path_str(complex_region.edges_in) << std::endl;
-                    std::cout << "edges out of region solved: " << path_str(complex_region.edges_out) << std::endl;
-                    std::cout << "complex regions size: " << complex_regions.complex_regions.size() << std::endl;
                     solveable_regions_count += 1;
                     involutions_of_edges_in_solved_regions.push_back(mInv[edge_index]);
                 }
@@ -239,10 +225,6 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
             paths_to_spanning_edges.clear();
             spanning_edges_in.clear();
             spanning_edges_out.clear();
-            /*
-            if (mInv[edge_index + 1] == edge_index){
-                edge_index += 1; // if the next edge will be involution of current one, skip it
-            } = actually better to properly check */
         }
     }
     std::cout << "Solveable regions: " << solveable_regions_count << " of: " << complex_regions.complex_regions.size() << std::endl;
@@ -261,315 +243,22 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
             auto oen=separate_path(p, true);
             if (oen.size() > 0) {
                 for (auto et:oen) {
-                    //std::cout << "Edge to migrate: " << et.first;
                         if (old_edges_to_new.count(et.first) == 0) old_edges_to_new[et.first] = {};
                         for (auto ne:et.second) {
                             old_edges_to_new[et.first].push_back(ne);
-                            //std::cout << " " << ne;
                         }
-                    //std::cout << std::endl;
                 }
                 sep++;
             }
         }
-    //mHBV.Involution(mInv);
-    //TestInvolution(mHBV, mInv);
 
     // pretty sure, because these are lmp paths,
-    //if (old_edges_to_new.size()>0) {
-    //    migrate_readpaths(old_edges_to_new);
-    //}
-    std::cout<<" "<<sep<<" paths separated!"<<std::endl;
-    std::cout<<mHBV.EdgeObjectCount() << " edges in hbv"<<std::endl;
-    std::cout << "Inv edge 0: " << mInv[0] << " edge 494: " << mInv[494] << " edge 495 " << mInv[495] << " edge 1: " << mInv[1] << " edge 8 " << mInv[8] << " edge 9: " << mInv[9] << std::endl;
-    TestInvolution(mHBV, mInv);
-    mHBV.Involution(mInv);
-    std::cout << "Inv edge 0: " << mInv[0] << " edge 494: " << mInv[494] << " edge 495 " << mInv[495] << " edge 1: " << mInv[1] << " edge 8 " << mInv[8] << " edge 9: " << mInv[9] << std::endl;
-
-    TestInvolution(mHBV, mInv);
-}
-
-void PathFinderkb::resolveRegionsUsingLMPData() {
-
-    int approximate_insert_size = 3500;
-    init_prev_next_vectors();// mToLeft and mToright are to/from vertices
-    std::tuple<std::vector<LMPPair >, std::vector<LMPPair >, std::map<uint64_t, std::vector<int> > > mapping_results = mapEdgesToLMPReads();
-    std::vector<LMPPair > pairs_for_scaffolding = std::get<0>(mapping_results);
-    std::vector<LMPPair > pairs_for_insert_size_calculation = std::get<1>(mapping_results);
-    std::map<uint64_t, std::vector<int> >  edge_id_to_pair_id_map = std::get<2>(mapping_results);
-    int same_in_out_degree = 0;
-    int same_in_out_degree_complex = 0;
-    int  solveable_regions_count = 0 ;
-    std::map<uint64_t, int> mapping_counts;
-
-    vector<uint64_t > traversed_edge_list;
-    std::vector<std::vector<uint64_t> >  paths_to_spanning_edges;
-    std::set<std::vector<uint64_t> >  paths_seen;
-    std::vector<uint64_t> intermediate_path;
-    std::vector<uint64_t>  spanning_edges_in;
-    std::vector<uint64_t>  spanning_edges_out;
-    std::vector<std::vector<uint64_t> > paths_to_separate;
-
-    std::vector<int> edges = {320, 390, 336, 463};
-    //for (int edge_index = 0; edge_index < mHBV.EdgeObjectCount(); ++edge_index) {
-    for (int edge_index:edges) {
-    //for (int edge_index = 0; edge_index < mHBV.EdgeObjectCount(); ++edge_index) {
-        auto edge = mHBV.EdgeObject(edge_index).ToString();
-        if (edge == mHBV.EdgeObject(mInv[edge_index]).ToString()){
-            continue;
-        }
-            edges_beyond_distance(spanning_edges_in, paths_to_spanning_edges, intermediate_path, edge_index, traversed_edge_list, approximate_insert_size, 0, 0, "right");
-            traversed_edge_list.clear();
-            edges_beyond_distance(spanning_edges_out, paths_to_spanning_edges, intermediate_path, edge_index, traversed_edge_list, approximate_insert_size, 0, 0, "left");
-
-            if (spanning_edges_in.size() == spanning_edges_out.size()) {//} && long_frontiers_in.size() != 0) {
-                same_in_out_degree += 1;
-                if (spanning_edges_in.size() > 1) {
-                    same_in_out_degree_complex += 1;
-                    std::map<uint64_t, std::pair< std::vector<uint64_t>, std::vector<int> > > mapped_lmp_in;
-                    std::map<uint64_t, std::pair< std::vector<uint64_t>, std::vector<int> > > mapped_lmp_out;
-                    int count = 0;
-                    // find number of lmp reads mapping to each large fronteir edge
-                    for (auto edge_in: spanning_edges_in) {
-                        std::vector<uint64_t> intermediate_edges;
-                        for (auto int_edge: paths_to_spanning_edges[count]){
-                            intermediate_edges.push_back(int_edge);
-                        }
-                        std::vector<int> pair_ids;
-                        for (auto pair_id :  edge_id_to_pair_id_map[edge_in]) {
-                            pair_ids.push_back(pair_id);
-                            mapping_counts[edge_in] += 1;
-                        }
-                        count += 1;
-                        std::pair< std::vector<uint64_t>, std::vector<int> > result = std::make_pair(intermediate_edges, pair_ids);
-                        mapped_lmp_in[edge_in] = result;
-                    }
-                    for (auto edge_out: spanning_edges_out) {
-                        std::vector<uint64_t> intermediate_edges;
-                        for (auto int_edge: paths_to_spanning_edges[count]){
-                            intermediate_edges.push_back(int_edge);
-                        }
-                        std::vector<int> pair_ids;
-                        for (auto pair_id :  edge_id_to_pair_id_map[mInv[edge_out]]) {
-                            mapping_counts[edge_out] += 1;
-                            pair_ids.push_back(pair_id);
-
-                        }
-                        count += 1;
-                        std::pair< std::vector<uint64_t>, std::vector<int> > result = std::make_pair(intermediate_edges, pair_ids);
-                        mapped_lmp_out[edge_out] = result;
-
-                    }
-                    std::map<std::pair<uint64_t, uint64_t>, int > counts_for_each_solveabe_pair;
-                    // find pairs which are in both mapped_lmp_in, and mapped_lmp_out- these can be used to solve this region
-                    for (auto edge_in: spanning_edges_in) {
-                        // TODO this way is horrible, need to design a better data structure
-                        vector<int> p1_ids = mapped_lmp_in[edge_in].second;
-                        for (auto p1_id: p1_ids){
-                            for (auto edge_out: spanning_edges_out) {
-                                vector<int> p2_ids = mapped_lmp_out[edge_out].second;
-                                if ((std::find(p2_ids.begin(), p2_ids.end(), p1_id) !=
-                                        p2_ids.end())) {
-                                    counts_for_each_solveabe_pair[std::make_pair(edge_in, edge_out)] += 1;
-
-                                }
-                            }
-                        }
-                    }
-
-                    int paths_separated = 0;
-                    std::vector<PathDetails> path_end_tracker;
-                    for (auto edge_pair_count: counts_for_each_solveabe_pair){
-                        std::pair<uint64_t, uint64_t> key = edge_pair_count.first;
-                        uint64_t edge_in = key.first;
-                        uint64_t edge_out = key.second;
-                        int count = edge_pair_count.second;
-                        std::cout << "count for pair:" << edge_pair_count.first.first <<  " " << edge_pair_count.first.second << " : " <<count <<std::endl;
-                        if (count > 10){
-                            std::vector<uint64_t> path_in = mapped_lmp_in[edge_in].first;
-                            std::vector<uint64_t> path_out = mapped_lmp_out[edge_out].first;
-                            std::vector<uint64_t> full_path;
-                            full_path.push_back(edge_in);
-                            //std::cout << "edge in added;" << path_str(full_path) << std::endl;
-                            for (auto e:path_in){
-                                full_path.push_back(e);
-                            }
-                            //std::cout << "path in added;" << path_str(full_path) << std::endl;
-                            full_path.push_back(edge_index);
-                            //std::cout << path_str(full_path) << std::endl;
-                            for (auto e:path_out){
-                                full_path.push_back(e);
-                            }
-                            //std::cout << "edge;" << path_str(full_path) << std::endl;
-                            full_path.push_back(edge_out);
-                            std::cout << "path out added;" << path_str(full_path) << std::endl;
-                            std::vector<uint64_t> path_canonical = canonicalisePath(full_path);
-                            std::vector<uint64_t> path_reversed;
-                            path_reversed.resize(path_canonical.size());
-                            std::reverse_copy(path_canonical.begin(), path_canonical.end(), path_reversed.begin());
-                            std::vector<uint64_t> edges_to_look_for {77, 76, 197, 196};
-                            if ((std::find(paths_seen.begin(), paths_seen.end(), path_canonical) == paths_seen.end()) && (std::find(paths_seen.begin(), paths_seen.end(), path_reversed) == paths_seen.end())) {
-                                int inner_path_length = 0;
-                                for (int i =1; i < path_canonical.size() -1; i++){
-                                    auto edge = mHBV.EdgeObject(path_canonical[i]);
-                                    inner_path_length += edge.size();
-                                }
-                                if (inner_path_length < 12000) { // hardcoded something longer tha any lmp... insert size
-                                    paths_seen.insert(path_canonical);
-                                    std::cout << "path to separate: " << path_str(full_path) << std::endl;
-                                    std::cout << "path canonical: " << path_str(path_canonical) << std::endl;
-                                    paths_to_separate.push_back(path_canonical);
-                                    paths_separated += 1;
-                                }
-                            }
-                        }
-                    }
-                    std::cout << "total paths eparated: " << paths_separated << " out of " << spanning_edges_in.size() << " len paths to separate " << paths_to_separate.size() << std::endl;
-                    if (spanning_edges_in.size() == paths_separated){
-                        solveable_regions_count += 1;
-                    }
-                }
-
-            }
-            paths_to_spanning_edges.clear();
-            spanning_edges_in.clear();
-            spanning_edges_out.clear();
-    }
-    // get both [354:355 204:205 481:480 ] and [354:355 204:205 302:303 204:205 481:480 ], want the longer- these must occur for different edges, so need tobe out of main loop
-    // should be able to incorporate this into above somewhere- but need to know length of path. given the paths are already calculated that can probably be moved up too
-    /*std::set<std::set<uint64_t, uint64_t> > edge_pairs;
-    for (std::vector<uint64_t> path; paths_to_separate){
-        auto before = edge_pairs.size();
-        std::set<uint64_t, uint64_t> path_ends = {path.front(), path.back()};
-        edge_pairs.insert(path_ends);
-        auto after = edge_pairs.size();
-        if (before == after){
-            // this doesn't do it, because we still need to know length of path, and index of path with these ends
-
-        }
-
-
-    }*/
-
-    std::map<std::pair<uint64_t, uint64_t>, PathDetails> path_length_edge_map;
-    int path_index = 0;
-    for (auto path: paths_to_separate){
-        auto path_length = path.size();
-        PathDetails path_details;
-        path_details.path_id = path_index;
-        path_details.length = path_length;
-        uint64_t start = path.front();
-        uint64_t end = path.back();
-        uint64_t start_rc = mInv[start];
-        uint64_t end_rc = mInv[end];
-        std::pair<uint64_t, uint64_t> edges;
-        edges.first = start;
-        edges.second = end;
-        std::pair<uint64_t, uint64_t>  edges_rc;
-        edges_rc.first = start_rc;
-        edges_rc.second = end_rc;
-        //std::cout << "edge in:" << start << " edge out:" << end <<std::endl;
-        std::cout << path_length_edge_map.count(edges) << std::endl;
-        //std::cout << "edge in rc:" << start_rc << " edge out rc:" << end_rc <<std::endl;
-        std::cout << path_length_edge_map.count(edges_rc) << std::endl;
-        std::pair<uint64_t, uint64_t> edges_backwards;
-        edges_backwards.first = edges.second;
-        edges_backwards.second = edges.first;
-        std::pair<uint64_t, uint64_t> edges_backwards_rc;
-        edges_backwards_rc.first = edges_rc.second;
-        edges_backwards_rc.second = edges_rc.first;
-        if (path_length_edge_map.count(edges) == 0 && path_length_edge_map.count(edges_rc) == 0 && (path_length_edge_map.count(edges_backwards) == 0 && path_length_edge_map.count(edges_backwards_rc) == 0)){
-            path_length_edge_map[edges] = path_details;
-            //std::cout << "edges p len: " << path_length_edge_map[edges].length << std::endl;
-            //std::cout << "edges_rc p len: " << path_length_edge_map[edges_rc].length << std::endl;
-            if ((path_length_edge_map.count(edges) == 0) && (path_length_edge_map.count(edges_rc) == 0)){
-                //std::cout <<  " first cond part:" << std::endl;
-            }
-            //std::cout << path_str(path) << std::endl;
-            //std::cout << "count edges: " << path_length_edge_map.count(edges)<< std::endl;
-            //std::cout << "count edges_rc: " << path_length_edge_map.count(edges_rc) << std::endl;
-            for (auto pmap:path_length_edge_map){
-                std::cout << "key: " << pmap.first.first << " " << pmap.first.second << ", value: " << pmap.second.path_id << std::endl;
-            }
-        }
-        path_index += 1;
-    }
-
-    std::vector<std::vector<uint64_t> > paths_to_separate_final;
-    for (auto path_to_use: path_length_edge_map){
-        std::cout << "path str: " << path_to_use.second.path_id << std::endl;
-        paths_to_separate_final.push_back(paths_to_separate[path_to_use.second.path_id]);
-        std::cout << path_str(paths_to_separate[path_to_use.second.path_id]) << std::endl;
-
-    }
-
-    std::cout << "Regions with same degree in and out:" << same_in_out_degree << std::endl;
-    std::cout << "Complex regions with same degree in and out:" << same_in_out_degree_complex << std::endl;
-    std::cout << "Complex regions solveable wit lmp reads:" << solveable_regions_count<< std::endl;
-    uint64_t sep=0;
-    std::map<uint64_t,std::vector<uint64_t>> old_edges_to_new;
-    std::set<uint64_t> start_edges_seen;
-    std::set<uint64_t> end_edges_seen; // old edges to new should do this!!
-    for (auto p:paths_to_separate_final){
-
-        if (old_edges_to_new.count(p.front()) > 0 or old_edges_to_new.count(p.back()) > 0) {
-            std::cout<<"WARNING: path starts or ends in an already modified edge, skipping"<<std::endl;
-            continue;
-        }
-        uint64_t start = p.front();
-        uint64_t end = p.back();
-        uint64_t start_rc = mInv[p.front()];
-        uint64_t end_rc = mInv[p.back()];
-        // this creates new vertices at the end of the graph, connects start to these, and removes old connection then repeats on the involution
-        if (std::find(start_edges_seen.begin(), start_edges_seen.end(), start) == start_edges_seen.end() &&
-             std::find(end_edges_seen.begin(), end_edges_seen.end(), end) == end_edges_seen.end() &&
-                std::find(start_edges_seen.begin(), start_edges_seen.end(), end_rc) == start_edges_seen.end() &&
-                std::find(end_edges_seen.begin(), end_edges_seen.end(), start_rc) == end_edges_seen.end()){
-                start_edges_seen.insert(start);
-                end_edges_seen.insert(end);
-                start_edges_seen.insert(end_rc);
-                end_edges_seen.insert(start_rc);
-                auto oen=separate_path(p, true);
-                    if (oen.size() > 0) {
-                        //mHBV.Involution(mInv);
-                        //TestInvolution(mHBV, mInv);
-
-                        for (auto et:oen) {
-                            if (oen[et.first].size() > 0) { // absutely no idea why the start and end edges are ending up as keys in here, because they aren't there when you output oen in side separate paths
-                                if (old_edges_to_new.count(et.first) == 0) old_edges_to_new[et.first] = {};
-                                for (auto ne:et.second) {
-                                    old_edges_to_new[et.first].push_back(ne);
-                                }
-                            }
-                        }
-                        sep++;
-            }
-        }
-    }
-
     if (old_edges_to_new.size()>0) {
         migrate_readpaths(old_edges_to_new);
     }
     std::cout<<" "<<sep<<" paths separated!"<<std::endl;
     std::cout<<mHBV.EdgeObjectCount() << " edges in hbv"<<std::endl;
-    // cleanup needs both PE and LMP paths, but then won't know whether its a PE or LMP read- i don't think this matters
-    /*std::vector<std::vector<ReadPath> > lmp_paths;
-    for (auto path: paths_to_separate_final){
-        std::vector<ReadPath>  path_read_path;
-        for (auto edge: path){
-            path_read_path.push_back(edge);
-        }
-        lmp_paths.push_back(path_read_path);
-
-    }
-    std::vector<std::vector<uint64_t> > all_paths;
-    all_paths.insert(all_paths.begin(), mPaths.begin(), mPaths.end());
-    all_paths.insert(all_paths.end(), lmp_paths.begin(), lmp_paths.end());*/
-    //mHBV.Involution(mInv);
-    //TestInvolution(mHBV, mInv);
-    //TODO: work out how to convert these paths into read paths!
-    //Cleanup(mHBV, mInv, mPaths);
-
+    std::cout << "Inv edge 0: " << mInv[0] << " edge 494: " << mInv[494] << " edge 495 " << mInv[495] << " edge 1: " << mInv[1] << " edge 8 " << mInv[8] << " edge 9: " << mInv[9] << std::endl;
 
 }
 
