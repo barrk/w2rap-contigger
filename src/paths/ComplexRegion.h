@@ -59,15 +59,10 @@ typedef struct {
         std::vector<std::pair<uint64_t, uint64_t> > combinations_to_use;
         std::vector<uint64_t > in_edges_solved;
         std::vector<uint64_t > out_edges_solved;
-        std::vector<std::vector<uint64_t> > candidate_paths;
-        std::vector<std::vector<uint64_t> > selected_paths;// think this will actually happen at the collection level
 
         std::vector<BoundingEdge> edges_in_detailed;
         std::vector<BoundingEdge> edges_out_detailed;
         std::pair<std::vector<uint64_t>, std::vector<BoundingEdge> > CanonicaliseEdgeList(std::vector<uint64_t> edges, std::vector<uint64_t> edges_canonical, std::vector<BoundingEdge>  detailed_edge_list);
-
-        bool SanityCheckPath(std::vector<uint64_t> path);
-        void canonicaliseEdgesInOut(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
 
     };
 
@@ -75,7 +70,6 @@ typedef struct {
 class ComplexRegionCollection {
 public:
     ComplexRegionCollection(vec<int> &involution);
-    //void AddRegion(ComplexRegion complex_region);
     bool AddRegion(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out,
                    vec<int> &involution, int insert_size = 5000);
     bool ContainsRegionWithEdges(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
@@ -91,7 +85,6 @@ private:
     std::vector<ComplexRegion> solved_regions_final;
     std::map<std::pair< std::vector<uint64_t>, std::vector<uint64_t> >, int> edges_to_region_index;
     std::pair< std::vector<uint64_t>, std::vector<uint64_t> > canonicaliseEdgesInOut(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
-    int CheckNoPathsClash(std::vector<std::vector<uint64_t > > all_edges);
     vec<int> involution;
 
 };

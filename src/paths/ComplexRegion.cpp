@@ -83,18 +83,6 @@ void ComplexRegion::FindSolveablePairs(){
     }
 }
 
-// actually, this would be too late, these can be checked earlier- may still ned to do other things to validate after path is built
-bool ComplexRegion::SanityCheckPath(std::vector<uint64_t> path){
-    // sanity check path, ensure its not a cycle (regions with equal in/out edges shouldn't be added), and is in this region
-    if (path.front() != path.back() &&
-            std::find(edges_in_canonical.begin(), edges_in_canonical.end(), path.front()) != edges_in_canonical.end()
-            && std::find(edges_out_canonical.begin(), edges_out_canonical.end(), path.back()) != edges_out_canonical.end()){
-        return true; // the path is not a cycle, it starts and ends at the bounds of this region- ask Bernardo what else I should check
-    } else {
-        std::cout << "Path is not valid in this region" << std::endl;
-        return false;
-    }
-}
 
 
 void  ComplexRegion::canonicaliseEdgesInOut(){
@@ -217,9 +205,6 @@ std::vector<uint64_t>  ComplexRegion::BuildPath(BoundingEdge edge_in, BoundingEd
         for (auto e:edge_out.path_from_center){
             result.push_back(involution[e]);
         }
-        if (edge_in.translated_edge_id > edge_out.translated_edge_id){
-            std::reverse(result.begin(), result.end());
-        }
         result.push_back(edge_out.translated_edge_id);
     }
 
@@ -236,21 +221,20 @@ bool ComplexRegionCollection::AddRegion(std::vector<uint64_t> edges_in, std::vec
                vec<int> &involution, int insert_size = 5000){
     std::set<uint64_t > check_edges_distinct;
     for (auto edge: edges_in){
-        std::cout << "adding edge: " << edge << std::endl;
+        //std::cout << "adding edge: " << edge << std::endl;
         check_edges_distinct.insert(edge);
         check_edges_distinct.insert(involution[edge]);
-        std::cout << "size of set: " << check_edges_distinct.size() << std::endl;
+        //std::cout << "size of set: " << check_edges_distinct.size() << std::endl;
     }
     for (auto edge: edges_out){
-        std::cout << "adding edge: " << edge << "size of set: " << check_edges_distinct.size() << std::endl;
+        //std::cout << "adding edge: " << edge << "size of set: " << check_edges_distinct.size() << std::endl;
         check_edges_distinct.insert(edge);
         check_edges_distinct.insert(involution[edge]);
-        std::cout << "size of set: " << check_edges_distinct.size() << std::endl;
+        //std::cout << "size of set: " << check_edges_distinct.size() << std::endl;
 
     }
-    // in[457:456 313:312 ], this fails
-    if (check_edges_distinct.size() == (2*edges_in.size() + 2*edges_out.size())) { // this allows regions with same in/out edges, but reversed, to be created
-        std::cout << "creating region " << std::endl;
+    if (check_edges_distinct.size() == (2*edges_in.size() + 2*edges_out.size())) {
+        //std::cout << "creating region " << std::endl;
         ComplexRegion complex_region(edges_in, edges_out, involution, insert_size);
         complex_regions.push_back(complex_region);
         auto key = std::make_pair(complex_region.edges_in, complex_region.edges_out);
@@ -275,22 +259,68 @@ ComplexRegion ComplexRegionCollection::GetRegionWithEdges(std::vector<uint64_t> 
 
 void ComplexRegionCollection::SelectRegionsForPathSeparation(){
     for (auto region:complex_regions){
+        std::cout << "Considering region "<< path_str(region.edges_in) << std::endl;
         if (region.solved){
             solved_regions.push_back(region);
             std::cout << "Solved region edges in: " << path_str(region.edges_in) << std::endl;
             std::cout << "Solved region edges out: " << path_str(region.edges_out) << std::endl;
+        } else {
+            std::cout << "Region not solved edges in: " << path_str(region.edges_in) << std::endl;
+            std::cout << "Region not solved edges out: " << path_str(region.edges_out) << std::endl;
         }
     }
     std::vector<ComplexRegion> solved_regions_final;
-    for (int i = 0; i < solved_regions.size(); i++){
+    for (int i = 0; i < solved_regions.size() -1 ; i++){
         auto region = solved_regions[i];
+        bool region_clashed = false;
         auto edges_in = region.edges_in;
+        std::cout << "edges in: " << path_str(edges_in) << " i: " << i << std::endl;
         for (int j = i + 1; j < solved_regions.size(); j++){
             auto region_2 = solved_regions[j];
             for (auto edge: edges_in) {
-                if (std::find(region_2.edges_in.begin(), region_2.edges_in.end(), edge) != region_2.edges_in.end()){
+                std::cout << "Looking for edge: " << edge << " j: " << j << std::endl;
+                if (std::find(region_2.edges_in.begin(), region_2.edges_in.end(), edge) != region_2.edges_in.end()
+                        || std::find(region_2.edges_in.begin(), region_2.edges_in.end(), involution[edge]) != region_2.edges_in.end()){
                         solved_regions_final.push_back(FindBestSolvedRegion(region, region_2));
+                        region_clashed = true;
                 }
+            }
+        }
+        if (!region_clashed){
+            //even through this gets hit by a breakpoint, solved regions final size doesn't go up
+            solved_regions_final.push_back(region);
+            std::cout << "Added solved rgeion: " << solved_regions_final.size() << std::endl;
+        }
+    }
+    std::cout << "Added: " << solved_regions_final.size() << "solved regions"  <<std::endl;
+    if (solved_regions_final.size() > 1) {
+        for (int i = 0; i < solved_regions_final.size() - 1; i++) {
+            bool region_removed = false;
+            auto region = solved_regions_final[i];
+            auto edges_out = region.edges_out;
+            std::cout << "checking edges out: " << path_str(edges_out) << " number solved regions:" <<  solved_regions_final.size() << " i: " << i << " i+1: " << i+1 << std::endl;
+            for (int j = i + 1; j < solved_regions_final.size() -1; j++) { // ok somehow j gets to 262149
+                auto region_2 = solved_regions_final[j];
+                for (auto edge: edges_out) {
+                    if (std::find(region_2.edges_out.begin(), region_2.edges_out.end(), edge) != region_2.edges_out.end()
+                        || std::find(region_2.edges_out.begin(), region_2.edges_out.end(), involution[edge]) !=
+                           region_2.edges_out.end()) {
+                        if (region.edges_in.size() > region_2.edges_in.size()){ //TODO define proper = operator so we cna ue the select best region function here tooo
+                            solved_regions_final.erase(solved_regions_final.begin() + j);
+                        } else {
+                            solved_regions_final.erase(solved_regions_final.begin() + i);
+                            region_removed = true; // start from next region if we've removed the region we are currently looping over
+                            continue;
+                        }
+                    }
+                }
+                if (region_removed){
+                    continue;
+                }
+            }
+
+            if (region_removed){
+                continue;
             }
         }
     }
@@ -305,7 +335,7 @@ void ComplexRegionCollection::SelectRegionsForPathSeparation(){
 std::vector<std::vector<uint64_t> > ComplexRegionCollection::GetPathsToSeparate(){
     // for each solved region, get each path in the right direction (so from in to out), on the main graph, not the involution
     std::vector<std::vector<uint64_t> > paths_to_separate;
-    for (auto region:solved_regions){
+    for (auto region:solved_regions_final){
         std::cout << "trying to solve region" << std::endl; // this is printed out, so issue is below here-
         auto paths = region.BuildPaths();
         for (auto path:paths){
@@ -334,26 +364,4 @@ ComplexRegion ComplexRegionCollection::FindBestSolvedRegion(ComplexRegion region
     } else {
         return region_2;
     }
-}
-
-
-int ComplexRegionCollection::CheckNoPathsClash(std::vector<std::vector<uint64_t > > all_edges){
-    std::set<uint64_t > seen_edges;
-
-    auto seen_count = seen_edges.size();
-    int region_index = 0;
-    for (auto edges: all_edges){
-        for (auto edge:edges){
-            seen_edges.insert(edge);
-            std::cout << "edge: " << edge << " Region index: " << region_index << " seen count: " << seen_count << " seen edges sixe" << seen_edges.size() << std::endl;
-            if (seen_edges.size() == (seen_count + 1)){
-                seen_count += 1;
-            } else{
-                return region_index;
-            }
-        }
-        region_index += 1;
-    }
-    // this gives us the index at which one solved region clashes with another
-    return region_index;
 }
