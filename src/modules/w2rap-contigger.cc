@@ -263,25 +263,10 @@ int main(const int argc, const char * argv[]) {
             PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
             pf.resolveComplexRegionsUsingLMPData();
         std::cout << "exited lmp pathing" << std::endl;
-        //hbvr.Involution(inv);
         // involution fine here
         std::cout << "testing invlution after lmp pathing" << std::endl;
         TestInvolution(hbvr, inv);
         std::cout << "hbv has " << hbvr.EdgeObjectCount() << "edges" <<  std::endl;
-        //BinaryWriter::writeFile("/Users/barrk/Documents/ecoli_dataset/v1/check_inv.hbv", hbvr);
-        //WriteReadPathVec(pathsr,"/Users/barrk/Documents/ecoli_dataset/v1/check_inv.paths");
-        /*std::cout << "reading in just written file" <<std::endl;
-        hbvr.Clear();
-        pathsr.clear();
-        inv.clear();
-        BinaryReader::readFile("/Users/barrk/Documents/ecoli_dataset/v1/check_inv.hbv", &hbvr);
-        LoadReadPathVec(pathsr,"/Users/barrk/Documents/ecoli_dataset/v1/check_inv.paths");
-        //inv.clear();
-        hbvr.Involution(inv);
-        std::cout << "testing involution after reading lmp hbv and calling involution" <<std::endl;
-        std::cout << "hbv has" << hbvr.EdgeObjectCount() << "edges" <<  std::endl;
-
-        TestInvolution(hbvr, inv);*/
         Scram(1);
     }
     //== Handle "special cases" to test on development==
@@ -681,29 +666,15 @@ int main(const int argc, const char * argv[]) {
         std::cout << "Mate pair files read" << std::endl;
         //BinaryReader::readFile(out_dir + "/" + out_prefix + ".contig.hbv", &hbvr);
         //LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".contig.paths").c_str());
+
         BinaryReader::readFile("/Users/barrk/Documents/ecoli_dataset/v1_canonical/ecoli_v1.contig.hbv", &hbvr);
         LoadReadPathVec(pathsr,"/Users/barrk/Documents/ecoli_dataset/v1_canonical/ecoli_v1.contig.paths");
-        //std::cout << "paired end graph loaded" << std::endl;
-        VecULongVec invPaths;
         hbvr.Involution(inv);
-        //std::cout << "testing invlution after lmp pathing in step 7 init before lmp bit" << std::endl;
-        //TestInvolution(hbvr, inv);
-        // involution here is fine using ifles r1sa and r2s
-        //std::cout << "testing invlution after calling Involution method from pe hbv only" << std::endl;
-        //TestInvolution(hbvr, inv);
-        //invert(pathsr, invPaths, hbvr.EdgeObjectCount());
-        //std::cout << "HBV edge number before pf: " << hbvr.EdgeObjectCount() << std::endl;
+        VecULongVec invPaths;
+        invert(pathsr, invPaths, hbvr.EdgeObjectCount());
+
         PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
         pf.resolveComplexRegionsUsingLMPData();
-
-        //BinaryReader::readFile("/Users/barrk/Documents/ecoli_dataset/v1/after_pathfinder.hbv", &hbvr);
-        //LoadReadPathVec(pathsr,"/Users/barrk/Documents/ecoli_dataset/v1/after_pathfinder.paths");
-        //BinaryWriter::writeFile("/Users/barrk/Documents/ecoli_dataset/v1/after_pathfinder.hbv", hbvr);
-        //std::string path_path = "/Users/barrk/Documents/ecoli_dataset/v1/after_pathfinder.paths";
-        //WriteReadPathVec(pathsr,path_path.c_str());
-        std::cout << "testing invlution after lmp pathing in step 7 init" << std::endl;
-        //hbvr.Involution(inv);
-        TestInvolution(hbvr, inv);
         std::cout << "HBV edge number: " << hbvr.EdgeObjectCount() << std::endl;
         if (dump_perf) perf_file << std::endl << checkpoint_perf_time("ContigGraphLoad") << std::endl;
     }
@@ -727,20 +698,16 @@ int main(const int argc, const char * argv[]) {
         //std::cout<<"all structures refreshed"<<std::endl;
         //PathFinder(hbvr,inv,pathsr,paths_inv).untangle_pins();
         //PathFinder(hbvr,inv,pathsr,paths_inv).untangle_complex_in_out_choices();
-        //MpData mp_data(mp_read_files);
-        //std::cout << "Mate pair files read" << std::endl;
 
-        std::cout << "testing involution before MakeGaps" <<std::endl;
-
-        TestInvolution(hbvr, inv);
+        // NEW Version, this runs, if last argument is set to false we can dump GFA as well, if its set to true, it fails in test involution because it says the involuton value is not reverse complemented
         MakeGaps(hbvr, inv, pathsr, paths_inv, MIN_LINE, MIN_LINK_COUNT, out_dir, out_prefix, true,
-                 false);
+                 true);
         if (dump_perf) perf_file << checkpoint_perf_time("MakeGaps") << std::endl;
         std::cout << "--== PE-Scaffolding DONE!" << std::endl << std::endl << std::endl;
         // Carry out final analyses and write final assembly files.
 
-        // with r1s/r2s, passes all tests unti lthis one, so it gets broken in make gaps
-        //hbvr.Involution(inv);
+
+        hbvr.Involution(inv);
         vecbasevector G;
         FinalFiles(hbvr, inv, pathsr, subsam_names, subsam_starts, out_dir, out_prefix+ "_assembly", MAX_CELL_PATHS, MAX_DEPTH, G);
         GFADump(out_dir +"/"+ out_prefix + "_assembly", hbvr, inv, pathsr, MAX_CELL_PATHS, MAX_DEPTH, true);

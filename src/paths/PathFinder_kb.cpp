@@ -3,6 +3,15 @@
 //
 //
 
+/*
+ * General comments- 1) still need to calculate the insert size to properly check distances
+ * 2) the function to get the paths returns lots of short edges when its in really complex areas, segfaulted when i added a lower length bound, needs fixing,
+ * 3) related to 2, really need to be more precise about which areas to try and solve with LMPs, I should discuss this with gonza and bernardo
+ * 4) the canonicalisation is a) inconsistent with rest of code base and b) not really used, either remove or make consistent
+ * 5) All the warnings in migrate readpaths need properly investigating and fixing, this may be what breaks the graph
+ * 6) recheck mapping, its the oldest part of this code, i've learned a lot- spotted one error already, w should not allow pairs where read map to edge not edge and reverse complement( to be used for insert size estimation)
+ *
+ */
 
 #include "PathFinder_kb.h"
 using namespace PatherKB;
@@ -258,8 +267,9 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
     }
     std::cout<<" "<<sep<<" paths separated!"<<std::endl;
     std::cout<<mHBV.EdgeObjectCount() << " edges in hbv"<<std::endl;
-    std::cout << "Inv edge 0: " << mInv[0] << " edge 494: " << mInv[494] << " edge 495 " << mInv[495] << " edge 1: " << mInv[1] << " edge 8 " << mInv[8] << " edge 9: " << mInv[9] << std::endl;
-
+    BinaryWriter::writeFile("/Users/barrk/Documents/ecoli_dataset/v1/after_new_pathfinder.hbv", mHBV);
+    std::string path_path = "/Users/barrk/Documents/ecoli_dataset/v1/after_new_pathfinder.paths";
+    WriteReadPathVec(mPaths,path_path.c_str());
 }
 
 std::string PathFinderkb::path_str(std::vector<uint64_t> path) {
@@ -346,14 +356,12 @@ void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> ed
     //if an old edge has more than one new edge it tries all combinations until it gets the paths to map
     //if more than one combination is valid, this chooses at random among them (could be done better? should the path be duplicated?)
     mHBV.ToLeft(mToLeft);
-    mHBV.ToRight(mToRight);
-    std::ofstream edge_migrations;
-    edge_migrations.open("/Users/barrk/Documents/ecoli_data/v1/edge_migrations.txt");
     for (auto &p:mPaths){
         std::vector<std::vector<uint64_t>> possible_new_edges;
         bool translated=false,ambiguous=false;
         for (auto i=0;i<p.size();++i){
             if (edgemap.count(p[i])) { // if edge i on path p has been translated
+                //std::cout << "New edges:" <<path_str(p[i]) << std:: endl;
                 possible_new_edges.push_back(edgemap[p[i]]);
                 if (not translated) translated=true;
                 // if same edge is in multiple paths, this could occur
@@ -386,8 +394,8 @@ void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> ed
                     if (possible_paths.size()==0) break;
                 }
                 if (possible_paths.size()==0){
-                    std::cout<<"Warning, a path could not be updated, truncating it to its first element!!!!"<<std::endl;
-                    std::cout << p << std::endl;
+                    //std::cout<<"Warning, a path could not be updated, truncating it to its first element!!!!"<<std::endl;
+                    //std::cout << p << std::endl;
                     p.resize(1);
                 }
                 else{
@@ -399,6 +407,5 @@ void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> ed
             }
         }
     }
-    edge_migrations.close();
 
 }

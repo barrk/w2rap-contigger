@@ -55,8 +55,7 @@ std::vector<edgeKmerPosition> LMPMapper::readOffsetFilter(std::vector<edgeKmerPo
 
 void LMPMapper::mapReads(){
     kMatch.Hbv2Map(&hbv);
-    std::cout << Date() << "starting read mapping"<< std::endl;
-    std::cout << kMatch.edgeMap.size() << std::endl;
+    std::cout << Date() << "starting lmp read mapping"<< std::endl;
     int mapped_to_single_edge_r1 = 0;
     int mappted_to_multiple_edge_r1 = 0;
     int mapped_to_single_edge_r2 = 0;
@@ -66,10 +65,8 @@ void LMPMapper::mapReads(){
     int mapped_to_single_edge_rc = 0;
     int mappted_to_multiple_edge_rc = 0;
     std::map<uint64_t, int> mapping_counts;
-    //std::vector<edgeKmerPosition> res = kmatch.lookupRead(lmp_data[0].ToString());
     for (int i=0; i < lmp_reads.size(); i++){
         std::vector<edgeKmerPosition> mapped_edges = kMatch.lookupRead(lmp_reads[i].ToString());
-        //std::cout << "Mapped read:" << i << " string " << lmp_reads[i].ToString() << " to " << mapped_edges.size() << "edges" << std::endl;
         read_edge_maps.push_back(mapped_edges);
         int distinct_edge_ids = 0;
         if (mapped_edges.size() != 0){
@@ -158,13 +155,11 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair >  & lmp_pairs_for_scaf
         LMPPair lmp_pair;
         lmp_pair.read_index = i / 2;
         std::vector<edgeKmerPosition> read_mapping_p1 = read_edge_maps[i];
-        //read_mapping_p1 = readOffsetFilter(read_mapping_p1);
         int read_len = static_cast<int>(lmp_reads[i].ToString().size());
         // ensure that full edges will be together, with offsets in increasing order, in read_mapping vector
         lmp_pair.p1 = sortMappingsFindFullyMappedEdges(read_mapping_p1, read_len, i);
         i = i + 1;
         std::vector<edgeKmerPosition> read_mapping_p2 = read_edge_maps[i];
-        //read_mapping_p2 = readOffsetFilter(read_mapping_p2);
         lmp_pair.p2 = sortMappingsFindFullyMappedEdges(read_mapping_p2, read_len, i);
         if (lmp_pair.p1.size() != 0) {
             if (lmp_pair.p2.size() != 0) {
@@ -172,6 +167,7 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair >  & lmp_pairs_for_scaf
                 counter += 1;
                 //for (auto edge1: lmp_pair.p1) {
                 if (lmp_pair.p1.size() == 1 && lmp_pair.p2.size() == 1) {
+                    // pretty sure we do not want to allow mappings where one read is not reverse complemented!!
                     if (lmp_pair.p1[0] == inv[lmp_pair.p2[0]] || lmp_pair.p1[0] == lmp_pair.p2[0]) {
                         // todo: lmp_pair is wrong data type for this, as we need edge offset
                         lmp_pairs_for_insert_size_estimation.push_back(lmp_pair);
@@ -202,9 +198,8 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair >  & lmp_pairs_for_scaf
         }
     }
 
-    std::cout << "p1 and p2 map to same egde: " << map_to_same_edge << std::endl;
+    std::cout << "LMP reads 1 and 2 map to same egde: " << map_to_same_edge << std::endl;
     std::cout << "total both pairs mapped: " << counter << " p1 mapped: " << counter_p1 << "p2 mapped " << counter_p2 << std::endl;
-    //removeUselessLMPMappings(read_paths, lmp_pairs_for_scaffolding);
     std::cout << "readEdgeMap2LMPPairs lmp pairs size: " << lmp_pairs_for_scaffolding.size() << std::endl;
         std::cout << "pairs map to edge and reverse complement and signle edge: "
                   << lmp_pairs_for_insert_size_estimation.size() << std::endl;
@@ -217,8 +212,7 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair >  & lmp_pairs_for_scaf
 ReadPath LMPMapper::sortMappingsFindFullyMappedEdges(std::vector<edgeKmerPosition>  read_mapping, int read_length, int i){
     if (read_mapping.size() > 0) {
         std::sort(read_mapping.begin(), read_mapping.end(), compareEdgeKmerPositions);
-        //std::cout << "Read mapping edge id:" << read_mapping[0].edge_id << " offset " << read_mapping[0].offset << " size: " << hbv.EdgeObject(read_mapping[0].edge_id).ToString().length() << " to read of length " << read_length
-//                  << std::endl;
+
         return getFullyMappedEdges(read_mapping, read_length, i);
     }
     // prevent bad access when no reads mapped
