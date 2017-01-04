@@ -106,36 +106,6 @@ void PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & spanning_edges
 
 }
 
-std::vector<uint64_t>  PathFinderkb::canonicalisePath(std::vector<uint64_t> path){
-    std::vector<uint64_t> result;
-    bool involution_path = false;
-    // if first edge is on involution, all will be
-    if (path[0] > mInv[path[0]]){
-        involution_path = true;
-    }
-    for (auto edge: path){
-        if (involution_path){
-            result.push_back(mInv[edge]);
-        } else {
-            result.push_back(edge);
-        }
-    }
-    if (involution_path || result.back() < result.front()) {
-        std::reverse(result.begin(), result.end());
-    }
-    return result;
-
-}
-
-
-
-typedef struct {
-    uint64_t e1;
-    uint64_t e2;
-    int path_id;
-    int length;
-} PathDetails;
-
 void PathFinderkb::resolveComplexRegionsUsingLMPData() {
 
     int approximate_insert_size = 3500;
@@ -160,6 +130,9 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
     ComplexRegionCollection complex_regions(mInv);
 
     for (int edge_index = 0; edge_index < mHBV.EdgeObjectCount(); ++edge_index) {
+        if (edge_index == 48){
+            std::cout << "e 48: " <<std::endl;
+        }
         // if we have already seen the involution of this edge, then leave it
         if (std::find(involutions_of_edges_in_solved_regions.begin(), involutions_of_edges_in_solved_regions.end(), edge_index) == involutions_of_edges_in_solved_regions.end()) {
             auto edge = mHBV.EdgeObject(edge_index).ToString();
@@ -240,7 +213,6 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
     // can now compare regions, select ones which are solved, track paths to ensure ends don't meet
     complex_regions.SelectRegionsForPathSeparation();
     auto paths_to_separate = complex_regions.GetPathsToSeparate();
-    std::cout << "paths to separate size: " << paths_to_separate.size() << std::endl;
     // last bit hsould be same as before
     uint64_t sep=0;
     std::map<uint64_t,std::vector<uint64_t>> old_edges_to_new;
@@ -250,19 +222,29 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
             std::cout<<"WARNING: path starts or ends in an already modified edge, skipping"<<std::endl;
             continue;
         }
-            auto oen=separate_path(p, true);
+        auto oen=separate_path(p, true);
+        std::vector<uint64_t> new_path;
+        new_path.push_back(p[0]);
+        new_path.push_back(mInv[p[0]]);
             if (oen.size() > 0) {
                 for (auto et:oen) {
-                        if (old_edges_to_new.count(et.first) == 0) old_edges_to_new[et.first] = {};
-                        for (auto ne:et.second) {
-                            old_edges_to_new[et.first].push_back(ne);
-                        }
+                    if (old_edges_to_new.count(et.first) == 0) old_edges_to_new[et.first] = {};
+                    for (auto ne:et.second) {
+                        old_edges_to_new[et.first].push_back(ne);
+                        new_path.push_back(ne);
+                    }
                 }
                 sep++;
             }
+        new_path.push_back(p[p.size()-1]);
+        new_path.push_back(mInv[p[p.size()-1]]);
+        std::cout << "new path string: " << path_str(new_path) << std::endl;
+        join_edges_in_path(new_path);
+        mHBV.Involution(mInv);
+        TestInvolution(mHBV, mInv);
+
         }
 
-    // pretty sure, because these are lmp paths,
     if (old_edges_to_new.size()>0) {
         migrate_readpaths(old_edges_to_new);
     }
@@ -271,6 +253,48 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
     BinaryWriter::writeFile("/Users/barrk/Documents/ecoli_dataset/v1/after_new_pathfinder.hbv", mHBV);
     std::string path_path = "/Users/barrk/Documents/ecoli_dataset/v1/after_new_pathfinder.paths";
     WriteReadPathVec(mPaths,path_path.c_str());
+
+}
+
+void PathFinderkb::join_edges_in_path(std::vector<uint64_t> path){
+    // in case where there is a SNP in the middle of the path.... these would clash and therefore not both be solved by LMPs... so SNP part will get disconnected, need to subdivide paths for here to deal with that
+    // forget about that for now, think it would involve the loopy path being part of the complex region, and then being separated along with the rest of it...
+    vec<int> args_to_cat;
+    vec<int> inv_args_to_cat;
+    for (int i = 0; i < path.size(); i++){
+        int edge_converted = (int) path[i];
+        i++;
+        int inv_edge_converted = (int) path[i];
+        args_to_cat.push_back(edge_converted);
+        inv_args_to_cat.push_back(inv_edge_converted);
+    }
+    std::cout << "edge object count: " << mHBV.EdgeObjectCount() << std::endl;
+    std::cout << "path being joined: " << path_str(path) << std::endl;
+    std::cout << "args_to_cat: " << args_to_cat << std::endl;
+    std::cout << "inv_args_to_cat: " << inv_args_to_cat << std::endl;
+    auto new_edge_bv = mHBV.Cat(args_to_cat);
+    std::reverse(inv_args_to_cat.begin(), inv_args_to_cat.end());
+    auto inv_new_edge_bv = mHBV.Cat(inv_args_to_cat);
+    // then rejoin edges into the start and end of this path, then remove the edges.
+    auto vertex_from = mToLeft[path[0]];
+    auto vertex_to = mToRight[path[path.size()-1]];
+    auto new_edge = mHBV.AddEdge(vertex_from, vertex_to, new_edge_bv);
+    auto inv_vertex_from =mToRight[inv_args_to_cat[0]];
+    auto inv_vertex_to = mToLeft[inv_args_to_cat[inv_args_to_cat.size()-1]];
+    auto inv_new_edge = mHBV.AddEdge(inv_vertex_from, inv_vertex_to, inv_new_edge_bv);
+    std::cout << "vertex from: " << vertex_from << " vertex to " << vertex_to << " inv vertex from " << inv_vertex_from << " inv vertex to " << inv_vertex_to << std::endl;
+    std::cout << "edge object count: " << mHBV.EdgeObjectCount() << std::endl;
+    std::cout << "mInv size: " << mInv.size() << std::endl;
+    mInv.push_back(inv_new_edge);
+    mInv.push_back(new_edge);
+    //TestInvolution(mHBV, mInv); // here it breaks because mInv is wrong size, because it hasn't been updated... so need to update here and after deletion
+    //std::cout << "invlution works before deleting edges" << std::endl;
+    std::cout << "deleting edges" << std::endl;
+    mHBV.DeleteEdges(args_to_cat);
+    std::cout << "deleted edges, hbv size: " << mHBV.EdgeObjectCount() << std::endl;
+    mHBV.DeleteEdges(inv_args_to_cat);
+    std::cout << "deleted inv edges, hbv size: " << mHBV.EdgeObjectCount() << std::endl;
+    TestInvolution(mHBV, mInv);
 }
 
 std::string PathFinderkb::path_str(std::vector<uint64_t> path) {
@@ -312,6 +336,7 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
     mToLeft[mInv[p[0]]] = current_vertex_rev;
     std::map<uint64_t,std::vector<uint64_t>> old_edges_to_new;
 
+
     for (auto ei=1;ei<p.size()-1;++ei){
         //add a new vertex for each of FW and BW paths
         uint64_t prev_vertex_fw=current_vertex_fw,prev_vertex_rev=current_vertex_rev;
@@ -320,20 +345,22 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
         current_vertex_rev=mHBV.N()+1;
         mHBV.AddVertices(2);
 
+
         //now, duplicate next edge for the FW and reverse path
         auto nef=mHBV.AddEdge(prev_vertex_fw,current_vertex_fw,mHBV.EdgeObject(p[ei]));// add an edge for each edge in path, with appropriate basevector
+        // inv breaks here but we expect it to
         mToLeft.push_back(prev_vertex_fw);
         mToRight.push_back(current_vertex_fw);
         if (! old_edges_to_new.count(p[ei]))  old_edges_to_new[p[ei]]={};
         old_edges_to_new[p[ei]].push_back(nef);
 
-        //std::cout << "Separating: " << p[ei] << " new edge: " << nef << std::endl;
+        std::cout << "Separating: " << p[ei] << " new edge: " << nef << std::endl;
         auto ner=mHBV.AddEdge(current_vertex_rev,prev_vertex_rev,mHBV.EdgeObject(mInv[p[ei]]));
         mToLeft.push_back(current_vertex_rev);
         mToRight.push_back(prev_vertex_rev);
         if (! old_edges_to_new.count(mInv[p[ei]]))  old_edges_to_new[mInv[p[ei]]]={};
         old_edges_to_new[mInv[p[ei]]].push_back(ner);
-        //std::cout << "Separating: " << mInv[p[ei]] << " new edge: " << ner << std::endl;
+        std::cout << "Separating: " << mInv[p[ei]] << " new edge: " << ner << std::endl;
 
         mInv.push_back(ner);
         mInv.push_back(nef);
@@ -344,7 +371,9 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
     //mToLeft[p[p.size()-1]] = current_vertex_fw;
     mHBV.GiveEdgeNewToVx(mInv[p[p.size()-1]],mToRight[mInv[p[p.size()-1]]],current_vertex_rev);
     //mToRight[mInv[p[p.size()-1]]] = current_vertex_rev;
-
+    //TestInvolution(mHBV, mInv);
+    //mHBV.Involution(mInv);
+    //TestInvolution(mHBV, mInv);
     //TODO: cleanup new isolated elements and leading-nowhere paths.
     //for (auto ei=1;ei<p.size()-1;++ei) mHBV.DeleteEdges({p[ei]});
     return old_edges_to_new;
@@ -395,8 +424,8 @@ void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> ed
                     if (possible_paths.size()==0) break;
                 }
                 if (possible_paths.size()==0){
-                    //std::cout<<"Warning, a path could not be updated, truncating it to its first element!!!!"<<std::endl;
-                    //std::cout << p << std::endl;
+                    std::cout<<"Warning, a path could not be updated, truncating it to its first element!!!!"<<std::endl;
+                    std::cout << p << std::endl;
                     p.resize(1);
                 }
                 else{

@@ -49,8 +49,8 @@ public:
     void resolveComplexRegionsUsingLMPData();
 
 private:
-    void PathFinderkb::edges_beyond_distance(std::vector<uint64_t>  & long_fronteirs, std::vector<std::vector<uint64_t> >  & paths_to_long_fronteirs, std::vector<uint64_t> &  intermediate_path, uint64_t e, vector<uint64_t > & traversed_edge_list, uint64_t large_frontier_size, int recursion_depth=0, int distance_traversed=0, std::string direction="right");
-    std::vector<uint64_t>  PathFinderkb::canonicalisePath(std::vector<uint64_t> path);
+    void join_edges_in_path(std::vector<uint64_t> path);
+    void edges_beyond_distance(std::vector<uint64_t>  & long_fronteirs, std::vector<std::vector<uint64_t> >  & paths_to_long_fronteirs, std::vector<uint64_t> &  intermediate_path, uint64_t e, vector<uint64_t > & traversed_edge_list, uint64_t large_frontier_size, int recursion_depth=0, int distance_traversed=0, std::string direction="right");
     HyperBasevector& mHBV;
     vecbvec& lmp_data;
     vec<int>& mInv;
