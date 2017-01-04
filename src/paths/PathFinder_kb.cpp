@@ -240,6 +240,7 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
     // can now compare regions, select ones which are solved, track paths to ensure ends don't meet
     complex_regions.SelectRegionsForPathSeparation();
     auto paths_to_separate = complex_regions.GetPathsToSeparate();
+    std::cout << "paths to separate size: " << paths_to_separate.size() << std::endl;
     // last bit hsould be same as before
     uint64_t sep=0;
     std::map<uint64_t,std::vector<uint64_t>> old_edges_to_new;

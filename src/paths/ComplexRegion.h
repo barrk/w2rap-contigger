@@ -14,7 +14,6 @@
 
 typedef struct {
     uint64_t edge_id;
-    uint64_t translated_edge_id;
     std::vector<int> pair_ids;
     std::vector<uint64_t> path_from_center;
     bool into; // true if this is an edge going into the region
@@ -45,24 +44,22 @@ typedef struct {
         bool solved;
         int insert_size;
         // to ensure all paths are on same part of the graph, in same direction
-        std::vector<uint64_t> edges_in_canonical;
-        std::vector<uint64_t> edges_out_canonical;
-        void canonicaliseEdgesInOut();
         void AddPairId(int edge_index, int pair_id, bool in);
         void AddPathTo(int edge_index, bool in, std::vector<uint64_t> path_from_center);
         void FindSolveablePairs();
         void isSolved(int min_count);
+        std::vector<std::pair<uint64_t, uint64_t> > combinations_to_use;
+
 
     private:
         std::vector<uint64_t>  BuildPath(BoundingEdge edge_in, BoundingEdge edge_out);
         std::map<std::pair<uint64_t, uint64_t>, int > combination_counts;
-        std::vector<std::pair<uint64_t, uint64_t> > combinations_to_use;
         std::vector<uint64_t > in_edges_solved;
         std::vector<uint64_t > out_edges_solved;
 
         std::vector<BoundingEdge> edges_in_detailed;
         std::vector<BoundingEdge> edges_out_detailed;
-        std::pair<std::vector<uint64_t>, std::vector<BoundingEdge> > CanonicaliseEdgeList(std::vector<uint64_t> edges, std::vector<uint64_t> edges_canonical, std::vector<BoundingEdge>  detailed_edge_list);
+        std::string path_str(std::vector<uint64_t> path);
 
     };
 
@@ -84,7 +81,6 @@ private:
     std::vector<ComplexRegion> solved_regions;
     std::vector<ComplexRegion> solved_regions_final;
     std::map<std::pair< std::vector<uint64_t>, std::vector<uint64_t> >, int> edges_to_region_index;
-    std::pair< std::vector<uint64_t>, std::vector<uint64_t> > canonicaliseEdgesInOut(std::vector<uint64_t> edges_in, std::vector<uint64_t> edges_out);
     vec<int> involution;
 
 };

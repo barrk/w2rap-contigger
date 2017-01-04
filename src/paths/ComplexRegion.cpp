@@ -14,11 +14,28 @@ ComplexRegion::ComplexRegion(std::vector<uint64_t  > edges_in, std::vector<uint6
     std::sort(edges_out.begin(), edges_out.end());
     edges_in_detailed.resize(edges_in.size());
     edges_out_detailed.resize(edges_out.size());
-    edges_in_canonical.resize(edges_in.size());
-    edges_out_canonical.resize(edges_out.size());
-    canonicaliseEdgesInOut();
-
+    for (int i=0; i < edges_in.size(); i++){
+        edges_in_detailed[i].edge_id = edges_in[i];
+    }
+    for (int i=0; i < edges_out.size(); i++) {
+        edges_out_detailed[i].edge_id = edges_out[i];
+    }
+    std::cout << "Adding region with edges in: " << path_str(edges_in) << std::endl;
+    std::cout << "Adding region with edges out: " << path_str(edges_out) << std::endl;
+    solved = false;
 };
+
+
+
+std::string ComplexRegion::path_str(std::vector<uint64_t> path) {
+    std::string s="[";
+    for (auto p:path){
+        // output edge id on hbv and involution
+        s+=std::to_string(p)+":"+std::to_string(involution[p])+" ";
+    }
+    s+="]";
+    return s;
+}
 
 void ComplexRegion::AddPairId(int edge_index, int pair_id, bool in){
     BoundingEdge e;
@@ -73,62 +90,39 @@ void ComplexRegion::FindSolveablePairs(){
 
 
 
-void  ComplexRegion::canonicaliseEdgesInOut(){
-    // this needs to be based on direction of flow through graph
-    // to avoid confusion and errors due to reverse complements, and order of read mapping, always deal with paths on the same strand, in the same direction
-    //first sort in/out edges- actually maybe should do this at the end
-    std::pair<std::vector<uint64_t>, std::vector<BoundingEdge> > in = CanonicaliseEdgeList(edges_in, edges_in_canonical, edges_in_detailed);
-    edges_in_canonical = in.first;
-    edges_in_detailed = in.second;
-    std::pair<std::vector<uint64_t>, std::vector<BoundingEdge> > out = CanonicaliseEdgeList(edges_out, edges_out_canonical, edges_out_detailed);
-    edges_out_canonical = out.first;
-    edges_out_detailed = out.second;
-}
-
-std::pair<std::vector<uint64_t>, std::vector<BoundingEdge> > ComplexRegion::CanonicaliseEdgeList(std::vector<uint64_t> edges, std::vector<uint64_t> edges_canonical, std::vector<BoundingEdge>  detailed_edge_list){
-    std::sort(edges.begin(), edges.end());
-    for (int i = 0; i < edges.size(); i++){
-        auto edge = edges[i];
-        BoundingEdge edge_details = detailed_edge_list[i];
-        // in practise i think all edges in will be edges in canonical if one of them is, same for out
-        if (edge < involution[edge]){// nb edge in i and edge out i may not be together finally, but the purpose of this is to ensure internal consistency
-            edge_details.edge_id = edge;
-            edge_details.forward = true;
-            edge_details.translated_edge_id = edge;
-            edges_canonical[i] = edge;
-        } else {
-            edge_details.edge_id = involution[edge];
-            edge_details.forward = false;
-            edge_details.translated_edge_id = involution[edge];
-            edges_canonical[i] = involution[edge];
-
-        }
-        detailed_edge_list[i] = edge_details;
-    }
-    return std::make_pair(edges_canonical, detailed_edge_list);
-}
 
 
 void ComplexRegion::isSolved(int min_count){
     // this assumes there is exactly one path per in/out combination- is this always the case? if there are fewer, region is not solved, if there are more over min count, region is not unambiguously solved, though in practise if one in/out pair had much more support than the other, we'd want that
-    int number_solved_pairs = 0;
+    //check for duplication - i orginally used a set instead of a vector, but changed it for a reson i now can't remember
+    std::set<uint64_t> in_edges_solved_set;
+    std::set<uint64_t> out_edges_solved_set;
     for (auto count:combination_counts){
         if (count.second > min_count){
             auto in = count.first.first;
             auto out = count.first.second;
             in_edges_solved.push_back(in);
             out_edges_solved.push_back(out); //TODO: think about removing duplication of data
-            number_solved_pairs += 1;
+            in_edges_solved_set.insert(in);
+            out_edges_solved_set.insert(out);
         }
     }
+
+    std::cout << "in edges solved size: " << in_edges_solved.size() << "edges in size: " <<  edges_in.size() <<  "in edges solved set size: " << in_edges_solved_set.size() << std::endl;
+    std::cout << "out edges solved size: " << out_edges_solved.size() << "edges out size: " <<  edges_out.size() <<  "out edges solved set size: " << out_edges_solved_set.size() << std::endl;
+
     // think about if this is actually the case....
-    if(in_edges_solved.size() == edges_in.size() && out_edges_solved.size() == edges_out.size()){
+    if((in_edges_solved.size() == edges_in.size()) && (in_edges_solved.size()  == in_edges_solved_set.size()) && (out_edges_solved.size() == edges_out.size()) && (out_edges_solved.size()  == out_edges_solved_set.size())){
+    //if(in_edges_solved.size() == edges_in.size()  && out_edges_solved.size() == edges_out.size() ){
+
         for (int i = 0; i < in_edges_solved.size(); i++){
             combinations_to_use.push_back(std::make_pair(in_edges_solved[i], out_edges_solved[i]));
         }
         solved = true;
+        std::cout << "Combinations to use size of region for solved region: " << combinations_to_use.size() << std::endl;
         std::cout << "Region solved" << std::endl;
     }
+    std::cout << "Combinations to use size of region: " << combinations_to_use.size() << std::endl;
 }
 
 std::vector<std::vector<uint64_t> >  ComplexRegion::BuildPaths(){
@@ -136,11 +130,13 @@ std::vector<std::vector<uint64_t> >  ComplexRegion::BuildPaths(){
      * determine which in/out pairs to use and build th associated paths
     */
     std::vector<std::vector<uint64_t> > paths;
+    std::cout << "building for region, edges in: " << path_str(edges_in) << std::endl;
+    std::cout << "building for region, edges out: " << path_str(edges_out) << std::endl;
     // combination counts contains pairs of in/out edge ids,
     for (auto in_out_pair:combinations_to_use){
         auto in_edge_id = in_out_pair.first;
         auto out_edge_id = in_out_pair.second;
-        // doesn't print this
+        std::cout << "Building path from: " << in_edge_id << " to: " << out_edge_id << " paths size: " << paths.size() << std::endl;
         for (auto in_edge: edges_in_detailed){
             if (in_edge.edge_id == in_edge_id) {
                 for (auto out_edge: edges_out_detailed) {
@@ -151,34 +147,24 @@ std::vector<std::vector<uint64_t> >  ComplexRegion::BuildPaths(){
                 }
             }
         }
+        std::cout << " paths size: " << paths.size() << std::endl;
     }
     return paths;
 }
+
 // this is baed on paths to original edges in/out
 std::vector<uint64_t>  ComplexRegion::BuildPath(BoundingEdge edge_in, BoundingEdge edge_out){
     std::vector<uint64_t> result;
-    if (edge_in.forward){
-        result.push_back(edge_in.translated_edge_id); // should be same as edge id- if this is on inv, all others should be?
-        for (auto e:edge_in.path_from_center){
-            result.push_back(e);
-            std::cout << e << std::endl;
-        }
-        for (auto e:edge_out.path_from_center){
-            result.push_back(e);
-            std::cout << e << std::endl;
-        }
-        result.push_back(edge_out.translated_edge_id);
-    } else { // really not sure this is correct
-        result.push_back(edge_in.translated_edge_id);
-        for (auto e:edge_in.path_from_center){
-            result.push_back(involution[e]);
-        }
-        for (auto e:edge_out.path_from_center){
-            result.push_back(involution[e]);
-        }
-        result.push_back(edge_out.translated_edge_id);
+    result.push_back(edge_in.edge_id); // should be same as edge id- if this is on inv, all others should be?
+    for (auto e:edge_in.path_from_center){
+        result.push_back(e);
+        std::cout << e << std::endl;
     }
-
+    for (auto e:edge_out.path_from_center){
+        result.push_back(e);
+        std::cout << e << std::endl;
+    }
+    result.push_back(edge_out.edge_id);
     return result;
 
 }
@@ -226,6 +212,7 @@ void ComplexRegionCollection::SelectRegionsForPathSeparation(){
     for (auto region:complex_regions){
         if (region.solved){
             solved_regions.push_back(region);
+            std::cout << "Combinations to use size of solved region: " << region.combinations_to_use.size() << std::endl;
         }
     }
     for (int i = 0; i < solved_regions.size() ; i++){
@@ -235,15 +222,15 @@ void ComplexRegionCollection::SelectRegionsForPathSeparation(){
         for (int j = i + 1; j < solved_regions.size(); j++){
             auto region_2 = solved_regions[j];
             for (auto edge: edges_in) {
+                // check if it doesn't share an edge with another region, or that the involution, so in the opposite direction,
                 if (std::find(region_2.edges_in.begin(), region_2.edges_in.end(), edge) != region_2.edges_in.end()
-                        || std::find(region_2.edges_in.begin(), region_2.edges_in.end(), involution[edge]) != region_2.edges_in.end()){
+                        || std::find(region_2.edges_out.begin(), region_2.edges_out.end(), involution[edge]) != region_2.edges_out.end()){
                         solved_regions_final.push_back(FindBestSolvedRegion(region, region_2));
                         region_clashed = true;
                 }
             }
         }
         if (!region_clashed){
-            //even through this gets hit by a breakpoint, solved regions final size doesn't go up
             solved_regions_final.push_back(region);
         }
     }
@@ -252,7 +239,7 @@ void ComplexRegionCollection::SelectRegionsForPathSeparation(){
             bool region_removed = false;
             auto region = solved_regions_final[i];
             auto edges_out = region.edges_out;
-            for (int j = i + 1; j < solved_regions_final.size() -1; j++) { // ok somehow j gets to 262149
+            for (int j = i + 1; j < solved_regions_final.size() -1; j++) {
                 auto region_2 = solved_regions_final[j];
                 for (auto edge: edges_out) {
                     if (std::find(region_2.edges_out.begin(), region_2.edges_out.end(), edge) != region_2.edges_out.end()
@@ -284,12 +271,15 @@ void ComplexRegionCollection::SelectRegionsForPathSeparation(){
 std::vector<std::vector<uint64_t> > ComplexRegionCollection::GetPathsToSeparate(){
     // for each solved region, get each path in the right direction (so from in to out), on the main graph, not the involution
     std::vector<std::vector<uint64_t> > paths_to_separate;
+    std::cout << "number of solved regions: " << solved_regions_final.size()  << std::endl;
     for (auto region:solved_regions_final){
         auto paths = region.BuildPaths();
         for (auto path:paths){
             paths_to_separate.push_back(path);
+            std::cout << "adding path: " << path_str(path) <<std::endl;
         }
     }
+    std::cout << "patsh to separate, about to return: " << paths_to_separate.size() << " paths." << std::endl;
     return paths_to_separate;
 }
 
@@ -305,7 +295,7 @@ std::string ComplexRegionCollection::path_str(std::vector<uint64_t> path) {
     return s;
 }
 
-// instead of doing it like this, find pairs of clashing regions and select one which solves most paths
+// select one which solves most paths
 ComplexRegion ComplexRegionCollection::FindBestSolvedRegion(ComplexRegion region_1, ComplexRegion region_2){
     if (region_1.edges_in.size() > region_2.edges_in.size()){
         return region_1;
