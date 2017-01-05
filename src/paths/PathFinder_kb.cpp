@@ -216,6 +216,7 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
     // last bit hsould be same as before
     uint64_t sep=0;
     std::map<uint64_t,std::vector<uint64_t>> old_edges_to_new;
+    std::cout << "Before separating paths, edge object count: " << mHBV.EdgeObjectCount()<< std::endl;
     for (auto p:paths_to_separate){
         std::cout << "separating path: " << path_str(p) << std::endl;
         if (old_edges_to_new.count(p.front()) > 0 or old_edges_to_new.count(p.back()) > 0) {
@@ -239,15 +240,22 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
         new_path.push_back(p[p.size()-1]);
         new_path.push_back(mInv[p[p.size()-1]]);
         std::cout << "new path string: " << path_str(new_path) << std::endl;
-        join_edges_in_path(new_path);
-        mHBV.Involution(mInv);
-        TestInvolution(mHBV, mInv);
+        //join_edges_in_path(new_path);
+        //mHBV.Involution(mInv);
+        //TestInvolution(mHBV, mInv);
 
         }
 
     if (old_edges_to_new.size()>0) {
         migrate_readpaths(old_edges_to_new);
     }
+    std::cout << "Before remoing unneeded edges, edge object count: " << mHBV.EdgeObjectCount()<< std::endl;
+    RemoveUnneededVertices2(mHBV, mInv,mPaths);
+    std::cout << "After remoing unneeded edges, edge object count: " << mHBV.EdgeObjectCount()<< std::endl;
+    Cleanup(mHBV, mInv, mPaths);
+    std::cout << "After cleanup, edge object count: " << mHBV.EdgeObjectCount()<< std::endl;
+    mHBV.Involution(mInv);
+    TestInvolution(mHBV, mInv);
     std::cout<<" "<<sep<<" paths separated!"<<std::endl;
     std::cout<<mHBV.EdgeObjectCount() << " edges in hbv"<<std::endl;
     BinaryWriter::writeFile("/Users/barrk/Documents/ecoli_dataset/v1/after_new_pathfinder.hbv", mHBV);
@@ -263,10 +271,12 @@ void PathFinderkb::join_edges_in_path(std::vector<uint64_t> path){
     vec<int> inv_args_to_cat;
     for (int i = 0; i < path.size(); i++){
         int edge_converted = (int) path[i];
+        std::cout << "i: " << i << " edge: " << path[i] << " to right: " << mToRight[path[i]] << " to left: " << mToLeft[path[i]] << std::endl;
         i++;
         int inv_edge_converted = (int) path[i];
         args_to_cat.push_back(edge_converted);
         inv_args_to_cat.push_back(inv_edge_converted);
+        std::cout << "i: " << i << " inv edge: " << path[i] << " to right: " << mToRight[path[i]] << " to left: " << mToLeft[path[i]] << std::endl;
     }
     std::cout << "edge object count: " << mHBV.EdgeObjectCount() << std::endl;
     std::cout << "path being joined: " << path_str(path) << std::endl;
@@ -335,6 +345,7 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
     mHBV.GiveEdgeNewFromVx(mInv[p[0]],mToLeft[mInv[p[0]]],current_vertex_rev);// erases old connection from old involution vertex, and connects edge to old
     mToLeft[mInv[p[0]]] = current_vertex_rev;
     std::map<uint64_t,std::vector<uint64_t>> old_edges_to_new;
+    std::cout << "first edge contains " << mHBV.EdgeObject(p[0]).ToString().size() << "characters" << std::endl;
 
 
     for (auto ei=1;ei<p.size()-1;++ei){
@@ -355,6 +366,9 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
         old_edges_to_new[p[ei]].push_back(nef);
 
         std::cout << "Separating: " << p[ei] << " new edge: " << nef << std::endl;
+        if (mHBV.EdgeObject(mInv[p[ei]]).ToString() == mHBV.EdgeObject(p[ei]).ReverseComplement().ToString()){
+            std::cout << "edge and inv rc match, string contains " << mHBV.EdgeObject(mInv[p[ei]]).ToString().size() << " characters" << std::endl;
+        }
         auto ner=mHBV.AddEdge(current_vertex_rev,prev_vertex_rev,mHBV.EdgeObject(mInv[p[ei]]));
         mToLeft.push_back(current_vertex_rev);
         mToRight.push_back(prev_vertex_rev);
@@ -370,6 +384,7 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
     mHBV.GiveEdgeNewFromVx(p[p.size()-1],mToLeft[p[p.size()-1]],current_vertex_fw);// attach new edges back into graph at right position
     //mToLeft[p[p.size()-1]] = current_vertex_fw;
     mHBV.GiveEdgeNewToVx(mInv[p[p.size()-1]],mToRight[mInv[p[p.size()-1]]],current_vertex_rev);
+    std::cout << "last edge contains " << mHBV.EdgeObject(p[p.size()-1]).ToString().size() << "characters" << std::endl;
     //mToRight[mInv[p[p.size()-1]]] = current_vertex_rev;
     //TestInvolution(mHBV, mInv);
     //mHBV.Involution(mInv);
@@ -424,8 +439,8 @@ void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> ed
                     if (possible_paths.size()==0) break;
                 }
                 if (possible_paths.size()==0){
-                    std::cout<<"Warning, a path could not be updated, truncating it to its first element!!!!"<<std::endl;
-                    std::cout << p << std::endl;
+                    //std::cout<<"Warning, a path could not be updated, truncating it to its first element!!!!"<<std::endl;
+                    //std::cout << p << std::endl;
                     p.resize(1);
                 }
                 else{
