@@ -254,6 +254,8 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
     std::cout << "After remoing unneeded edges, edge object count: " << mHBV.EdgeObjectCount()<< std::endl;
     Cleanup(mHBV, mInv, mPaths);
     std::cout << "After cleanup, edge object count: " << mHBV.EdgeObjectCount()<< std::endl;
+    // so all the above numbers add up, and the edge which breaks it is the first new edge
+    // the first mismatch between the string and the rc is at position 27, which is smaller than small k, so i'm completely confused
     mHBV.Involution(mInv);
     TestInvolution(mHBV, mInv);
     std::cout<<" "<<sep<<" paths separated!"<<std::endl;
@@ -364,8 +366,7 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
         mToRight.push_back(current_vertex_fw);
         if (! old_edges_to_new.count(p[ei]))  old_edges_to_new[p[ei]]={};
         old_edges_to_new[p[ei]].push_back(nef);
-
-        std::cout << "Separating: " << p[ei] << " new edge: " << nef << std::endl;
+        std::cout << "Separating: " << p[ei] << "with size: " << mHBV.EdgeObject(p[ei]).size() << " new edge: " << nef << std::endl;
         if (mHBV.EdgeObject(mInv[p[ei]]).ToString() == mHBV.EdgeObject(p[ei]).ReverseComplement().ToString()){
             std::cout << "edge and inv rc match, string contains " << mHBV.EdgeObject(mInv[p[ei]]).ToString().size() << " characters" << std::endl;
         }
