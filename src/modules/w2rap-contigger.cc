@@ -245,8 +245,8 @@ int main(const int argc, const char * argv[]) {
             std::cout << "Reading mate pair files:" << mp_read_files << std::endl;
             MpData mp_data(mp_read_files);
             std::cout << "Mate pair files read" << std::endl;
-            BinaryReader::readFile("/Users/barrk/Documents/ecoli_dataset/v1_canonical/ecoli_v1.contig.hbv", &hbvr);
-            LoadReadPathVec(pathsr,"/Users/barrk/Documents/ecoli_dataset/v1_canonical/ecoli_v1.contig.paths");
+            BinaryReader::readFile(out_dir + "/ecoli_v1.contig.hbv", &hbvr);
+            LoadReadPathVec(pathsr, (out_dir + "/ecoli_v1.contig.paths").c_str());
 
         //BinaryReader::readFile(out_dir + "/" + out_prefix + ".large_K.hbv", &hbvr);
             //LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".large_K.paths").c_str());
@@ -667,8 +667,8 @@ int main(const int argc, const char * argv[]) {
         //BinaryReader::readFile(out_dir + "/" + out_prefix + ".contig.hbv", &hbvr);
         //LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".contig.paths").c_str());
 
-        BinaryReader::readFile("/Users/barrk/Documents/ecoli_dataset/v1_canonical/ecoli_v1.contig.hbv", &hbvr);
-        LoadReadPathVec(pathsr,"/Users/barrk/Documents/ecoli_dataset/v1_canonical/ecoli_v1.contig.paths");
+        BinaryReader::readFile(out_dir + "/ecoli_v1.contig.hbv", &hbvr);
+        LoadReadPathVec(pathsr, (out_dir + "/ecoli_v1.contig.paths").c_str());
         hbvr.Involution(inv);
         VecULongVec invPaths;
         invert(pathsr, invPaths, hbvr.EdgeObjectCount());
@@ -686,18 +686,6 @@ int main(const int argc, const char * argv[]) {
 
         bool SCAFFOLD_VERBOSE = False;
         bool GAP_CLEANUP = True;
-
-        //GFADump(out_dir +"/"+ out_prefix + "_prePF", hbvr, inv, pathsr, MAX_CELL_PATHS, MAX_DEPTH);
-        //PathFinder(hbvr,inv,pathsr,paths_inv).classify_forks();
-        //PathFinder(hbvr,inv,pathsr,paths_inv).unroll_loops();
-        //std::cout<<"refreshing all structures as precaution"<<std::endl;
-        //inv.clear();
-        //hbvr.Involution(inv);
-        //paths_inv.clear();
-        //invert(pathsr, paths_inv, hbvr.EdgeObjectCount());
-        //std::cout<<"all structures refreshed"<<std::endl;
-        //PathFinder(hbvr,inv,pathsr,paths_inv).untangle_pins();
-        //PathFinder(hbvr,inv,pathsr,paths_inv).untangle_complex_in_out_choices();
 
         // NEW Version, this runs, if last argument is set to false we can dump GFA as well, if its set to true, it fails in test involution because it says the involuton value is not reverse complemented
         MakeGaps(hbvr, inv, pathsr, paths_inv, MIN_LINE, MIN_LINK_COUNT, out_dir, out_prefix, true,
