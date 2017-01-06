@@ -583,92 +583,11 @@ void TestInvolution( const HyperBasevector& hb, const vec<int>& inv )
           b.ReverseComplement( );
           if ( b != hb.EdgeObject( inv[e] ) )
           {    std::cout << "\n";
+              std::cout << b.ReverseComplement().ToString() << std::endl;
+              std::cout << hb.EdgeObject( inv[e] ).ToString() << std::endl;
                int re = inv[e];
-              if (b.ToString() == hb.EdgeObject( inv[e] ).ToString()){
-                  std::cout << "strings match" << std::endl;
-              } else {
-                  for (int string_index= 0; string_index < b.ToString().size(); string_index++) {
-                      auto char2 = b.ToString()[string_index];
-                      auto char1 = hb.EdgeObject(inv[e]).ToString()[string_index];
-                      if (char1 != char2) {
-                          std::cout << "mismatch at:" << string_index << " "
-                                    << b.ToString().substr(string_index - 10, string_index + 10) << " ... "
-                                    << std::endl;
-                          std::cout << hb.EdgeObject(inv[e]).ToString().substr(string_index - 10, string_index + 10)
-                                    << " ... " << std::endl;
-                          int number_mismatches = 0;
-                          while(char1 != char2){
-                              string_index++;
-                              number_mismatches += 1;
-                              char2 = b.ToString()[string_index];
-                              char1 = hb.EdgeObject(inv[e]).ToString()[string_index];
-                          }
-                          std::cout << "number mismatches: " << number_mismatches << std::endl;
-                          break;
-                      }
-                }
-                      auto b_string = b.ToString();
-                      auto hb_string = hb.EdgeObject( inv[e] ).ToString();
-                      std::reverse(b_string.begin(), b_string.end());
-                      std::reverse(hb_string.begin(), hb_string.end());
-                      for (int string_index= 0; string_index < b_string.size(); string_index++) {
-                          auto char2 = b_string[string_index];
-                          auto char1 = hb_string[string_index];
-                          if (char1 != char2) {
-                              std::cout << "mismatch at:" << string_index << " "
-                                        << b_string.substr(string_index - 10, string_index + 10) << " ... "
-                                        << std::endl;
-                              std::cout << hb_string.substr(string_index - 10, string_index + 10) << " ... "
-                                        << std::endl;
-                              int number_mismatches = 0;
-                              while(char1 != char2){
-                                  string_index++;
-                                  number_mismatches += 1;
-                                  char2 = b_string[string_index];
-                                  char1 = hb_string[string_index];
-                              }
-                              std::cout << "number mismatches reverse : " << number_mismatches << std::endl;
-                              break;
-                          }
-
-                  }
-                  // from short printed out substring, it looks like the edge may have been concatenated
-                  // with its reverse complement, though theres a random last character, so try splitting in half and rcing one half
-                  auto substring_1st = hb.EdgeObject(inv[e]).ToString().substr(1, 672);
-                  auto substring_2nd = ReverseComplement(hb.EdgeObject(inv[e]));
-                  auto substring_2n_str = substring_2nd.ToString().substr(0, 672);
-                  std::cout << substring_1st.substr(0, 20) << std::endl;
-                  std::cout << substring_2n_str.substr(0, 20) << std::endl;
-                  std::cout << "substr1 size: " << substring_1st.size() << " substr 2 size " << substring_2n_str.size() << std::endl;
-                  if (substring_1st == substring_2n_str){
-                      // aka a palindrome....
-                      std::cout << "somehow this edge is an edge concatenated with its rc" << std::endl;
-                  }
-                  for (int string_index= 0; string_index < b.ToString().size(); string_index++) {
-                      auto char2 = substring_1st[string_index];
-                      auto char1 = substring_2n_str[string_index];
-                      if (char1 != char2) {
-                          std::cout << "mismatch at:" << string_index << " "
-                                    << substring_1st.substr(string_index - 10, string_index + 10) << " ... "
-                                    << std::endl;
-                          std::cout << substring_2n_str.substr(string_index - 10, string_index + 10)
-                                    << " ... " << std::endl;
-                          int number_mismatches = 0;
-                          while(char1 != char2){
-                              string_index++;
-                              number_mismatches += 1;
-                              char2 = substring_1st[string_index];
-                              char1 = substring_2n_str[string_index];
-                          }
-                          std::cout << "number mismatches: " << number_mismatches << std::endl;
-                          break;
-                      }
-                  }
-                  //auto mismatch = std::mismatch (b.ToString().begin(), b.ToString().end(), hb.EdgeObject( inv[e] ).ToString());
-                  //std::cout << "First mismatching elements: " << *mismatch.first << " and " << mismatch.second << std::endl;
-              }
-              std::cout << b.ToString().substr(0, 10) << " ... " << b.ToString().substr(b.ToString().size()-11,b.ToString().size()-1) <<std::endl;
-              std::cout << hb.EdgeObject( inv[e] ).ToString().substr(0, 10) << " ... " << hb.EdgeObject( inv[e] ).ToString().substr(hb.EdgeObject( inv[e] ).ToString().size()-11,hb.EdgeObject( inv[e] ).ToString().size()-1) <<std::endl;
+              std::cout << b.ToString().substr(0, 50) << " ... " << b.ToString().substr(b.ToString().size()-51,b.ToString().size()-1) <<std::endl;
+              std::cout << hb.EdgeObject( inv[e] ).ToString().substr(0, 50) << " ... " << hb.EdgeObject( inv[e] ).ToString().substr(hb.EdgeObject( inv[e] ).ToString().size()-51,hb.EdgeObject( inv[e] ).ToString().size()-1) <<std::endl;
                PRINT4( e, re, b.size( ), hb.EdgeObject(re).size( ) );
               std::cout << "EDGE BREAKING INVOLUTION: " << e << "inv" << inv[e] << " inv inv " << inv[inv[e]] <<  std::endl;
                std::cout << "Involution value not rc.\n" << "Abort." << std::endl;

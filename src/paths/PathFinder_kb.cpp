@@ -256,6 +256,7 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
     std::cout << "After cleanup, edge object count: " << mHBV.EdgeObjectCount()<< std::endl;
     // so all the above numbers add up, and the edge which breaks it is the first new edge
     // the first mismatch between the string and the rc is at position 27, which is smaller than small k, so i'm completely confused
+    mInv.clear();
     mHBV.Involution(mInv);
     TestInvolution(mHBV, mInv);
     std::cout<<" "<<sep<<" paths separated!"<<std::endl;
@@ -263,7 +264,8 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
     BinaryWriter::writeFile("/Users/barrk/Documents/ecoli_dataset/v1/after_new_pathfinder.hbv", mHBV);
     std::string path_path = "/Users/barrk/Documents/ecoli_dataset/v1/after_new_pathfinder.paths";
     WriteReadPathVec(mPaths,path_path.c_str());
-
+    // copy hbv edges, sort, unique- check how many edges, should still have the same number of edges, if not
+    // can print gf and look at it
 }
 
 void PathFinderkb::join_edges_in_path(std::vector<uint64_t> path){
@@ -349,6 +351,7 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
     std::map<uint64_t,std::vector<uint64_t>> old_edges_to_new;
     std::cout << "first edge contains " << mHBV.EdgeObject(p[0]).ToString().size() << "characters" << std::endl;
 
+    TestInvolution(mHBV, mInv);
 
     for (auto ei=1;ei<p.size()-1;++ei){
         //add a new vertex for each of FW and BW paths
@@ -367,19 +370,23 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
         if (! old_edges_to_new.count(p[ei]))  old_edges_to_new[p[ei]]={};
         old_edges_to_new[p[ei]].push_back(nef);
         std::cout << "Separating: " << p[ei] << "with size: " << mHBV.EdgeObject(p[ei]).size() << " new edge: " << nef << std::endl;
-        if (mHBV.EdgeObject(mInv[p[ei]]).ToString() == mHBV.EdgeObject(p[ei]).ReverseComplement().ToString()){
-            std::cout << "edge and inv rc match, string contains " << mHBV.EdgeObject(mInv[p[ei]]).ToString().size() << " characters" << std::endl;
-        }
+        //if (mHBV.EdgeObject(mInv[p[ei]]).ToString() == mHBV.EdgeObject(p[ei]).ReverseComplement().ToString()){
+        //    std::cout << "edge and inv rc match, string contains " << mHBV.EdgeObject(mInv[p[ei]]).ToString().size() << " characters" << std::endl;
+        //}
         auto ner=mHBV.AddEdge(current_vertex_rev,prev_vertex_rev,mHBV.EdgeObject(mInv[p[ei]]));
         mToLeft.push_back(current_vertex_rev);
         mToRight.push_back(prev_vertex_rev);
         if (! old_edges_to_new.count(mInv[p[ei]]))  old_edges_to_new[mInv[p[ei]]]={};
         old_edges_to_new[mInv[p[ei]]].push_back(ner);
         std::cout << "Separating: " << mInv[p[ei]] << " new edge: " << ner << std::endl;
-
+        std::cout << mHBV.EdgeObject(mInv[p[ei]]).ToString() << std::endl;
+        std::cout << mHBV.EdgeObject(p[ei]).ToString() << std::endl;
+        std::cout << "strings used to create new edges" << std::endl;
         mInv.push_back(ner);
         mInv.push_back(nef);
         mEdgeToPathIds.resize(mEdgeToPathIds.size()+2);
+        TestInvolution(mHBV, mInv);
+
 
     }
     mHBV.GiveEdgeNewFromVx(p[p.size()-1],mToLeft[p[p.size()-1]],current_vertex_fw);// attach new edges back into graph at right position
@@ -387,7 +394,7 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
     mHBV.GiveEdgeNewToVx(mInv[p[p.size()-1]],mToRight[mInv[p[p.size()-1]]],current_vertex_rev);
     std::cout << "last edge contains " << mHBV.EdgeObject(p[p.size()-1]).ToString().size() << "characters" << std::endl;
     //mToRight[mInv[p[p.size()-1]]] = current_vertex_rev;
-    //TestInvolution(mHBV, mInv);
+    TestInvolution(mHBV, mInv);
     //mHBV.Involution(mInv);
     //TestInvolution(mHBV, mInv);
     //TODO: cleanup new isolated elements and leading-nowhere paths.
