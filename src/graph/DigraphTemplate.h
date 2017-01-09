@@ -1922,7 +1922,8 @@ template<class E> void digraphE<E>::DeleteEdgeTo( int w, int j )
      from_edge_obj_[v].erase( from_edge_obj_[v].begin( ) + i );    }
 
 template<class E> void digraphE<E>::DeleteEdgeFrom( int v, int j )
-{    int w = from_[v][j];
+{
+     int w = from_[v][j];
      int i = InputFromOutputTo( v, j );
      from_[v].erase( from_[v].begin( ) + j );
      from_edge_obj_[v].erase( from_edge_obj_[v].begin( ) + j );
@@ -1935,7 +1936,7 @@ template<class E> void digraphE<E>::DeleteEdgesTo( int w, const vec<int>& js )
 
 template<class E> void digraphE<E>::DeleteEdgesFrom( int v, const vec<int>& js )
 {    for ( int l = js.isize( ) - 1; l >= 0; l-- )
-          DeleteEdgeFrom( v, js[l] );    }
+          DeleteEdgeFrom( v, js [l] );    }
 
 template<class E> 
 vec<int> digraphE<E>::EdgesBetween( const int v, const int w ) const

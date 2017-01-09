@@ -10,8 +10,6 @@ ComplexRegion::ComplexRegion(){};
 ComplexRegion::ComplexRegion(std::vector<uint64_t  > edges_in, std::vector<uint64_t  > edges_out, vec<int>& involution, int insert_size=5000):
     edges_in(edges_in), edges_out(edges_out), insert_size(insert_size), involution(involution)
 {
-    std::sort(edges_in.begin(), edges_in.end());
-    std::sort(edges_out.begin(), edges_out.end());
     edges_in_detailed.resize(edges_in.size());
     edges_out_detailed.resize(edges_out.size());
     for (int i=0; i < edges_in.size(); i++){
@@ -108,10 +106,7 @@ void ComplexRegion::isSolved(int min_count){
         }
     }
 
-    std::cout << "in edges solved size: " << in_edges_solved.size() << "edges in size: " <<  edges_in.size() <<  "in edges solved set size: " << in_edges_solved_set.size() << std::endl;
-    std::cout << "out edges solved size: " << out_edges_solved.size() << "edges out size: " <<  edges_out.size() <<  "out edges solved set size: " << out_edges_solved_set.size() << std::endl;
-
-    // think about if this is actually the case....
+   // think about if this is actually the case....
     if((in_edges_solved.size() == edges_in.size()) && (in_edges_solved.size()  == in_edges_solved_set.size()) && (out_edges_solved.size() == edges_out.size()) && (out_edges_solved.size()  == out_edges_solved_set.size())){
     //if(in_edges_solved.size() == edges_in.size()  && out_edges_solved.size() == edges_out.size() ){
 
@@ -119,10 +114,8 @@ void ComplexRegion::isSolved(int min_count){
             combinations_to_use.push_back(std::make_pair(in_edges_solved[i], out_edges_solved[i]));
         }
         solved = true;
-        std::cout << "Combinations to use size of region for solved region: " << combinations_to_use.size() << std::endl;
         std::cout << "Region solved" << std::endl;
     }
-    std::cout << "Combinations to use size of region: " << combinations_to_use.size() << std::endl;
 }
 
 std::vector<std::vector<uint64_t> >  ComplexRegion::BuildPaths(){
@@ -130,13 +123,10 @@ std::vector<std::vector<uint64_t> >  ComplexRegion::BuildPaths(){
      * determine which in/out pairs to use and build th associated paths
     */
     std::vector<std::vector<uint64_t> > paths;
-    std::cout << "building for region, edges in: " << path_str(edges_in) << std::endl;
-    std::cout << "building for region, edges out: " << path_str(edges_out) << std::endl;
     // combination counts contains pairs of in/out edge ids,
     for (auto in_out_pair:combinations_to_use){
         auto in_edge_id = in_out_pair.first;
         auto out_edge_id = in_out_pair.second;
-        std::cout << "Building path from: " << in_edge_id << " to: " << out_edge_id << " paths size: " << paths.size() << std::endl;
         for (auto in_edge: edges_in_detailed){
             if (in_edge.edge_id == in_edge_id) {
                 for (auto out_edge: edges_out_detailed) {
@@ -147,7 +137,6 @@ std::vector<std::vector<uint64_t> >  ComplexRegion::BuildPaths(){
                 }
             }
         }
-        std::cout << " paths size: " << paths.size() << std::endl;
     }
     return paths;
 }
@@ -212,7 +201,6 @@ void ComplexRegionCollection::SelectRegionsForPathSeparation(){
     for (auto region:complex_regions){
         if (region.solved){
             solved_regions.push_back(region);
-            std::cout << "Combinations to use size of solved region: " << region.combinations_to_use.size() << std::endl;
         }
     }
     for (int i = 0; i < solved_regions.size() ; i++){
@@ -271,15 +259,12 @@ void ComplexRegionCollection::SelectRegionsForPathSeparation(){
 std::vector<std::vector<uint64_t> > ComplexRegionCollection::GetPathsToSeparate(){
     // for each solved region, get each path in the right direction (so from in to out), on the main graph, not the involution
     std::vector<std::vector<uint64_t> > paths_to_separate;
-    std::cout << "number of solved regions: " << solved_regions_final.size()  << std::endl;
     for (auto region:solved_regions_final){
         auto paths = region.BuildPaths();
         for (auto path:paths){
             paths_to_separate.push_back(path);
-            std::cout << "adding path: " << path_str(path) <<std::endl;
         }
     }
-    std::cout << "patsh to separate, about to return: " << paths_to_separate.size() << " paths." << std::endl;
     return paths_to_separate;
 }
 
@@ -295,7 +280,7 @@ std::string ComplexRegionCollection::path_str(std::vector<uint64_t> path) {
     return s;
 }
 
-// select one which solves most paths
+// select one which solves most paths, currently makes aribitrary choice if the number of in/out edges is equal
 ComplexRegion ComplexRegionCollection::FindBestSolvedRegion(ComplexRegion region_1, ComplexRegion region_2){
     if (region_1.edges_in.size() > region_2.edges_in.size()){
         return region_1;

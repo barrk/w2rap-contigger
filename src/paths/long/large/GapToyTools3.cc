@@ -27,6 +27,7 @@
 #include "paths/long/ReadPathTools.h"
 #include "paths/long/ReadStack.h"
 #include "paths/long/large/GapToyTools.h"
+#include <fstream>
 #include <ctime>
 
 
@@ -583,11 +584,7 @@ void TestInvolution( const HyperBasevector& hb, const vec<int>& inv )
           b.ReverseComplement( );
           if ( b != hb.EdgeObject( inv[e] ) )
           {    std::cout << "\n";
-              std::cout << b.ReverseComplement().ToString() << std::endl;
-              std::cout << hb.EdgeObject( inv[e] ).ToString() << std::endl;
                int re = inv[e];
-              std::cout << b.ToString().substr(0, 50) << " ... " << b.ToString().substr(b.ToString().size()-51,b.ToString().size()-1) <<std::endl;
-              std::cout << hb.EdgeObject( inv[e] ).ToString().substr(0, 50) << " ... " << hb.EdgeObject( inv[e] ).ToString().substr(hb.EdgeObject( inv[e] ).ToString().size()-51,hb.EdgeObject( inv[e] ).ToString().size()-1) <<std::endl;
                PRINT4( e, re, b.size( ), hb.EdgeObject(re).size( ) );
               std::cout << "EDGE BREAKING INVOLUTION: " << e << "inv" << inv[e] << " inv inv " << inv[inv[e]] <<  std::endl;
                std::cout << "Involution value not rc.\n" << "Abort." << std::endl;

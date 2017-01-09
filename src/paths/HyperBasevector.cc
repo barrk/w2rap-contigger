@@ -657,12 +657,6 @@ void HyperBasevector::Involution( vec<int>& inv )
           edges[i].ReverseComplement( );
      ParallelSort( x2, [&edges](int i1, int i2){ return edges[i1] < edges[i2]; } ); // populate x2 with rc edges in ascending order
      for ( int i = 0; i < E( ); i++ ) {
-         if (i < 10) {
-             std::cout << " " << i << " " << x1[i] << " " << x2[i] << " " << std::endl;
-         }
-         if (x1[i] < 10) {
-             std::cout << " " << i << " " << x1[i] << " " << x2[i] << " " << std::endl;
-         }
          inv[x1[i]] = x2[i];
      }
 } // the position of the reverse complement of x1 i is x2 i

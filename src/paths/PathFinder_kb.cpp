@@ -329,8 +329,8 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
     //moves paths across to the new reapeat instances as needed
     //changes neighbourhood (i.e. creates new vertices and moves the to and from for the implicated edges).
 
-    //creates a copy of each node but the first and the last, connects  linearly to the previous copy,
-    std::cout<<std::endl<<"Separating path"<< path_str(p) << std::endl;
+    //creates a copy of each node but the first and the last, connects only linearly to the previous copy,
+    //std::cout<<std::endl<<"Separating path"<<std::endl;
     std::set<uint64_t> edges_fw;
     std::set<uint64_t> edges_rev;
     for (auto e:p){//TODO: this is far too astringent...
@@ -341,19 +341,31 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
             return {};}
     }
     //create two new vertices (for the FW and BW path)
-    uint64_t current_vertex_fw=mHBV.N(),current_vertex_rev=mHBV.N()+1; // .N is number of vertices, so these ar ethe two vertices added on the next line
+    uint64_t current_vertex_fw=mHBV.N(),current_vertex_rev=mHBV.N()+1;
     mHBV.AddVertices(2);
     //migrate connections (dangerous!!!)
-    mHBV.GiveEdgeNewToVx(p[0],mToRight[p[0]],current_vertex_fw); // edit graph so edge p now goes to newly created vertex instead of old vertex
-    mToRight[p[0]] = current_vertex_fw;
-    mHBV.GiveEdgeNewFromVx(mInv[p[0]],mToLeft[mInv[p[0]]],current_vertex_rev);// erases old connection from old involution vertex, and connects edge to old
-    mToLeft[mInv[p[0]]] = current_vertex_rev;
+    if (verbose_separation) std::cout<<"Migrating edge "<<p[0]<<" To node old: "<<mToRight[p[0]]<<" new: "<<current_vertex_fw<<std::endl;
+    mHBV.GiveEdgeNewToVx(p[0],mToRight[p[0]],current_vertex_fw);
+    if (verbose_separation) std::cout<<"Migrating edge "<<mInv[p[0]]<<" From node old: "<<mToLeft[mInv[p[0]]]<<" new: "<<current_vertex_rev<<std::endl;
+    mHBV.GiveEdgeNewFromVx(mInv[p[0]],mToLeft[mInv[p[0]]],current_vertex_rev);
     std::map<uint64_t,std::vector<uint64_t>> old_edges_to_new;
-    std::cout << "first edge contains " << mHBV.EdgeObject(p[0]).ToString().size() << "characters" << std::endl;
-
-    TestInvolution(mHBV, mInv);
-
+    std::ofstream edges("/Users/barrk/Documents/ecoli_dataset/v1/edges.fasta");
+    std::ofstream inv_edges("/Users/barrk/Documents/ecoli_dataset/v1/inv_edges.fasta");
+    edges << "edge0" << std::endl;
+    edges << mHBV.EdgeObject(p[0]).ToString() << std::endl;
+    inv_edges << "edge0" << std::endl;
+    inv_edges << mHBV.EdgeObject(mInv[p[0]]).ToString() << std::endl;
+    std::string full_edge = mHBV.EdgeObject(p[0]).ToString();
+    std::string full_edge_inv = mHBV.EdgeObject(mInv[p[0]]).ToString();
+    std::cout << "first edge size: " << mHBV.EdgeObject(p[0]).size() << std::endl;
     for (auto ei=1;ei<p.size()-1;++ei){
+        edges << "edge" << ei << std::endl;
+        edges << mHBV.EdgeObject(p[ei]).ToString() << std::endl;
+        inv_edges << "edge" << ei << std::endl;
+        inv_edges << mHBV.EdgeObject(mInv[p[ei]]).ToString() << std::endl;
+        full_edge += mHBV.EdgeObject(p[ei]).ToString();
+        full_edge_inv = mHBV.EdgeObject(mInv[p[ei]]).ToString() + full_edge_inv;
+
         //add a new vertex for each of FW and BW paths
         uint64_t prev_vertex_fw=current_vertex_fw,prev_vertex_rev=current_vertex_rev;
         //create two new vertices (for the FW and BW path)
@@ -361,42 +373,44 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
         current_vertex_rev=mHBV.N()+1;
         mHBV.AddVertices(2);
 
-
         //now, duplicate next edge for the FW and reverse path
-        auto nef=mHBV.AddEdge(prev_vertex_fw,current_vertex_fw,mHBV.EdgeObject(p[ei]));// add an edge for each edge in path, with appropriate basevector
-        // inv breaks here but we expect it to
+        auto nef=mHBV.AddEdge(prev_vertex_fw,current_vertex_fw,mHBV.EdgeObject(p[ei]));
+        if (verbose_separation)  std::cout<<"Edge "<<nef<<": copy of "<<p[ei]<<": "<<prev_vertex_fw<<" - "<<current_vertex_fw<<std::endl;
         mToLeft.push_back(prev_vertex_fw);
         mToRight.push_back(current_vertex_fw);
         if (! old_edges_to_new.count(p[ei]))  old_edges_to_new[p[ei]]={};
         old_edges_to_new[p[ei]].push_back(nef);
-        std::cout << "Separating: " << p[ei] << "with size: " << mHBV.EdgeObject(p[ei]).size() << " new edge: " << nef << std::endl;
-        //if (mHBV.EdgeObject(mInv[p[ei]]).ToString() == mHBV.EdgeObject(p[ei]).ReverseComplement().ToString()){
-        //    std::cout << "edge and inv rc match, string contains " << mHBV.EdgeObject(mInv[p[ei]]).ToString().size() << " characters" << std::endl;
-        //}
+        std::cout << "next edge size: " << mHBV.EdgeObject(p[ei]).size() << std::endl;
         auto ner=mHBV.AddEdge(current_vertex_rev,prev_vertex_rev,mHBV.EdgeObject(mInv[p[ei]]));
+        if (verbose_separation) std::cout<<"Edge "<<ner<<": copy of "<<mInv[p[ei]]<<": "<<current_vertex_rev<<" - "<<prev_vertex_rev<<std::endl;
         mToLeft.push_back(current_vertex_rev);
         mToRight.push_back(prev_vertex_rev);
         if (! old_edges_to_new.count(mInv[p[ei]]))  old_edges_to_new[mInv[p[ei]]]={};
         old_edges_to_new[mInv[p[ei]]].push_back(ner);
-        std::cout << "Separating: " << mInv[p[ei]] << " new edge: " << ner << std::endl;
-        std::cout << mHBV.EdgeObject(mInv[p[ei]]).ToString() << std::endl;
-        std::cout << mHBV.EdgeObject(p[ei]).ToString() << std::endl;
-        std::cout << "strings used to create new edges" << std::endl;
+        std::cout << "next edge inv size: " << mHBV.EdgeObject(mInv[p[ei]]).size() << std::endl;
         mInv.push_back(ner);
         mInv.push_back(nef);
         mEdgeToPathIds.resize(mEdgeToPathIds.size()+2);
-        TestInvolution(mHBV, mInv);
-
-
     }
-    mHBV.GiveEdgeNewFromVx(p[p.size()-1],mToLeft[p[p.size()-1]],current_vertex_fw);// attach new edges back into graph at right position
-    //mToLeft[p[p.size()-1]] = current_vertex_fw;
+    edges << "edge" << p[p.size()-1] <<std::endl;
+    edges << mHBV.EdgeObject(p[p.size()-1]).ToString() << std::endl;
+    inv_edges << "edge" << p[p.size()-1] <<std::endl;
+    inv_edges << mHBV.EdgeObject(mInv[p[p.size()-1]]).ToString() << std::endl;
+    full_edge += mHBV.EdgeObject(p[p.size()-1]).ToString();
+    full_edge_inv += mHBV.EdgeObject(mInv[p[p.size()-1]]).ToString();
+    edges.close();
+    inv_edges.close();
+    std::ofstream edges_all("/Users/barrk/Documents/ecoli_dataset/v1/edges_cat.fasta");
+    std::ofstream inv_edges_all("/Users/barrk/Documents/ecoli_dataset/v1/inv_edges_cat.fasta");
+    edges_all << full_edge << std::endl;
+    inv_edges_all << full_edge_inv << std::endl;
+    edges_all.close();
+    inv_edges_all.close();
+    if (verbose_separation) std::cout<<"Migrating edge "<<p[p.size()-1]<<" From node old: "<<mToLeft[p[p.size()-1]]<<" new: "<<current_vertex_fw<<std::endl;
+    mHBV.GiveEdgeNewFromVx(p[p.size()-1],mToLeft[p[p.size()-1]],current_vertex_fw);
+    if (verbose_separation) std::cout<<"Migrating edge "<<mInv[p[p.size()-1]]<<" To node old: "<<mToRight[mInv[p[p.size()-1]]]<<" new: "<<current_vertex_rev<<std::endl;
     mHBV.GiveEdgeNewToVx(mInv[p[p.size()-1]],mToRight[mInv[p[p.size()-1]]],current_vertex_rev);
-    std::cout << "last edge contains " << mHBV.EdgeObject(p[p.size()-1]).ToString().size() << "characters" << std::endl;
-    //mToRight[mInv[p[p.size()-1]]] = current_vertex_rev;
-    TestInvolution(mHBV, mInv);
-    //mHBV.Involution(mInv);
-    //TestInvolution(mHBV, mInv);
+
     //TODO: cleanup new isolated elements and leading-nowhere paths.
     //for (auto ei=1;ei<p.size()-1;++ei) mHBV.DeleteEdges({p[ei]});
     return old_edges_to_new;
