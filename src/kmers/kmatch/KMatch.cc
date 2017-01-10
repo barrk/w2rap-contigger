@@ -62,7 +62,6 @@ std::vector<pKmer> KMatch::ProduceKmers(std::string seq){
 void KMatch::Hbv2Map(HyperBasevector* hbv){
   //  std::vector<kmer_position_t> karray;
 
-  std::cout << Date() << "building edge dict"<< std::endl;
   std::map<uint64_t, std::vector<edgeKmerPosition>> edgeDict;
   uint32_t seq_index=0;
 
@@ -93,7 +92,7 @@ void KMatch::Hbv2Map(HyperBasevector* hbv){
     }
     seq_index++;
   }
-  std::cout << Date() << "finishe dbuilding edge dict"<< std::endl;
+  std::cout << Date() << "finished building edge dict"<< std::endl;
 
 }
 

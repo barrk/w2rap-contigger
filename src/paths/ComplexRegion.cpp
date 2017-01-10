@@ -106,6 +106,7 @@ void ComplexRegion::isSolved(int min_count){
         }
     }
 
+    std::cout << "in edges solved size: " << in_edges_solved.size() << std::endl;
    // think about if this is actually the case....
     if((in_edges_solved.size() == edges_in.size()) && (in_edges_solved.size()  == in_edges_solved_set.size()) && (out_edges_solved.size() == edges_out.size()) && (out_edges_solved.size()  == out_edges_solved_set.size())){
     //if(in_edges_solved.size() == edges_in.size()  && out_edges_solved.size() == edges_out.size() ){
@@ -178,7 +179,7 @@ bool ComplexRegionCollection::AddRegion(std::vector<uint64_t> edges_in, std::vec
         ComplexRegion complex_region(edges_in, edges_out, involution, insert_size);
         complex_regions.push_back(complex_region);
         auto key = std::make_pair(complex_region.edges_in, complex_region.edges_out);
-        edges_to_region_index[key] = complex_regions.size();
+        edges_to_region_index[key] = complex_regions.size() - 1;
         return true;
     } else {
         std::cout << "In/Out edges do not define a valid region" << std::endl;
@@ -200,6 +201,8 @@ std::pair<ComplexRegion, int> ComplexRegionCollection::GetRegionWithEdges(std::v
 void ComplexRegionCollection::SelectRegionsForPathSeparation(){
     for (auto region:complex_regions){
         if (region.solved){
+            // so its already determined solved here
+            std::cout << "region solved, edges in: " << path_str(region.edges_in) << std::endl;
             solved_regions.push_back(region);
         }
     }

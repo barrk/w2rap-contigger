@@ -218,7 +218,7 @@ int main(const int argc, const char * argv[]) {
 
     //========== Main Program Begins ======
     // This has to be according to the input
-    PeData pe_data;
+    PeData pe_data;//(pe_read_files);
     vecbvec bases;
     VecPQVec quals;
 
