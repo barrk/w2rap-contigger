@@ -195,12 +195,7 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
                     edge_ind += 1;
 
                 }
-                for (int i = 0; i < complex_regions.complex_regions.size(); i++){
-                    if (complex_regions.complex_regions[i].solved){
-                        std::cout << " region solved: " << i;
-                    }
-                    std::cout << std::endl;
-                }
+
                 complex_region.FindSolveablePairs();
                 complex_region.isSolved(12);
                 if (complex_region.solved) {
@@ -312,14 +307,12 @@ std::map<uint64_t,std::vector<uint64_t>> PathFinderkb::separate_path(std::vector
         mToRight.push_back(current_vertex_fw);
         if (! old_edges_to_new.count(p[ei]))  old_edges_to_new[p[ei]]={};
         old_edges_to_new[p[ei]].push_back(nef);
-        std::cout << "next edge size: " << mHBV.EdgeObject(p[ei]).size() << std::endl;
         auto ner=mHBV.AddEdge(current_vertex_rev,prev_vertex_rev,mHBV.EdgeObject(mInv[p[ei]]));
         if (verbose_separation) std::cout<<"Edge "<<ner<<": copy of "<<mInv[p[ei]]<<": "<<current_vertex_rev<<" - "<<prev_vertex_rev<<std::endl;
         mToLeft.push_back(current_vertex_rev);
         mToRight.push_back(prev_vertex_rev);
         if (! old_edges_to_new.count(mInv[p[ei]]))  old_edges_to_new[mInv[p[ei]]]={};
         old_edges_to_new[mInv[p[ei]]].push_back(ner);
-        std::cout << "next edge inv size: " << mHBV.EdgeObject(mInv[p[ei]]).size() << std::endl;
         mInv.push_back(ner);
         mInv.push_back(nef);
         mEdgeToPathIds.resize(mEdgeToPathIds.size()+2);

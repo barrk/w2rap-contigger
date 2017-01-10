@@ -148,11 +148,9 @@ std::vector<uint64_t>  ComplexRegion::BuildPath(BoundingEdge edge_in, BoundingEd
     result.push_back(edge_in.edge_id); // should be same as edge id- if this is on inv, all others should be?
     for (auto e:edge_in.path_from_center){
         result.push_back(e);
-        std::cout << e << std::endl;
     }
     for (auto e:edge_out.path_from_center){
         result.push_back(e);
-        std::cout << e << std::endl;
     }
     result.push_back(edge_out.edge_id);
     return result;
@@ -202,7 +200,6 @@ void ComplexRegionCollection::SelectRegionsForPathSeparation(){
     for (auto region:complex_regions){
         if (region.solved){
             // so its already determined solved here
-            std::cout << "region solved, edges in: " << path_str(region.edges_in) << std::endl;
             solved_regions.push_back(region);
         }
     }
