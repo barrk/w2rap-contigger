@@ -2018,7 +2018,6 @@ template<class F> void digraphE<F>::AddVertices( int nadd )
 
 template<class F> void digraphE<F>::DeleteEdges( const vec<int>& to_delete )
 {
-     std::cout << to_delete.size() << " edges to delete " << std::endl;
      vec<int> to_delete_local;
      // order to dlete propr to searching it
      if ( !to_delete.UniqueOrdered( ) )

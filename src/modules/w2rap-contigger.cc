@@ -221,6 +221,7 @@ int main(const int argc, const char * argv[]) {
     PeData pe_data;//(pe_read_files);
     vecbvec bases;
     VecPQVec quals;
+    VecULongVec invPaths;
 
     vec<String> subsam_names = {"C"};
     vec<int64_t> subsam_starts = {0};
@@ -662,20 +663,12 @@ int main(const int argc, const char * argv[]) {
     if (from_step==7){
         std::cout << "Reading contig graph and paths..." << std::endl;
 
-        MpData mp_data(mp_read_files);
-        std::cout << "Mate pair files read" << std::endl;
-        //BinaryReader::readFile(out_dir + "/" + out_prefix + ".contig.hbv", &hbvr);
-        //LoadReadPathVec(pathsr,(out_dir + "/" + out_prefix + ".contig.paths").c_str());
-
-        BinaryReader::readFile(out_dir + "/ecoli_v1.contig.hbv", &hbvr);
-        LoadReadPathVec(pathsr, (out_dir + "/ecoli_v1.contig.paths").c_str());
+        BinaryReader::readFile(out_dir + out_prefix + ".contig.hbv", &hbvr);
+        LoadReadPathVec(pathsr, (out_dir + out_prefix + ".contig.paths").c_str());
         hbvr.Involution(inv);
-        VecULongVec invPaths;
         invert(pathsr, invPaths, hbvr.EdgeObjectCount());
 
-        PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
-        pf.resolveComplexRegionsUsingLMPData();
-        std::cout << "HBV edge number: " << hbvr.EdgeObjectCount() << std::endl;
+        //std::cout << "HBV edge number: " << hbvr.EdgeObjectCount() << std::endl;
         if (dump_perf) perf_file << std::endl << checkpoint_perf_time("ContigGraphLoad") << std::endl;
     }
     if (from_step<=7 and to_step>=7) {
@@ -687,9 +680,21 @@ int main(const int argc, const char * argv[]) {
         bool SCAFFOLD_VERBOSE = False;
         bool GAP_CLEANUP = True;
 
+        if (mp_read_files != ""){
+            std::cout << "Reading long mate pair data" << std::endl;
+            MpData mp_data(mp_read_files);
+            std::cout << "Mate pair files read" << std::endl;
+            PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
+            pf.resolveComplexRegionsUsingLMPData();
+            std::cout << "LMP scaffoling done, writing files" << std::endl;
+            BinaryWriter::writeFile(out_dir + out_prefix + "lmp_scaffolds.hbv", hbvr);
+            std::string path_path = out_dir + out_prefix + "lmp_scaffolds.paths";
+            WriteReadPathVec(pathsr,path_path.c_str());
+
+        }
         // NEW Version, this runs, if last argument is set to false we can dump GFA as well, if its set to true, it fails in test involution because it says the involuton value is not reverse complemented
         MakeGaps(hbvr, inv, pathsr, paths_inv, MIN_LINE, MIN_LINK_COUNT, out_dir, out_prefix, true,
-                 true);
+                 GAP_CLEANUP);
         if (dump_perf) perf_file << checkpoint_perf_time("MakeGaps") << std::endl;
         std::cout << "--== PE-Scaffolding DONE!" << std::endl << std::endl << std::endl;
         // Carry out final analyses and write final assembly files.

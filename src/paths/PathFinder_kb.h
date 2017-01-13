@@ -39,17 +39,15 @@ public:
 
 
     //ReadPath-related methods
-
-    void resolveRegionsUsingLMPData();
     void init_prev_next_vectors();
     std::string path_str(std::vector<uint64_t> e);
-    std::tuple <std::vector<LMPPair >, std::vector<LMPPair >, std::map<uint64_t, std::vector<int> > > PathFinderkb::mapEdgesToLMPReads();//(std::vector<LMPPair > & lmp_pairs_for_scaffolding);
+    std::string read_path_str(ReadPath path);
+    std::tuple <std::vector<LMPPair >, std::vector<LMPPair >, std::map<uint64_t, std::vector<int> > > mapEdgesToLMPReads();//(std::vector<LMPPair > & lmp_pairs_for_scaffolding);
     void migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> edgemap);
     std::map<uint64_t,std::vector<uint64_t>> separate_path(std::vector<uint64_t> p, bool verbose_separation);
     void resolveComplexRegionsUsingLMPData();
 
 private:
-    void join_edges_in_path(std::vector<uint64_t> path);
     void edges_beyond_distance(std::vector<uint64_t>  & long_fronteirs, std::vector<std::vector<uint64_t> >  & paths_to_long_fronteirs, std::vector<uint64_t> &  intermediate_path, uint64_t e, vector<uint64_t > & traversed_edge_list, uint64_t large_frontier_size, int recursion_depth=0, int distance_traversed=0, std::string direction="right");
     HyperBasevector& mHBV;
     vecbvec& lmp_data;

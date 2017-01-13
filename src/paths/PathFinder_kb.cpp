@@ -7,8 +7,8 @@
  * General comments- 1) still need to calculate the insert size to properly check distances
  * 2) the function to get the paths returns lots of short edges when its in really complex areas, segfaulted when i added a lower length bound, needs fixing,
  * 3) related to 2, really need to be more precise about which areas to try and solve with LMPs, I should discuss this with gonza and bernardo
- * 4) the canonicalisation is a) inconsistent with rest of code base and b) not really used, either remove or make consistent
- * 5) All the warnings in migrate readpaths need properly investigating and fixing, this may be what breaks the graph
+ * 4) need to do something to avoid accidentally running it with this hard coded inset size before we actually calculate the insert size
+ * 5) All the warnings in migrate readpaths: did some investigation, it seems to be when start of path doesn't need migrating, see comments below, as the lmp solving is run last, the messed up read paths shouldn't have a negative effect
  * 6) recheck mapping, its the oldest part of this code, i've learned a lot- spotted one error already, w should not allow pairs where read map to edge not edge and reverse complement( to be used for insert size estimation)
  *
  */
@@ -225,7 +225,6 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
             continue;
         }
         auto oen=separate_path(p, true);
-        std::vector<uint64_t> new_path;
             if (oen.size() > 0) {
                 for (auto et:oen) {
                     if (old_edges_to_new.count(et.first) == 0) old_edges_to_new[et.first] = {};
@@ -249,16 +248,22 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
     mHBV.Involution(mInv);
     TestInvolution(mHBV, mInv);
     std::cout<<" "<<sep<<" paths separated!"<<std::endl;
-    std::cout<<mHBV.EdgeObjectCount() << " edges in hbv"<<std::endl;
-    BinaryWriter::writeFile("/Users/barrk/Documents/ecoli_dataset/v1/after_new_pathfinder.hbv", mHBV);
-    std::string path_path = "/Users/barrk/Documents/ecoli_dataset/v1/after_new_pathfinder.paths";
-    WriteReadPathVec(mPaths,path_path.c_str());
 }
 std::string PathFinderkb::path_str(std::vector<uint64_t> path) {
     std::string s="[";
     for (auto p:path){
         // output edge id on hbv and involution
         s+=std::to_string(p)+":"+std::to_string(mInv[p])+" ";//+" ("+std::to_string(mHBV.EdgeObject(p).size())+"bp "+std::to_string(paths_per_kbp(p))+"ppk)  ";
+    }
+    s+="]";
+    return s;
+}
+
+std::string PathFinderkb::read_path_str(ReadPath path) {
+    std::string s="[";
+    for (auto p:path){
+        // output edge id on hbv and involution
+        s+=std::to_string(p)+" ";//
     }
     s+="]";
     return s;
@@ -339,11 +344,14 @@ void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> ed
         bool translated=false,ambiguous=false;
         for (auto i=0;i<p.size();++i){
             if (edgemap.count(p[i])) { // if edge i on path p has been translated
-                //std::cout << "New edges:" <<path_str(p[i]) << std:: endl;
+                //std::cout << "path: " << read_path_str(p) <<  " old edge: " << p[i] << " new edge: " << path_str(edgemap[p[i]]) << std::endl;
                 possible_new_edges.push_back(edgemap[p[i]]);
-                if (not translated) translated=true;
+                if (not translated) {translated=true; //std::cout << "translated" << std::endl;
+                };
                 // if same edge is in multiple paths, this could occur
-                if (possible_new_edges.back().size()>1) ambiguous=true; // if there is more than 1 edge mapping, its ambiguous
+                if (possible_new_edges.back().size()>1) {ambiguous=true ;
+                    //std::cout << "ambiguous" << std::endl;
+                    }; // if there is more than 1 edge mapping, its ambiguous
             }
             else possible_new_edges.push_back({p[i]});
 
@@ -351,29 +359,58 @@ void PathFinderkb::migrate_readpaths(std::map<uint64_t,std::vector<uint64_t>> ed
         if (translated){
             if (not ambiguous){ //just straigh forward translation
                 for (auto i=0;i<p.size();++i) {
-                    //edge_migrations << "Migrating edge: " << p[i] << " to edge " << possible_new_edges[i][0] << std::endl;
                     p[i]=possible_new_edges[i][0];}
             }
             else {
                 //ok, this is the complicated case, we first generate all possible combinations
                 std::vector<std::vector<uint64_t>> possible_paths={{}};
+                if (p[0] == 312){
+                    std::cout << "for a breakpoint.." << std::endl;
+                }
+                std::cout << "path: " << read_path_str(p) << std::endl;
                 for (auto i=0;i<p.size();++i) {//for each position
+                    std::cout << "path: " << read_path_str(p) << std::endl;
                     std::vector<std::vector<uint64_t>> new_possible_paths;
                     for (auto pp:possible_paths) { //take every possible one
                         for (auto e:possible_new_edges[i]) {
+                            // why is 267 a possible new edge, when its actually an edge to be mapped? - i think this is the first time possibel new edges starts with an old edge, there are cases where e is the last of an old path
+                            // looped over 267, 334, 338, 342- 267 goes to 334, 150 goes to 338, 342 so this is fine. we know this and that it segfaults on new_possible_paths.back for first time when we try to output that
                             //if i>0 check there is a real connection to the previous edge
                             if (i == 0 or (mToRight[pp.back()]==mToLeft[e])) {
+                                if (e == 267){
+                                    std::cout << "another breakpoint" << std::endl;
+                                }
+                                std::cout << "e" << e << std::endl;
                                 new_possible_paths.push_back(pp);
                                 new_possible_paths.back().push_back(e);
+                                std::cout << "new possible paths" << path_str(new_possible_paths.back()) << " possible paths size: " << possible_paths.size() << std::endl;
+                                std::cout << "pp:" << path_str(pp) << std::endl;
                             }
                         }
                     }
+                    //std::cout << "after loop new possible paths" << path_str(new_possible_paths.back()) << std::endl; // segfaults on this line whe we get the first warning...
+                    //std::cout << "after loop pp:" << path_str(possible_paths.back()) << std::endl;
+                    //std::cout << "1 size of possible paths: " << possible_paths.size() << "new possible paths size: " << new_possible_paths.size() << std::endl;
                     possible_paths=new_possible_paths;
-                    if (possible_paths.size()==0) break;
+                    //std::cout << "2 size of possible paths: " << possible_paths.size() << "new possible paths size: " << new_possible_paths.size() << std::endl;
+                    if (possible_paths.size()==0) {
+                        std::cout << "i conditional: " << std::endl;
+                        break;
+                    }
+                    //std::cout << "3 size of possible paths: " << possible_paths.size() << "new possible paths size: " << new_possible_paths.size() << std::endl;
+
                 }
                 if (possible_paths.size()==0){
-                    //std::cout<<"Warning, a path could not be updated, truncating it to its first element!!!!"<<std::endl;
-                    //std::cout << p << std::endl;
+                    // paths that can't be updated, are the one's that aren't there anymore- these then get removed, so maybe doesn't matter
+                    // just annoying to get all these warnings
+                    std::cout<<"Warning, a path could not be updated, truncating it to its first element!!!!"<<std::endl;
+                    std::cout << "edge: " << p[0] << "to left: " << mToLeft[p[0]] << "prev edges: " << path_str(prev_edges[p[0]]) << std::endl;
+                    std::cout << "to right: " << mToRight[p[0]] << "next edges: " << path_str(next_edges[p[0]])<< std::endl;
+                    if (p.size() > 1){
+                        std::cout << "edge: " << p[1] << "to left: " << mToLeft[p[1]] << "prev edges: " << path_str(prev_edges[p[1]]) << std::endl;
+                        std::cout << "to right: " << mToRight[p[1]] << "next edges: " << path_str(next_edges[p[1]])<< std::endl;
+                    }
+                    std::cout << read_path_str(p) << std::endl;
                     p.resize(1);
                 }
                 else{
