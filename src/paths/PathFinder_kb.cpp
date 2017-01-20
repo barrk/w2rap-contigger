@@ -8,7 +8,7 @@
  * 2) the function to get the paths returns lots of short edges when its in really complex areas, segfaulted when i added a lower length bound, needs fixing,
  * 3) related to 2, really need to be more precise about which areas to try and solve with LMPs, I should discuss this with gonza and bernardo
  * 4) need to do something to avoid accidentally running it with this hard coded inset size before we actually calculate the insert size
- * 5) All the warnings in migrate readpaths: did some investigation, it seems to be when start of path doesn't need migrating, see comments below, as the lmp solving is run last, the messed up read paths shouldn't have a negative effect
+ * 5) All the warnings in migrate readpaths: did some investigation, it seems to break when start of path doesn't need migrating, see comments below, as the lmp solving is run last, the messed up read paths shouldn't have a negative effect
  * 6) recheck mapping, its the oldest part of this code, i've learned a lot- spotted one error already, w should not allow pairs where read map to edge not edge and reverse complement( to be used for insert size estimation)
  *
  */
@@ -237,9 +237,10 @@ void PathFinderkb::resolveComplexRegionsUsingLMPData() {
 
         }
 
+    /*
     if (old_edges_to_new.size()>0) {
         migrate_readpaths(old_edges_to_new);
-    }
+    }*/
     RemoveUnneededVertices2(mHBV, mInv,mPaths);
     Cleanup(mHBV, mInv, mPaths);
     // so all the above numbers add up, and the edge which breaks it is the first new edge
