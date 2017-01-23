@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <sys/time.h>
+#include <system/System.h>
 #include <paths/PathFinder.h>
 #include <paths/long/large/ImprovePath.h>
 #include "GFADump.h"
@@ -662,7 +663,8 @@ int main(const int argc, const char * argv[]) {
     }
     if (from_step==7){
         std::cout << "Reading contig graph and paths..." << std::endl;
-
+        auto memory_usage = MemoryUsage();
+        std::cout << "start of step 7 memory usage: " << memory_usage << std::endl;
         BinaryReader::readFile(out_dir + out_prefix + ".contig.hbv", &hbvr);
         LoadReadPathVec(pathsr, (out_dir + out_prefix + ".contig.paths").c_str());
         hbvr.Involution(inv);

@@ -19,8 +19,8 @@ typedef struct {
 
 class LMPMapper{
     public:
-        LMPMapper(vecbvec* lmp_reads, HyperBasevector& hbv, vec<int>& inv, KMatch kmatch);
-        vecbvec* lmp_reads;
+        LMPMapper(vecbvec& lmp_reads, HyperBasevector& hbv, vec<int>& inv, KMatch kmatch);
+        vecbvec& lmp_reads;
         std::vector<LMPPair > read_paths;
         void LMPReads2MappedPairedEdgePaths(std::vector<LMPPair >  & lmp_pairs_for_scaffolding, std::vector<LMPPair > & lmp_pairs_for_insert_size_estimation, std::map<uint64_t, std::vector<int> > & edge_id_to_pair_id_map);
 

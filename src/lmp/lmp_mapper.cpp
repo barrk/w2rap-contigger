@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <paths/PathFinder_kb.h>
 
-LMPMapper::LMPMapper(vecbvec* lmp_reads, HyperBasevector& hbv, vec<int>& inv, KMatch kmatch): lmp_reads(lmp_reads), hbv(hbv), inv(inv), kMatch(kmatch), read_edge_maps(initalise_read_edge_map()) {}
+LMPMapper::LMPMapper(vecbvec& lmp_reads, HyperBasevector& hbv, vec<int>& inv, KMatch kmatch): lmp_reads(lmp_reads), hbv(hbv), inv(inv), kMatch(kmatch), read_edge_maps(initalise_read_edge_map()) {}
 
 bool compareEdgeKmerPositions(const edgeKmerPosition &ekp1, const edgeKmerPosition &ekp2){
     // sort by edge id first, then offset. so a higher edge id with a lower offset would be the greater one
@@ -66,8 +66,8 @@ void LMPMapper::mapReads(){
     int mappted_to_multiple_edge_rc = 0;
     std::map<uint64_t, int> mapping_counts;
     #pragma omp parallel for
-    for (int i=0; i < lmp_reads->size(); i++){
-        std::string read = (*lmp_reads)[i].ToString();
+    for (int i=0; i < lmp_reads.size(); i++){
+        std::string read = (lmp_reads)[i].ToString();
         std::vector<edgeKmerPosition> mapped_edges = kMatch.lookupRead(read);
         int distinct_edge_ids = 0;
         if (mapped_edges.size() != 0){
@@ -113,7 +113,7 @@ void LMPMapper::mapReads(){
     std::cout << "Mapped to multiple edges_r1: " << mappted_to_multiple_edge_r1 << std::endl;
     std::cout << "Mapped to single edge_r2: " << mapped_to_single_edge_r2 << std::endl;
     std::cout << "Mapped to multiple edges_r2: " << mappted_to_multiple_edge_r2 << std::endl;
-    std::cout << "TOtal reads: " << lmp_reads->size() << std:: endl;
+    std::cout << "TOtal reads: " << lmp_reads.size() << std:: endl;
     std::ofstream edge_map_counter;
     edge_map_counter.open("/Users/barrk/Documents/arabidopsis_data/edge_mapping_counts_raw.txt");
     for (auto edge_map_count: mapping_counts){
@@ -158,7 +158,7 @@ void LMPMapper::readEdgeMap2LMPPairs(std::vector<LMPPair >  & lmp_pairs_for_scaf
         LMPPair lmp_pair;
         lmp_pair.read_index = i / 2;
         std::vector<edgeKmerPosition> read_mapping_p1 = read_edge_maps[i];
-        int read_len = static_cast<int>((*lmp_reads)[i].ToString().size());
+        int read_len = static_cast<int>((lmp_reads)[i].ToString().size());
         // ensure that full edges will be together, with offsets in increasing order, in read_mapping vector
         lmp_pair.p1 = sortMappingsFindFullyMappedEdges(read_mapping_p1, read_len, i);
         i = i + 1;
