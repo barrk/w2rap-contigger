@@ -663,8 +663,8 @@ int main(const int argc, const char * argv[]) {
     }
     if (from_step==7){
         std::cout << "Reading contig graph and paths..." << std::endl;
-        auto memory_usage = MemoryUsage();
-        std::cout << "start of step 7 memory usage: " << memory_usage << std::endl;
+        PrintMemUsage();
+        std::cout << "start of step 7 memory usage" <<  std::endl;
         BinaryReader::readFile(out_dir + out_prefix + ".contig.hbv", &hbvr);
         LoadReadPathVec(pathsr, (out_dir + out_prefix + ".contig.paths").c_str());
         hbvr.Involution(inv);
@@ -684,10 +684,16 @@ int main(const int argc, const char * argv[]) {
 
         if (mp_read_files != ""){
             std::cout << "Reading long mate pair data" << std::endl;
+            PrintMemUsage();
             MpData mp_data(mp_read_files);
             std::cout << "Mate pair files read" << std::endl;
+            PrintMemUsage();
             PathFinderkb pf(hbvr, inv, pathsr, invPaths, mp_data.bases);
+            PrintMemUsage();
+            std::cout << "Path finder initialised: " << std::endl;
             pf.resolveComplexRegionsUsingLMPData();
+            PrintMemUsage();
+            std::cout << "LMP scaffolding complete" << std::endl;
             std::cout << "LMP scaffoling done, writing files" << std::endl;
             BinaryWriter::writeFile(out_dir + out_prefix + "lmp_scaffolds.hbv", hbvr);
             std::string path_path = out_dir + out_prefix + "lmp_scaffolds.paths";

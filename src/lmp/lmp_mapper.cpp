@@ -55,6 +55,7 @@ std::vector<edgeKmerPosition> LMPMapper::readOffsetFilter(std::vector<edgeKmerPo
 
 void LMPMapper::mapReads(){
     kMatch.Hbv2Map(&hbv);
+    PrintMemUsage();
     std::cout << Date() << "starting lmp read mapping"<< std::endl;
     int mapped_to_single_edge_r1 = 0;
     int mappted_to_multiple_edge_r1 = 0;
@@ -106,7 +107,7 @@ void LMPMapper::mapReads(){
         read_edge_maps.push_back(mapped_edges);
     }
     std::cout << Date() << "finished read mapping"<< std::endl;
-
+    PrintMemUsage();
     std::cout << "Unmapped reads r1: " << unmapped_reads_r1 << std::endl;
     std::cout << "Unmapped reads r2: " << unmapped_reads_r2 << std::endl;
     std::cout << "Mapped to single edge_r1: " << mapped_to_single_edge_r1 << std::endl;
