@@ -55,7 +55,7 @@ std::vector<edgeKmerPosition> LMPMapper::readOffsetFilter(std::vector<edgeKmerPo
 
 void LMPMapper::mapReads(){
     kMatch.Hbv2Map(&hbv);
-    PrintMemUsage();
+    PrintMemUsage(); // 1125576
     std::cout << Date() << "starting lmp read mapping"<< std::endl;
     int mapped_to_single_edge_r1 = 0;
     int mappted_to_multiple_edge_r1 = 0;
@@ -63,24 +63,22 @@ void LMPMapper::mapReads(){
     int mappted_to_multiple_edge_r2 = 0;
     int unmapped_reads_r1 = 0;
     int unmapped_reads_r2 = 0;
-    int mapped_to_single_edge_rc = 0;
-    int mappted_to_multiple_edge_rc = 0;
-    std::map<uint64_t, int> mapping_counts;
-    #pragma omp parallel for
+    std::map<uint64_t, std::atomic<int>> mapping_counts;
+    #pragma omp parallel for num_threads(8) reduction(+: mapped_to_single_edge_r1, mappted_to_multiple_edge_r1, mapped_to_single_edge_r2, mappted_to_multiple_edge_r2, unmapped_reads_r1, unmapped_reads_r2)
     for (int i=0; i < lmp_reads.size(); i++){
         std::string read = (lmp_reads)[i].ToString();
         std::vector<edgeKmerPosition> mapped_edges = kMatch.lookupRead(read);
+        if (mapped_edges.size() > 1000){
+            std::cout << "mapped edges size: " << mapped_edges.size() << " read index: " << i << std::endl;
+        }
         int distinct_edge_ids = 0;
         if (mapped_edges.size() != 0){
-            int distinct_edge_ids = +1;
             int current_edge_id = mapped_edges[0].edge_id;
             mapping_counts[current_edge_id] += 1;
             for (auto mapping: mapped_edges){
                 if (mapping.edge_id != current_edge_id){
                     current_edge_id = mapping.edge_id;
                     distinct_edge_ids += 1;
-                    mapping_counts[current_edge_id] += 1;
-
                 }
         }
             if (distinct_edge_ids == 1 && i%2==1){
@@ -104,10 +102,14 @@ void LMPMapper::mapReads(){
             }
         }
 #pragma omp critical (lmp_read_map)
-        read_edge_maps.push_back(mapped_edges);
+        this->read_edge_maps.push_back(mapped_edges);
     }
+    std::cout << sizeof(read_edge_maps)/sizeof(read_edge_maps[0]) << " size of element of read_edge_maps" << std::endl;
+    std::cout << sizeof(read_edge_maps)+sizeof(read_edge_maps[0])*read_edge_maps.capacity()<<std::endl; // 1572888 - mempool allocator doesn't count these....
+    std::cout << sizeof(read_edge_maps[0]) << " size of read_edge_maps[0]" << std::endl;
+    std::cout << sizeof(read_edge_maps) << " size of read_edge_maps" << std::endl;
     std::cout << Date() << "finished read mapping"<< std::endl;
-    PrintMemUsage();
+    PrintMemUsage(); // 1231452, so increase in memory usage over the course of this function is 105876
     std::cout << "Unmapped reads r1: " << unmapped_reads_r1 << std::endl;
     std::cout << "Unmapped reads r2: " << unmapped_reads_r2 << std::endl;
     std::cout << "Mapped to single edge_r1: " << mapped_to_single_edge_r1 << std::endl;
@@ -115,12 +117,6 @@ void LMPMapper::mapReads(){
     std::cout << "Mapped to single edge_r2: " << mapped_to_single_edge_r2 << std::endl;
     std::cout << "Mapped to multiple edges_r2: " << mappted_to_multiple_edge_r2 << std::endl;
     std::cout << "TOtal reads: " << lmp_reads.size() << std:: endl;
-    std::ofstream edge_map_counter;
-    edge_map_counter.open("/Users/barrk/Documents/arabidopsis_data/edge_mapping_counts_raw.txt");
-    for (auto edge_map_count: mapping_counts){
-        edge_map_counter << edge_map_count.first << ', ' << edge_map_count.second << std::endl;
-    }
-    edge_map_counter.close();
 
 }
 
