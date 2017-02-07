@@ -25,7 +25,7 @@ typedef struct {
     int offset;
 } pKmer;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
     uint64_t kmer;
     int edge_id;
     int edge_offset;

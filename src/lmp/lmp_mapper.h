@@ -10,7 +10,7 @@
 #include <paths/long/ReadPath.h>
 
 // perhaps better to pair all along rather than find pair at the end
-typedef struct {
+typedef struct __attribute__((packed)) {
     ReadPath p1;
     ReadPath p2;
     int read_index;
@@ -35,7 +35,7 @@ class LMPMapper{
         void mapReads();
         void readEdgeMap2LMPPairs(std::vector<LMPPair >  & lmp_pairs_for_scaffolding, std::vector<LMPPair > & lmp_pairs_for_insert_size_estimation, std::map<uint64_t, std::vector<int> > & edge_id_to_pair_id_map);
          ReadPath sortMappingsFindFullyMappedEdges(std::vector<edgeKmerPosition>  read_mapping, int read_length, int count);
-        std::vector<edgeKmerPosition> LMPMapper::readOffsetFilter(std::vector<edgeKmerPosition> data);
+        std::vector<edgeKmerPosition> readOffsetFilter(std::vector<edgeKmerPosition> data);
         std::string path_str(ReadPath path);
         };
 #endif //W2RAP_CONTIGGER_LMP_MAPPER_H

@@ -64,9 +64,13 @@ void LMPMapper::mapReads(){
     int unmapped_reads_r1 = 0;
     int unmapped_reads_r2 = 0;
     std::map<uint64_t, std::atomic<int>> mapping_counts;
+    int kmers_in_read
     #pragma omp parallel for num_threads(8) reduction(+: mapped_to_single_edge_r1, mappted_to_multiple_edge_r1, mapped_to_single_edge_r2, mappted_to_multiple_edge_r2, unmapped_reads_r1, unmapped_reads_r2)
     for (int i=0; i < lmp_reads.size(); i++){
         std::string read = (lmp_reads)[i].ToString();
+        // make guess that if mapped edges contains loads more than the number of kmers in the read, the mappings probably aren't seful
+        // actually first just see if it mapping to loads of edges is an issue
+        kmers_in_read = read.length() - 31; // k is hard coded at present
         std::vector<edgeKmerPosition> mapped_edges = kMatch.lookupRead(read);
         if (mapped_edges.size() > 1000){
             std::cout << "mapped edges size: " << mapped_edges.size() << " read index: " << i << std::endl;
@@ -80,6 +84,10 @@ void LMPMapper::mapReads(){
                     current_edge_id = mapping.edge_id;
                     distinct_edge_ids += 1;
                 }
+                if (distinct_edge_ids > 5){// total guess....
+                    mapped_edges.clear();
+                }
+
         }
             if (distinct_edge_ids == 1 && i%2==1){
                 mapped_to_single_edge_r2 += 1;

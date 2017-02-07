@@ -32,8 +32,7 @@
 #include <paths/long/large/ImprovePath.h>
 #include "GFADump.h"
 
-// [GONZA]
-#include "test_code/pacbio/pacbio_pather.h"
+
 
 std::string checkpoint_perf_time(const std::string section_name){
     static double wtimer, cputimer;
