@@ -50,23 +50,6 @@ public:
 
 typedef std::vector<Insert> VecInsert;
 
-struct Mapper : public std::unary_function<unsigned char,char>
-{ char operator()( unsigned char val ) const { return "ACGT- "[val]; } };
-
-void print( VecUCharVec const& vucv )
-{
-    static SpinLockedData gLock;
-
-    SpinLocker locker(gLock);
-    typedef VecUCharVec::const_iterator Itr;
-    for ( Itr itr(vucv.begin()), end(vucv.end()); itr != end; ++itr )
-    {
-        std::transform(itr->begin(),itr->end(),
-                        std::ostream_iterator<char>(std::cout),Mapper());
-        std::cout << std::endl;
-    }
-}
-
 }
 void AlignFriendsToFounder( vecbvec const& friends, size_t founderIdx,
                    VecAlign const& alignments, Scorer const& scorer,

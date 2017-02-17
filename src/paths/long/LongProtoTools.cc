@@ -23,7 +23,6 @@
 #include "reporting/PerfStat.h"
 #include "paths/long/CreateGenome.h"
 #include "paths/long/Friends.h"
-#include "paths/long/ultra/GetFriendsAndAlignsInitial.h"
 #include "paths/long/LargeKDispatcher.h"
 #include "paths/long/LongProtoTools.h"
 #include "paths/long/MakeKmerStuff.h"
