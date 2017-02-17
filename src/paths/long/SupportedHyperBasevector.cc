@@ -13,7 +13,6 @@
 #include "ParallelVecUtilities.h"
 #include "Set.h"
 #include "VecUtilities.h"
-#include "fastg/FastgGraph.h"
 #include "math/Functions.h"
 #include "paths/BigMapTools.h"
 //#include "paths/PairedPair.h"

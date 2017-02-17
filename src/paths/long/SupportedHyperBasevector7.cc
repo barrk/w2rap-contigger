@@ -11,113 +11,12 @@
 
 #include "Basevector.h"
 #include "MainTools.h"
-#include "fastg/FastgGraph.h"
 #include "paths/HyperBasevector.h"
 #include "paths/long/CleanEfasta.h"
 #include "paths/long/LargeKDispatcher.h"
 #include "paths/long/MakeKmerStuff.h"
 #include "paths/long/SupportedHyperBasevector.h"
 
-namespace { // open anonymous namespace
-
-template<int K2> void MapAssembly( const HyperBasevector& hb, 
-     const HyperBasevector& hb_orig, vec< vec<int> >& content, const int verbosity )
-{    if ( verbosity >= 1 ) std::cout << Date( ) << ": mapping hb onto hb_orig" << std::endl;
-     vecbasevector B;
-     for ( int e = 0; e < hb_orig.EdgeObjectCount( ); e++ )
-          B.push_back_reserve( hb_orig.EdgeObject(e) );
-     vec< triple<kmer<K2>,int,int> > kmers_plus;
-     MakeKmerLookup1( B, kmers_plus );
-     vec< kmer<K2> > kmers( kmers_plus.size( ) );
-     for ( size_t i = 0; i < kmers.size( ); i++ )
-          kmers[i] = kmers_plus[i].first;
-     content.resize( hb.EdgeObjectCount( ) );
-     for ( int e = 0; e < hb.EdgeObjectCount( ); e++ )
-     {    const basevector& b = hb.EdgeObject(e);
-          kmer<K2> x;
-          int pos = 0;
-          while( pos < b.isize( ) - (K2-1) )
-          {    x.SetToSubOf( b, pos );
-               int64_t low = LowerBound( kmers, x );
-               int64_t high = UpperBound( kmers, x );
-
-               // A kmer in hb cannot occur more than once in hb_orig.  However,
-               // note that it is possible (but rare, and perhaps never occurred) 
-               // to have a kmer in hb that is not present in hb_orig.  The reason 
-               // for this is that at some point two edges in hb_orig might have 
-               // been joined along a (K-1)-base overlap, resulting in the creation 
-               // of new kmers.  It is not entirely clear what the implications of 
-               // this are here.
-
-               if ( high == low )
-               {    pos++;
-                    continue;    }
-               ForceAssertEq( high, low + 1 );
-
-               int id = kmers_plus[low].second;
-               content[e].push_back(id);
-               if ( verbosity >= 1 ) PRINT2( e, id );
-
-               // There used to be an assert here, but it doesn't work when there
-               // are instances of high = low, as discussed above.
-
-               // ForceAssertEq( kmers_plus[low].third, 0 );
-
-               pos += B[id].isize( ) - (K2-1) - kmers_plus[low].third;    }    }    }
-
-template <int K>
-struct MapAsmFunctor
-{
-    void operator()( const HyperBasevector& hb,  const HyperBasevector& hb_orig,
-                        vec< vec<int> >& content, const int verbosity )
-    { MapAssembly<K>(hb,hb_orig,content,verbosity); }
-};
-
-void MapOne( const vec<int>& u, const vec< vec< std::pair<int,int> > >& cindex,
-     const vec< vec<int> >& content, const HyperBasevector& hb,
-     const vec<int>& to_right, vec< vec<int> >& fulls, vec<int>& fulls_pos )
-{
-     fulls.clear( );
-     fulls_pos.clear( );
-     vec< triple< vec<int>, int, int > > partials;
-     const vec< std::pair<int,int> >& locs = cindex[ u[0] ];
-     for ( int j = 0; j < locs.isize( ); j++ )
-     {    int x = locs[j].first, y = locs[j].second;
-          Bool mismatch = False;
-          int l;
-          for ( l = 0; l < u.isize( ); l++ )
-          {    if ( y+l == content[x].isize( ) ) break;
-               if ( content[x][y+l] != u[l] ) 
-               {    mismatch = True;
-                    break;    }    }
-          if (mismatch) continue;
-          vec<int> p(1);
-          p[0] = x;
-          partials.push( p, l, y );    }
-     while( partials.nonempty( ) )
-     {    vec<int> p = partials.back( ).first;
-          int pos = partials.back( ).second;
-          int y = partials.back( ).third;
-          partials.pop_back( );
-          if ( pos == u.isize( ) )
-          {    fulls.push_back(p);
-               fulls_pos.push_back(y);
-               continue;    }
-          int v = to_right[ p.back( ) ];
-          for ( int j = 0; j < hb.From(v).isize( ); j++ )
-          {    int l, e = hb.EdgeObjectIndexByIndexFrom( v, j ); 
-               Bool mismatch = False;
-               for ( l = pos; l < u.isize( ); l++ )
-               {    if ( l-pos == content[e].isize( ) ) break;
-                    if ( content[e][l-pos] != u[l] ) 
-                    {    mismatch = True;
-                         break;    }    }
-               if (mismatch) continue;
-               vec<int> q(p);
-               q.push_back(e);
-               partials.push( q, l, y );    }    }    }
-
-} // close anonymous namespace
 
 // TransformPaths: replace each occurrence of x[i] by y[i].
 
@@ -344,8 +243,6 @@ void SupportedHyperBasevector::DumpFiles( const String& head,
           fout << ">edge_" << e << " " << v << ":" << w 
                << " K=" << K( ) << " kmers=" << EdgeLengthKmers(e) << "\n";
           EdgeObject(e).Print(fout);    }    
-
-     if(logc.MAKE_FASTG) fastg::WriteFastg(head+".fastg", *this);
 
      // Output .glocs and .gpaths.
 

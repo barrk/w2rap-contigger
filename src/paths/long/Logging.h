@@ -246,8 +246,6 @@ LoggingBool( STATUS_LOGGING, True, "generate cryptic logging that reports on the
 
 LoggingBool( MIN_LOGGING, True, "generate at least minimal logging" );
 
-LoggingBool( MAKE_FASTG, False, "generates fastg output when OUT_INT_HEAD is ON");
-
      // Test for illegal arguments.
 
      Bool fail = False;
@@ -326,7 +324,6 @@ LoggingBool( MAKE_FASTG, False, "generates fastg output when OUT_INT_HEAD is ON"
      Bool PRINT_BAMS;
      Bool STATUS_LOGGING;
      Bool MIN_LOGGING;
-     Bool MAKE_FASTG;
      Bool USE_GENOME_FOR_DUMP;
 
 };

@@ -13,7 +13,7 @@
 #include "PairsManager.h"
 #include "ParallelVecUtilities.h"
 #include "VecUtilities.h"
-#include "efasta/AmbiguityScore.h"
+//#include "efasta/AmbiguityScore.h"
 #include "efasta/EfastaTools.h"
 #include "graph/Digraph.h"
 #include "math/Functions.h"
