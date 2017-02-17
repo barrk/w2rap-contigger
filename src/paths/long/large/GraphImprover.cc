@@ -104,7 +104,7 @@ std::set<uint64_t> GraphImprover::expand_cannonical_repeats(uint64_t min_support
         //std::cout<<"repeat solved!  ("<<ins<<":"<<outs<<") ";
         for (auto i=0;i<ins;++i) {
             //TODO: is it right to assume the inverse will exist by definition? it should...
-            if (in_edges[i]<mInv[outdest[i]]) canonical_separations.push_back({in_edges[i],r_edge,outdest[i]});
+            if (in_edges[i]<mInv[outdest[i]]) canonical_separations.push_back({in_edges[i],(uint64_t)r_edge,outdest[i]});
             //std::cout<<in_edges[i]<<"->"<<r_edge<<"->"<<outdest[i]<<"  ";
         }
         //std::cout<<std::endl;
