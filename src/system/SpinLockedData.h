@@ -28,7 +28,7 @@ class SpinLockedData
 public:
     SpinLockedData() : m_flag(false) {};
     inline void lock()     noexcept {   while(std::atomic_exchange_explicit(&m_flag, true, std::memory_order_acquire)); }
-    inline void unlock()   noexcept {   std::atomic_exchange_explicit(&m_flag, false, std::memory_order_release); }
+    inline void unlock()   noexcept {   m_flag=false; }
 };
 
 /// Something that operates a spin-lock, and never forgets to unlock it.
