@@ -11,7 +11,6 @@
 
 #include "CoreTools.h"
 
-#include "paths/long/EvalByReads.h"
 #include "paths/long/SupportedHyperBasevector.h"
 
 namespace { // open anonymous namespace
