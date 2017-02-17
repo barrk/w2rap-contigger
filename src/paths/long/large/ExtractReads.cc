@@ -15,16 +15,11 @@
 #include "FastIfstream.h"
 #include "FetchReads.h"
 #include "PairsManager.h"
-#include "ParseSet.h"
-#include "Qualvector.h"
 #include "TokenizeString.h"
-#include "bam/ReadBAM.h"
-#include "feudal/ObjectManager.h"
 #include "feudal/PQVec.h"
 #include "math/HoInterval.h"
 #include "paths/long/LoadCorrectCore.h"
 #include "paths/long/large/ExtractReads.h"
-#include "paths/long/large/ReadNameLookup.h"
 
 void ExtractReads( String reads, const String& work_dir, vecbvec* pReads, VecPQVec* quals )
 {
