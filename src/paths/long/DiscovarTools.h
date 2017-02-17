@@ -24,41 +24,8 @@ namespace DiscovarTools{
 
     void ExitAssemblyEmpty( );
     void ExitPathsEmpty( );
-    void ExitNoReads( );
     void ExitNoCorrectedReads( );
     void ExitShortReads( const String& additional_info="" );
-
-    // Final message and exit 1 when something really wrong.
-
-    void DiscovarUnhappy( );
-
-
-    //check if parsed REGIONS input is valid or not
-    void CheckDiscovarRegions( const String& REGIONS );
-
-    //check if parsed OUT_HEAD input is valid or not
-    void CheckDiscovarOutHead( const String& OUT_HEAD );
-
-    //check if parsed TMP input is valid or not
-    void CheckDiscovarTmp( const String& TMP );
-
-    //check if parsed READS input is valid or not
-    void CheckDiscovarReads( const String& READS );
-
-    void TestDiscovarRegionsBamsCompatibility( const String& REGIONS,
-         const vec<String>& bams );
-
-    void ExitSamtoolsFailed( );
-
-    void CheckReferenceInput( const String& REFERENCE, const String& OUT_HEAD );
-
-    // Forbids region longer than certain length
-    const size_t MaxRegionSize=50000000; // Maximum allowable region size
-    void CheckRegionSize(size_t size,const String&sPrefix=""); // helper function: check if 'size' is longer than MaxRegionSize
-
-    // Forbids total BAM file size over certain number of bytes, typically called when REGIONS="all", which is then translated to REGIONS==""
-    const size_t MaxBAMSize=10ULL*1024*1024*1024; // Maximum allowable BAM size
-    void CheckBAMSize(size_t size,const String& REGIONS); // helper function: check if 'size' is larger than MaxBAMSize if REGIONS=="all" or ""
 
 }//namespace DiscovarTools
 

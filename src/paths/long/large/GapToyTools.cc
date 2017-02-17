@@ -10,18 +10,10 @@
 // MakeDepend: cflags OMP_FLAGS
 
 #include "Basevector.h"
-#include "CoreTools.h"
-#include "FetchReads.h"
-#include "Intvector.h"
-#include "IteratorRange.h"
 #include "PairsManager.h"
 #include "ParallelVecUtilities.h"
-#include "Qualvector.h"
-#include "TokenizeString.h"
 #include "efasta/EfastaTools.h"
 #include "feudal/HashSet.h"
-#include "graph/DigraphTemplate.h"
-#include "kmers/KMerHasher.h"
 #include "paths/HyperBasevector.h"
 #include "paths/ReadsToPathsCoreX.h"
 #include "paths/RemodelGapTools.h"

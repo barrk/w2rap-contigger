@@ -10,29 +10,19 @@
 // MakeDepend: cflags OMP_FLAGS
 
 #include "Basevector.h"
-#include "CoreTools.h"
 #include "PairsManager.h"
 #include "ParseSet.h"
 #include "Qualvector.h"
 #include "paths/FindErrorsCore.h"
 #include "paths/HyperKmerPath.h"
 #include "kmers/naif_kmer/KernelKmerStorer.h"
-#include "lookup/LibInfo.h"
 #include "paths/long/Correct1Pre.h"
 #include "paths/long/CorrectPairs1.h"
 #include "paths/long/FillPairs.h"
-#include "paths/long/Heuristics.h"
 #include "paths/long/LoadCorrectCore.h"
-#include "paths/long/Logging.h"
-#include "paths/long/LongProtoTools.h"
 #include "paths/long/LongReadsToPaths.h"
 #include "paths/long/PreCorrectAlt1.h"
 #include "paths/long/PreCorrectOldNew.h"
-#include "paths/long/DiscovarTools.h"
-#include <numeric>
-#include <type_traits>
-#include "util/w2rap_timers.h"
-#include "ReadStack.h"
 
 void PopulateSpecials( const vecbasevector& creads, const PairsManager& pairs,
      const vecbasevector& creads_done, const vec<Bool>& done,

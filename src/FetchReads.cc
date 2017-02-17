@@ -30,11 +30,8 @@
 /// the sequence ids to be returned.
 
 #include "Basevector.h"
-#include "CoreTools.h"
 #include "FastIfstream.h"
 #include "FetchReads.h"
-#include "Qualvector.h"
-#include "random/Random.h"
 
 // Heuristic constants:
 

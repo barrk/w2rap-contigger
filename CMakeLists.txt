@@ -99,7 +99,6 @@ add_library(base_libs OBJECT
         src/kmers/KMerContext.cc
         src/kmers/KmerRecord.cc
         src/kmers/ReadPather.cc
-        src/lookup/SAM.cc
         src/math/Functions.cc
         src/math/HoInterval.cc
         src/math/Matrix.cc
@@ -169,9 +168,6 @@ add_library(base_libs OBJECT
         src/paths/long/DigraphFromWords.cc
         src/paths/long/KmerCount.cc
         src/paths/long/LongHyper.cc
-        #src/paths/long/RefTrace.cc
-        #src/paths/long/RefTraceControl.cc
-        #src/paths/long/RefTraceTools.cc
         src/paths/long/SupportedHyperBasevector.cc
         src/paths/long/SupportedHyperBasevector3.cc
         src/paths/long/SupportedHyperBasevector4.cc
