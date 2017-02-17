@@ -22,7 +22,6 @@
 #include "paths/long/LargeKDispatcher.h"
 #include "paths/long/LongProtoTools.h"
 #include "paths/long/SupportedHyperBasevector.h"
-//#include "paths/long/ultra/MakeBlocks.h"
 
 void ReportPeakMem( const String msg )
 {    std::cout << Date( ) << ": " << msg << ( msg != "" ? ", " : "" ) 
