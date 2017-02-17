@@ -82,18 +82,14 @@ class long_logging_control {
 // uninitialized
 //     long_logging_control( ) { }
 
-     long_logging_control( const ref_data& ref, vec<ref_loc>* readlocs, 
-          const String& OUT_INT_HEAD, const String& VERB )
+     long_logging_control( const ref_data& ref, vec<ref_loc>* readlocs)
           : G(&ref.G), G3(&ref.G3), G3plus(&ref.G3plus), Gplus_ext(&ref.Gplus_ext), 
           is_circular(&ref.is_circular), ploidy(&ref.ploidy), LG(ref.LG), 
           Glocs(&ref.Glocs), G3locs(&ref.G3locs), G3pluslocs(&ref.G3pluslocs), 
-          readlocs(readlocs), OUT_INT_HEAD(OUT_INT_HEAD)
-          {    vec<String> m;
-               ParseStringSet( VERB, m );
-               for ( int j = 0; j < m.isize( ); j++ )
-               {    ForceAssert( m[j].Contains( ":" ) );
-                    verb.x.push( m[j].Before( ":" ), 
-                         m[j].After( ":" ).Int( ) );    }    }
+          readlocs(readlocs)
+          {
+
+          }
 
      const vecbasevector* G;
      const vecbasevector* G3;
@@ -106,8 +102,6 @@ class long_logging_control {
      const VecIntPairVec* G3locs;
      const VecIntPairVec* G3pluslocs;
      vec<ref_loc>* readlocs;
-     String OUT_INT_HEAD;
-     simple_map verb;
 
      vec<placementy> FindGenomicPlacements( const basevector& b ) const
      {    vec<placementy> p = FindGenomicPlacementsY( 0, b, LG, *G3plus, 

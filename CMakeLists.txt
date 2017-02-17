@@ -167,26 +167,25 @@ add_library(base_libs OBJECT
         src/paths/Unipath.cc
         src/paths/long/AssessBestAlignCore.cc
         src/paths/long/CleanEfasta.cc
-        src/paths/long/CreateGenome.cc
+        #src/paths/long/CreateGenome.cc
         src/paths/long/DigraphFromWords.cc
-        src/paths/long/EvalByReads.cc
+        #src/paths/long/EvalByReads.cc
         src/paths/long/KmerCount.cc
         src/paths/long/LongHyper.cc
-        src/paths/long/ReadOriginTracker.cc
-        src/paths/long/RefTrace.cc
-        src/paths/long/RefTraceControl.cc
-        src/paths/long/RefTraceTools.cc
+        #src/paths/long/RefTrace.cc
+        #src/paths/long/RefTraceControl.cc
+        #src/paths/long/RefTraceTools.cc
         src/paths/long/SupportedHyperBasevector.cc
         src/paths/long/SupportedHyperBasevector3.cc
         src/paths/long/SupportedHyperBasevector4.cc
         src/paths/long/SupportedHyperBasevector5.cc
         src/paths/long/SupportedHyperBasevector6.cc
         src/paths/long/SupportedHyperBasevector7.cc
-        src/paths/long/VariantCallTools.cc
-        src/paths/long/VariantFilters.cc
-        src/paths/long/VariantPostProcess.cc
-        src/paths/long/VariantReadSupport.cc
-        src/paths/long/Variants.cc
+        #src/paths/long/VariantCallTools.cc
+        #src/paths/long/VariantFilters.cc
+        #src/paths/long/VariantPostProcess.cc
+        #src/paths/long/VariantReadSupport.cc
+        #src/paths/long/Variants.cc
         src/paths/long/large/CN1PeakFinder.cc
         src/paths/long/large/GapToyTools.cc
         src/paths/long/large/GapToyTools3.cc
@@ -233,7 +232,6 @@ add_library(specific_w2rap-contigger OBJECT
         src/paths/long/large/Repath.cc
         src/system/Crash.cc
         src/util/PeakFinder.h
-        src/paths/long/DisplayTools.cc
         src/paths/long/large/FinalFiles.cc
         src/paths/long/large/MakeGaps.cc
         src/paths/long/large/Simplify.cc

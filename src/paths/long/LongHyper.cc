@@ -171,53 +171,25 @@ Bool LongHyper(const VecEFasta &correctede, const vec<pairing_info> &cpartner, S
                         incomplete = True;
                         bad = True;
                     }
-                    if (logc.TRACE_READS && i == 0) {
-                        std::cout << "\n" << (pass == 1 ? "+" : "-")
-                                  << origin[id].first << "."
-                                  << origin[id].second + 1 << "\n";
-                    }
                     if (i == 0 && j == M.isize() && !incomplete) {
                         i = j - 1;
                         continue;
                     }
                     int last = (i == 0 ? -1 : M2.back().first.Stop());
                     if (M[i].first.Start() > last + 1) {
-                        if (logc.TRACE_READS) {
-                            std::cout << last + 1 << "-" << M[i].first.Start() - 1
-                                      << " --> MISSING\n";
-                        }
                         bad = True;
                     }
                     M2.push(ho_interval(M[i].first.Start(),
                                         M[j - 1].first.Stop()), M[i].second,
                             ho_interval(M[i].third.Start(),
                                         M[j - 1].third.Stop()));
-                    if (logc.TRACE_READS) {
-                        std::cout << M[i].first.Start() << "-"
-                                  << M[j - 1].first.Stop() << " --> "
-                                  << M[i].second << "." << M[i].third.Start()
-                                  << "-" << M[j - 1].third.Stop()
-                                  << (incomplete ? " [INCOMPLETE]" : "")
-                                  << "\n";
-                    }
                     if (j == M.isize() && M[j - 1].first.Stop()
                                           < p.KmerCount() - 1) {
-                        if (logc.TRACE_READS) {
-                            std::cout << M[j - 1].first.Stop() + 1 << "-"
-                                      << p.KmerCount() - 1
-                                      << " --> MISSING\n";
-                        }
                         bad = True;
                     }
                     i = j - 1;
                 }
                 if (!bad && u.nonempty()) {
-                    if (logc.TRACE_READS) {
-                        std::cout << "u =";
-                        for (int j = 0; j < u.isize(); j++)
-                            std::cout << " " << u[j];
-                        std::cout << "\n";
-                    }
                     us.push_back(u);
                     if (pass == 1) {
                         weight_fw.push_back(fix64_6(1, origin[id].third));
@@ -308,18 +280,6 @@ Bool LongHyper(const VecEFasta &correctede, const vec<pairing_info> &cpartner, S
             weights_rc_origin.push_back(wrc);
             i = j - 1;
         }
-        if (logc.TRACE_READS) {
-            std::cout << "\ntraces:\n";
-            for (int i = 0; i < usu.isize(); i++) {
-                std::cout << "[" << i + 1 << "," << std::setiosflags(std::ios::fixed)
-                          << std::setprecision(1) << count_fw[i] + count_rc[i]
-                          << std::resetiosflags(std::ios::fixed) << "x]";
-                for (int j = 0; j < usu[i].isize(); j++)
-                    std::cout << " " << usu[i][j];
-                std::cout << "\n";
-            }
-            std::cout << "\n";
-        }
         if (logc.STATUS_LOGGING)
             std::cout << Date() << ": read tracing complete" << std::endl;
     }
@@ -351,7 +311,6 @@ Bool LongHyper(const VecEFasta &correctede, const vec<pairing_info> &cpartner, S
     REPORT_TIME(z1clock, "used after tracing");
     shb.FixWeights(logc);
     shb.TestValid(logc);
-    shb.DumpFilesStandard(log_control, logc, 1);
 
     return True;
 }

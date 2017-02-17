@@ -117,8 +117,6 @@ LoggingBool( PRINT_READ, False, "print read and true genome sequence" );
 LoggingBool( PRINT_BLOCK_ERROR_RATES, False,
      "print error rate for each block for each friend, and aggregate" );
 
-LoggingBool( TRACE_READS, False, "trace path of reads on assembly" );
-
 LoggingBool( EVAL_CORRECTED, False, "evaluate corrected reads" );
 
 LoggingBool( EVAL_UNCORRECTED, False, "evaluate uncorrected reads" );
@@ -278,7 +276,6 @@ LoggingBool( MIN_LOGGING, True, "generate at least minimal logging" );
      Bool PRINT_EDITS;
      Bool PRINT_READ;
      Bool PRINT_BLOCK_ERROR_RATES;
-     Bool TRACE_READS;
      Bool EVAL_CORRECTED;
      Bool EVAL_UNCORRECTED;
      Bool ANALYZE;

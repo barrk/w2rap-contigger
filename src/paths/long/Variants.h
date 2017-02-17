@@ -34,12 +34,7 @@ public:
     vec<basevector> branches; // 0 - branch1, 1-branch2
 };
 
-// Mark the variants from the hyper efasta assembly. Return the actual number marked.
-int MarkVariants( HyperEfasta& he, const vec<VariantSignature>& v_signatures,
-     const long_logging& logc );
 
-void VariantsMarkedDot(const String& head, const SupportedHyperBasevector& shb, 
-       const vec<int>& varient_edge_list, const long_logging& logc );
 
 void ReftraceVariants(std::ostream& out, std::ostream& callsOut, const vecbasevector& G, 
         const vecbasevector& Gplus, const vec<int>& Gplus_ext, 

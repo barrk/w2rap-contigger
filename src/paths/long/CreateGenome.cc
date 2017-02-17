@@ -12,21 +12,11 @@
 #include <sys/time.h>
 
 #include "Basevector.h"
-#include "CoreTools.h"
-#include "FastIfstream.h"
-#include "FetchReads.h"
 #include "ParallelVecUtilities.h"
-#include "ParseSet.h"
-#include "TokenizeString.h"
-#include "math/Functions.h"
 #include "paths/HyperBasevector.h"
 #include "paths/LongReadTools.h"
 #include "paths/long/CreateGenome.h"
 #include "paths/long/LongProtoTools.h"
-#include "random/Random.h"
-#include "system/Worklist.h"
-#include "paths/long/RefTrace.h"
-#include "paths/long/RefTraceControl.h"
 
 
 namespace

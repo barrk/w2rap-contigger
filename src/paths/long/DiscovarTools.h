@@ -34,12 +34,6 @@ namespace DiscovarTools{
 
     void DiscovarUnhappy( );
 
-    void CheckDiscovarSystemRequirements( );
-
-    void CheckDiscovarBams( const vec<String>& bams );
-
-    //check if REGIONS input is valid or not
-    void CheckDiscovarRegionsInput(const String& REGIONS);
 
     //check if parsed REGIONS input is valid or not
     void CheckDiscovarRegions( const String& REGIONS );

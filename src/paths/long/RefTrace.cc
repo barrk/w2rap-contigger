@@ -83,7 +83,7 @@
 #include "polymorphism/Edit.h"
 //#include "reporting/PerfStat.h"
 #include "paths/long/Variants.h"
-#include "paths/long/ReadOriginTracker.h"
+//#include "paths/long/ReadOriginTracker.h"
 #include "paths/long/CreateGenome.h"
 #include "paths/long/Logging.h"
 #include "util/NullOStream.h"
@@ -454,15 +454,5 @@ RefTraceResults RefTrace( const ref_data& ref,
 }
 
 
-RefTraceResults RefTraceAndCallVaraint( const ref_data& ref,
-     const HyperBasevector& hb, const vec<int>& inv, 
-     const int verbosity, const long_logging& logc, 
-     std::ostream& out, std::ostream& callsOut, RefTraceHeuristics rth,
-     const String& BEST_GLOBAL_OUT, const Bool fix_bug,
-     const RefTraceControl& ref_trace_control, 
-     const ReadOriginTracker* p_read_tracker)
-{
-    return RefTraceInternal(ref, hb, inv, verbosity, logc, out, callsOut,
-            rth, BEST_GLOBAL_OUT, fix_bug, &ref_trace_control, p_read_tracker);
-}
+
 

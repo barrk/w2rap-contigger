@@ -180,11 +180,4 @@ private:
 
 
 
-// Given the variants and callers, find the multiple placement of the caller
-// edges and genome location (gid, pos) of the alternative placement.
-void FindVariantFriends(const vec<VariantCallGroup>& vcall_groups, 
-        const vec<vec<align>>& all_aligns, const HyperBasevector& hbp,
-        const vec<std::pair<int,Bool>>& hbp_to_hb,
-        std::map<Variant, vec<std::pair<int,int>>> *p_var_friending);
-
 #endif

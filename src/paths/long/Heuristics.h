@@ -171,8 +171,6 @@ HeuristicBool( PACBIO_PATCH, False,
 HeuristicBool( CORRECT_PACBIO_PATCH, True, 
         "validate and correct pacbio patches in fosmid assembly" );
 
-HeuristicBool( DETECT_VARIANTS, False, "mark SNP bubble edges in efasta" );
-
 HeuristicBool( PRECORRECT_OLD_NEW, False, "run PreCorrectOldNew" );
 
 HeuristicBool( PRECORRECT_ALT1, False,
@@ -348,7 +346,6 @@ HeuristicString( REQUIRE_EDGE_MATCH, "",
      Bool DIVINE_STRONG;
      Bool PACBIO_PATCH;
      Bool CORRECT_PACBIO_PATCH;
-     Bool DETECT_VARIANTS;
      Bool PRECORRECT_OLD_NEW;
      Bool PRECORRECT_ALT1;
      Bool CORRECT_PAIRS;

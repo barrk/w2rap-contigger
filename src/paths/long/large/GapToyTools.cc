@@ -119,7 +119,7 @@ void MakeLocalAssembly2(VecEFasta &corrected,
     logc.MIN_LOGGING = False;
     ref_data ref;
     vec<ref_loc> readlocs;
-    long_logging_control log_control(ref, &readlocs, "", "");
+    long_logging_control log_control(ref, &readlocs);
     long_heuristics heur("");
     heur.K2_FLOOR = K2_FLOOR;
     int count = 0;

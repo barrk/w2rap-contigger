@@ -20,7 +20,7 @@
 #include "util/TextTable.h"
 #include "graph/Digraph.h"
 #include "graph/DigraphTemplate.h"
-#include "paths/long/ReadOriginTracker.h"
+//#include "paths/long/ReadOriginTracker.h"
 #include "paths/long/EvalByReads.h"
 
 namespace {
