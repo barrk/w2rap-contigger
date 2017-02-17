@@ -69,9 +69,8 @@ void step_3(HyperBasevector &hbv,
             unsigned int minFreq,
             unsigned int small_K,
             std::string out_dir) {
-    bool FILL_JOIN = False;
 
-    buildReadQGraph(bases, quals, kmercounts, FILL_JOIN, FILL_JOIN, minFreq, .75, 0, &hbv, &paths, small_K);
+    buildReadQGraph(bases, quals, kmercounts, minFreq, &hbv, &paths, small_K);
 
     kmercounts.reset();
     OutputLog(2)<<"computing graph involution and fragment sizes"<<std::endl;

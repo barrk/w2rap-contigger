@@ -90,26 +90,8 @@ namespace
             other.kc=kc.mVal;
         }
         unsigned char count;
-
         KMerContext kc;
     };
-
-
-
-    inline void summarizeEntries( BRQ_Entry* e1, BRQ_Entry* e2 )
-    {
-        KMerContext kc;
-        size_t count = 0;
-        while ( e2-- != e1 )
-        {
-            KDef const& kDef = e2->getKDef();
-            kc |= kDef.getContext();
-            count += std::max(kDef.getCount(),1ul);
-        }
-        KDef& kDef = e1->getKDef();
-        kDef.setContext(kc);
-        kDef.setCount(count);
-    }
 
     class EdgeBuilder {
     public:
@@ -365,24 +347,6 @@ namespace
     }
 
 
-    template <class Itr1, class Itr2, class ItrW, typename sumType >
-    size_t fuzzyMatchLen( Itr1 itr1, Itr1 end1, Itr2 itr2, Itr2 end2,
-                          ItrW itrw, ItrW endw, sumType& maxWeight)
-    {
-        size_t result = 0;
-
-        while ( itr1 != end1 && itr2 != end2 && itrw != endw )
-        {
-            if ( *itr1 != *itr2 ) maxWeight -= *itrw;
-
-            if ( maxWeight < 0 ) break;             // EARLY EXIT!
-
-            ++result; ++itr1; ++itr2; ++itrw;
-        }
-
-        return result;
-    }
-
     class EdgeLoc
     {
     public:
@@ -545,236 +509,6 @@ namespace
         vecbvec const& mEdges;
         std::vector<PathPart> mPathParts;
     };
-
-    class GapFiller
-    {
-    public:
-        GapFiller( vecbvec const& reads, vecbvec const& edges, unsigned maxGapSize,
-                   unsigned minFreq, BRQ_Dict* pDict )
-                : mReads(reads), mDict(*pDict), mPather(*pDict,edges),
-                  mMaxGapSize(maxGapSize), mMinFreq(minFreq) {}
-
-        template <class OItr>
-        void map( size_t readId, OItr oItr )
-        { bvec const& read = mReads[readId];
-            std::vector<PathPart> const& parts = mPather.path(read);
-            if ( parts.size() < 3 ) return; // EARLY RETURN!
-            auto rItr = read.begin(parts[0].getLength());
-            auto end = parts.end()-1;
-            // for each path part sandwiched between two others
-            for ( auto pPart=parts.begin()+1; pPart != end; ++pPart )
-            { // if it's not a gap of appropriate size
-                if ( !pPart->isGap() ||
-                     (mMaxGapSize && pPart->getLength() > mMaxGapSize) ||
-                     // or if it fits cleanly on the existing graph
-                     pPart->isConformingCapturedGap(MAX_JITTER) )
-                { rItr += pPart->getLength();
-                    continue; } // just CONTINUE
-                // we have a gap of appropriate size, and it has new, interesting kmers
-                // that might change the graph structure
-                auto itr = rItr - 1;
-                BRQ_Kmer kkk(itr); itr += K;
-                update(kkk,KMerContext::initialContext(*itr));
-                auto last = itr + pPart->getLength();
-                while ( itr != last )
-                { unsigned char predCode = kkk.front();
-                    kkk.toSuccessor(*itr);
-                    KMerContext kc(predCode,*++itr);
-                    *oItr++ = kkk.isRev()?BRQ_Entry(BRQ_Kmer(kkk).rc(),kc.rc()) : BRQ_Entry(kkk,kc); }
-                KMerContext kc = KMerContext::finalContext(kkk.front());
-                kkk.toSuccessor(*itr);
-                update(kkk,kc);
-                rItr += pPart->getLength(); } }
-
-        void reduce( BRQ_Entry* e1, BRQ_Entry* e2 )
-        { summarizeEntries(e1,e2);
-            if ( e1->getKDef().getCount() >= mMinFreq )
-            { mDict.insertEntry(std::move(*e1)); } }
-
-        BRQ_Entry* overflow( BRQ_Entry* e1, BRQ_Entry* e2 )
-        { if ( e2-e1 > 1 ) summarizeEntries(e1,e2); return e1+1; }
-
-    private:
-        void update( BRQ_Kmer kmer, KMerContext kc )
-        { if ( kmer.isRev() ) { kmer.rc(); kc=kc.rc(); }
-            mDict.applyCanonical(kmer,
-                                 [kc](BRQ_Entry const& ent)
-                                 { KDef& kd = const_cast<KDef&>(ent.getKDef());
-                                     kd.setContext(kc|kd.getContext()); }); }
-
-        static unsigned const MAX_JITTER = 1;
-        vecbvec const& mReads;
-        BRQ_Dict& mDict;
-        BRQ_Pather mPather;
-        unsigned mMaxGapSize;
-        unsigned mMinFreq;
-    };
-    typedef MapReduceEngine<GapFiller,BRQ_Entry,BRQ_Kmer::Hasher> GFMRE;
-
-    void fillGaps( vecbvec const& reads, unsigned maxGapSize, unsigned minFreq,
-                   vecbvec* pEdges, BRQ_Dict* pDict )
-    {
-        //std::cout << Date() << ": filling gaps." << std::endl;
-        GapFiller gf(reads,*pEdges,maxGapSize,minFreq,pDict);
-        GFMRE mre(gf);
-        if ( !mre.run(5*reads.size(),0ul,reads.size()) )
-            FatalErr("Map/Reduce operation failed in gap filling.");
-
-        //std::cout << "Now the dictionary has " << pDict->size()
-        //                << " entries." << std::endl;
-
-        //std::cout << Date() << ": finding edge sequences again." << std::endl;
-        pDict->nullEntries();
-        pDict->recomputeAdjacencies();
-        pEdges->clear();
-        buildEdges(*pDict,pEdges);
-    }
-
-    class BRQ_Join
-    {
-    public:
-        BRQ_Join( EdgeLoc const& edgeLoc1, EdgeLoc const& edgeLoc2, unsigned overlap )
-                : mEdgeLoc1(edgeLoc1), mEdgeLoc2(edgeLoc2), mOverlap(overlap)
-        {}
-
-        EdgeLoc const& getEdgeLoc1() const { return mEdgeLoc1; }
-        EdgeLoc const& getEdgeLoc2() const { return mEdgeLoc2; }
-        unsigned getOverlap() const { return mOverlap; }
-
-        size_t hash() const
-        { return 47 * (47*mEdgeLoc1.hash()+mEdgeLoc2.hash()) + mOverlap; }
-
-        struct Hasher
-        { size_t operator()( BRQ_Join const& join ) { return join.hash(); } };
-
-        friend bool operator<( BRQ_Join const& join1, BRQ_Join const& join2 )
-        { if ( join1.mEdgeLoc1 < join2.mEdgeLoc1 ) return true;
-            if ( join2.mEdgeLoc1 < join1.mEdgeLoc1 ) return false;
-            if ( join1.mEdgeLoc2 < join2.mEdgeLoc2 ) return true;
-            if ( join2.mEdgeLoc2 < join1.mEdgeLoc2 ) return false;
-            return join1.mOverlap < join2.mOverlap; }
-
-        friend std::ostream& operator<<( std::ostream& os, BRQ_Join const& join )
-        { return os << join.mEdgeLoc1 << "<-" << join.mOverlap << "->"
-                 << join.mEdgeLoc2; }
-
-    private:
-        EdgeLoc mEdgeLoc1;
-        EdgeLoc mEdgeLoc2;
-        unsigned mOverlap;
-    };
-
-    class BRQ_Joiner
-    {
-    public:
-        BRQ_Joiner( vecbvec const& reads, vecbvec const& edges, BRQ_Dict const& dict,
-                unsigned maxGapSize, unsigned minFreq,
-                vecbvec* pFakeReads )
-                : mReads(reads), mEdges(edges), mPather(dict,edges),
-                  mMaxGapSize(maxGapSize), mMinFreq(minFreq), mFakeReads(*pFakeReads)
-        { ForceAssertLt(maxGapSize,K-1); }
-
-        template <class OItr>
-        void map( size_t readId, OItr oItr )
-        { bvec const& read = mReads[readId];
-            std::vector<PathPart> const& parts = mPather.path(read);
-            if ( parts.size() < 3 ) return; // EARLY RETURN!
-            auto end = parts.end()-1;
-            for ( auto pPart=parts.begin()+1; pPart != end; ++pPart )
-            { // if it's a captured gap of appropriate size
-                if ( pPart->isGap() && pPart->getLength() <= mMaxGapSize )
-                { PathPart const& prev = pPart[-1];
-                    PathPart const& next = pPart[1];
-                    unsigned overlap = K-pPart->getLength()-1;
-                    if ( next.getEdgeID() < prev.getEdgeID() )
-                        *oItr++ = BRQ_Join(next.rc().lastLoc(),prev.rc().firstLoc(),overlap);
-                    else
-                        *oItr++ = BRQ_Join(prev.lastLoc(),next.firstLoc(),overlap); } } }
-
-        void reduce( BRQ_Join* pJoin1, BRQ_Join* pJoin2 )
-        { Assert(validOverlap(*pJoin1));
-            if ( pJoin2-pJoin1 >= mMinFreq )
-            { //std::cout << "Joining: " << *pJoin1 << std::endl;
-                bvec bv; bv.reserve(2*K);
-                append(pJoin1->getEdgeLoc1(),0,&bv);
-                append(pJoin1->getEdgeLoc2(),pJoin1->getOverlap(),&bv);
-                add(bv); } }
-
-        BRQ_Join* overflow( BRQ_Join* pJoin1, BRQ_Join* pJoin2 )
-        { return pJoin1+std::min(unsigned(pJoin2-pJoin1),mMinFreq); }
-
-    private:
-        bool validOverlap( BRQ_Join const& join )
-        { EdgeLoc const& el1 = join.getEdgeLoc1();
-            bvec const& bv1 = mEdges[el1.getEdgeID().val()];
-            EdgeLoc const& el2 = join.getEdgeLoc2();
-            bvec const& bv2 = mEdges[el2.getEdgeID().val()];
-            bool result;
-            if ( el1.isRC() )
-            { auto end = bv1.rcbegin(el1.getEdgeOffset()+K);
-                auto beg = end - join.getOverlap();
-                if ( el2.isRC() )
-                    result = std::equal(beg,end,bv2.rcbegin(el2.getEdgeOffset()));
-                else
-                    result = std::equal(beg,end,bv2.begin(el2.getEdgeOffset())); }
-            else
-            { auto end = bv1.begin(el1.getEdgeOffset()+K);
-                auto beg = end - join.getOverlap();
-                if ( el2.isRC() )
-                    result = std::equal(beg,end,bv2.rcbegin(el2.getEdgeOffset()));
-                else
-                    result = std::equal(beg,end,bv2.begin(el2.getEdgeOffset())); }
-            return result; }
-
-        void append( EdgeLoc const& el, unsigned indent, bvec* pBV )
-        { bvec const& edge = mEdges[el.getEdgeID().val()];
-            unsigned offset = el.getEdgeOffset()+indent;
-            unsigned len = K-indent;
-            if ( el.isRC() )
-            { auto itr = edge.rcbegin(offset);
-                pBV->append(itr,itr+len); }
-            else
-            { auto itr = edge.begin(offset);
-                pBV->append(itr,itr+len); } }
-
-        void add( bvec const& bv )
-        { static SpinLockedData gLock;
-            if ( true )
-            { SpinLocker lock(gLock);
-                mFakeReads.push_back(bv); } }
-
-        vecbvec const& mReads;
-        vecbvec const& mEdges;
-        BRQ_Pather mPather;
-        unsigned mMaxGapSize;
-        unsigned mMinFreq;
-        vecbvec& mFakeReads;
-    };
-    typedef MapReduceEngine<BRQ_Joiner,BRQ_Join,BRQ_Join::Hasher> JMRE;
-
-    void joinOverlaps( vecbvec const& reads, unsigned maxGapSize, unsigned minFreq,
-                       vecbvec* pEdges, BRQ_Dict* pDict )
-    {
-        //std::cout << Date() << ": joining overlaps." << std::endl;
-        vecbvec fakeReads;
-        fakeReads.reserve(pEdges->size()/10);
-        BRQ_Joiner joiner(reads,*pEdges,*pDict,maxGapSize,minFreq,&fakeReads);
-        JMRE mre(joiner);
-        if ( !mre.run(reads.size(),0ul,reads.size()) )
-            FatalErr("Map/Reduce operation failed when joining overlaps.");
-
-        if ( fakeReads.size() )
-        {
-            //std::cout << "Found " << fakeReads.size() << " joins." << std::endl;
-            pDict->nullEntries();
-            pDict->process(fakeReads);
-            //std::cout << "Now the dictionary has " << pDict->size()
-            //                    << " entries." << std::endl;
-            //std::cout << Date() << ": finding edge sequences again." << std::endl;
-            pEdges->clear();
-            buildEdges(*pDict,pEdges);
-        }
-    }
 
 
     inline size_t pathPartToEdgeID( PathPart const& part, std::vector<int> const& mFwdEdgeXlat, std::vector<int> const& mRevEdgeXlat )
@@ -1041,9 +775,7 @@ void KmerList::load(std::string filename) {
 
 void KmerList::resize(size_t new_size) {
     if (size != new_size) {
-        //std::cout << " allocating space for "<< new_size <<" elements: " << sizeof(KMerNodeFreq_s) * new_size <<std::endl;
-        /*if (0==size) kmers = (KMerNodeFreq_s *) malloc(sizeof(KMerNodeFreq_s) * new_size);
-        else*/ kmers = (KMerNodeFreq_s *) realloc(kmers, sizeof(KMerNodeFreq_s) * new_size);
+        kmers = (KMerNodeFreq_s *) realloc(kmers, sizeof(KMerNodeFreq_s) * new_size);
         //if (new_size>0 and kmers == nullptr) std::cout << " realloc error!!! "<<std::endl;
         size = new_size;
     }
@@ -1312,38 +1044,15 @@ std::shared_ptr<KmerList> buildKMerCount( vecbvec const& reads,
     return spectrum;
 }
 
-void dumpkmers( std::shared_ptr<std::vector<KMerNodeFreq_s>> const kmercounts, std::string filename) {
-    std::ofstream batch_file(filename,std::ios::out | std::ios::trunc | std::ios::binary);
-    uint64_t total_kmers=kmercounts->size();
-    batch_file.write((const char *)&total_kmers,sizeof(uint64_t));
-    batch_file.write((const char *)kmercounts->data(),sizeof(KMerNodeFreq_s)*kmercounts->size());
-    batch_file.close();
-}
-
-std::shared_ptr<std::vector<KMerNodeFreq_s>> loadkmers( std::string filename) {
-    std::shared_ptr<std::vector<KMerNodeFreq_s>> kmercounts;
-    kmercounts=std::make_shared<std::vector<KMerNodeFreq_s>>();
-    std::ifstream batch_file(filename,std::ios::in | std::ios::binary);
-    uint64_t total_kmers;
-    batch_file.read((char *)&total_kmers,sizeof(uint64_t));
-    kmercounts=std::make_shared<std::vector<KMerNodeFreq_s>>();
-    kmercounts->resize(total_kmers);
-    batch_file.read(( char *)kmercounts->data(),sizeof(KMerNodeFreq_s)*kmercounts->size());
-    batch_file.close();
-    return kmercounts;
-}
-
 void buildReadQGraph( vecbvec const & reads, VecPQVec const &quals, std::shared_ptr<KmerList> kmerlist,
-                      bool doFillGaps, bool doJoinOverlaps,
-                      unsigned minFreq, double minFreq2Fract, unsigned maxGapSize,  HyperBasevector* pHBV,
-                      ReadPathVec* pPaths, int _K)
+                      unsigned minFreq, HyperBasevector* pHBV, ReadPathVec* pPaths, int _K)
 {
     OutputLog(2) << "Filtering kmers into Dict..." << std::endl;
     uint64_t kc=0;
     for (auto i=0;i<kmerlist->size;++i) if (kmerlist->kmers[i].count>=minFreq) ++kc;
     OutputLog(2) << kc << " kmers with freq >= "<< minFreq << std::endl;
     BRQ_Dict * pDict = new BRQ_Dict(kc);
-    OutputLog(2) << kc << "Dict created, populating "<< minFreq << std::endl;
+    OutputLog(2) << "Dict created, populating "<< std::endl;
     for (auto i=0;i<kmerlist->size;++i) {
         if (kmerlist->kmers[i].count>=minFreq) {
             KMerNodeFreq knf(kmerlist->kmers[i]);
@@ -1361,18 +1070,6 @@ void buildReadQGraph( vecbvec const & reads, VecPQVec const &quals, std::shared_
     uint64_t totalk=0;
     for (auto &e:edges) totalk+=e.size()+1-K;
     OutputLog(2) <<edges.size()<<" edges with "<<totalk<<" "<<K<<"-mers"<<std::endl;
-
-    unsigned minFreq2 = std::max(2u,unsigned(minFreq2Fract*minFreq+.5));
-
-    if ( doFillGaps ) { // Off by default
-        OutputLog(2) << "filling gaps." << std::endl;
-        fillGaps(reads, maxGapSize, minFreq2, &edges, pDict);
-    }
-
-    if ( doJoinOverlaps ) { // Off by default
-        OutputLog(2) << "joining Overlaps." << std::endl;
-        joinOverlaps(reads, _K / 2, minFreq2, &edges, pDict);
-    }
 
     std::vector<int> fwdEdgeXlat;
     std::vector<int> revEdgeXlat;
