@@ -688,7 +688,7 @@ int main(const int argc, const char * argv[]) {
         //TODO: Report time, memory, etc
 
 
-        if (1==step and (to_step<6 or dump_all)) {
+        if (1==step) {
             //TODO: dump reads
             OutputLog(2) << "Dumping reads in fastb/cqual format..." << std::endl;
             bases.WriteAll(out_dir + "/pe_data.fastb");
