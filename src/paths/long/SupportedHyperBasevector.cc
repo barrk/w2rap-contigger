@@ -17,7 +17,6 @@
 #include "paths/BigMapTools.h"
 //#include "paths/PairedPair.h"
 #include "paths/HyperBasevector.h"
-#include "paths/long/CleanEfasta.h"
 #include "paths/long/DigraphFromWords.h"
 #include "paths/long/LargeKDispatcher.h"
 #include "paths/long/LongProtoTools.h"
@@ -27,81 +26,7 @@
 
 namespace { // open anonymous namespace
 
-vec<int> GetNextEdges( const HyperBasevector& hb, const vec< vec<int> >& paths,
-     const vec<fix64_6>& counts_fw, const vec<fix64_6>& counts_rc, 
-     const vec< vec< std::pair<int,int> > >& paths_index,
-     const int median_read, const vec<int>& p, const fix64_6 keep_score, 
-     const int win_ratio, const int verbosity, std::ostringstream& out )
-{    
-     // First find the edges that follow p, from an overlap of a path with p.
 
-     vec<int> nexts;
-     int b = p.back( );
-     ForceAssertGe( b, 0 );
-     for ( int k = 0; k < paths_index[b].isize( ); k++ )
-     {    int id2 = paths_index[b][k].first, pos2 = paths_index[b][k].second;
-          if ( pos2 == paths[id2].isize( ) - 1 ) continue;
-          int n = paths[id2][pos2+1];
-          if ( n < 0 || Member( nexts, n ) ) continue;
-          Bool mismatch = False;
-          for ( int p2 = pos2 - 1; p2 >= 0; p2-- )
-          {    int p1 = p.isize( ) - 1 - ( pos2 - p2 );
-               if ( p1 < 0 ) break;
-               if ( p[p1] != paths[id2][p2] )
-               {    mismatch = True;
-                    break;    }    }
-          if ( !mismatch ) nexts.push_back( paths[id2][pos2+1] );    }
-     Sort(nexts);
-     if ( nexts.size( ) > 1 )
-     {    
-          // Try to eliminate some nexts using the nonexistence criterion.
-
-          if ( verbosity >= 2 )
-          {    out << "- checking " << printSeq( p, " " );
-               out << " { " << printSeq( nexts, " " ) << " }\n";    }
-          for ( int s = 0; s < p.isize( ); s++ )
-          {    vec<fix64_6> score( nexts.size( ), 0 );
-               int len = 0;
-               for ( int j = s + 1; j < p.isize( ); j++ )
-               {    ForceAssertGe( p[j], 0 );
-                    len += hb.EdgeLengthKmers( p[j] );    }
-               if ( len > median_read ) continue;
-               vec<int> p1, offsets;
-               p1.SetToSubOf( p, s, p.isize( ) - s );
-               for ( int l = 0; l < nexts.isize( ); l++ )
-               {    vec<int> p2(p1);
-                    p2.push_back( nexts[l] );
-
-                    // Compute the number of reads that contain p2.
-
-                    vec<int> ids;
-                    int b = p2.back( );
-                    for ( int k = 0; k < paths_index[b].isize( ); k++ )
-                    {    int id3 = paths_index[b][k].first; 
-                         int pos3 = paths_index[b][k].second;
-                         if ( pos3 < p2.isize( ) - 1 ) continue;
-                         Bool mismatch = False;
-                         for ( int p3 = pos3 - 1; p3 >= 0; p3-- )
-                         {    int p2x = p2.isize( ) - 1 - ( pos3 - p3 );
-                              if ( p2x < 0 ) break;
-                              if ( p2[p2x] != paths[id3][p3] )
-                              {    mismatch = True;
-                                   break;    }    }
-                         if (mismatch) continue;
-                         ids.push_back(id3);    }
-                    UniqueSort(ids);
-                    for ( int i = 0; i < ids.isize( ); i++ )
-                         score[l] += counts_fw[ ids[i] ] + counts_rc[ ids[i] ];    }
-               if ( verbosity >= 3 )
-               {    PRINT2_TO( out, s, len );
-                    out << "score = " << printSeq( score, " " ) << "\n";    }
-               vec<Bool> to_delete( nexts.size( ), False );
-               for ( int l = 0; l < nexts.isize( ); l++ )
-               {    if ( score[l] < keep_score 
-                         && Max(score) >= win_ratio * score[l] ) 
-                    {    to_delete[l] = True;     }    }
-               EraseIf( nexts, to_delete );    }    }
-     return nexts;    }
 
 vec<int> Betweens( const HyperBasevector& hb, const vec<int>& to_right, 
      const vec<int>& q, const bool debug = false )

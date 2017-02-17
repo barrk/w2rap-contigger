@@ -10,10 +10,7 @@
 // MakeDepend: cflags OMP_FLAGS
 
 #include "Basevector.h"
-#include "MainTools.h"
 #include "paths/HyperBasevector.h"
-#include "paths/long/CleanEfasta.h"
-#include "paths/long/LargeKDispatcher.h"
 #include "paths/long/MakeKmerStuff.h"
 #include "paths/long/SupportedHyperBasevector.h"
 
@@ -143,31 +140,7 @@ void SupportedHyperBasevector::readBinary( BinaryReader& reader )
      reader.read( &ReadLengthDistMutable( ) );
      reader.read( &FudgeMultMutable( ) );    }
 
-void SupportedHyperBasevector::DumpDot( const String& head,
-     const vec<Bool>& invisible, const vec<String>& edge_color,
-     const long_logging& logc, const Bool hide_inv, 
-     const vec<String>& edge_names ) const
-{    vec<Bool> hide;
-     if (hide_inv) FlagEdgesForHiding( *this, Inv( ), hide, logc );
-     else hide.resize( EdgeObjectCount( ), False );
-     const Bool DOT_LABEL_CONTIGS = True;
-     const Bool DOT_LABEL_VERTICES = False;
-     vec<double> lengths( EdgeObjectCount( ) );
-     for ( int i = 0; i < EdgeObjectCount( ); i++ )
-          lengths[i] = EdgeLengthKmers(i);
-     vec<String> edge_id_names( EdgeObjectCount( ) );
-     if ( edge_names.size( ) > 0 ) edge_id_names = edge_names;
-     else
-     {    for ( int i = 0; i < EdgeObjectCount( ); i++ )
-          {    if ( !InvDef(i) ) edge_id_names[i] = ToString(i);
-               else 
-               {    edge_id_names[i] = ToString(i) 
-                         + "=" + ToString( Inv(i) ) + "'";    }    }    }
-     Ofstream( dout, head + ".dot" );
-     PrettyDOT( dout, lengths, HyperBasevector::edge_label_info(
-          HyperBasevector::edge_label_info::DIRECT, &edge_id_names ),
-          DOT_LABEL_CONTIGS, DOT_LABEL_VERTICES, NULL, NULL, NULL, &hide,
-          &invisible, &edge_color, NULL, logc.LAYOUT );    }
+
 
 
 

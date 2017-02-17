@@ -17,8 +17,6 @@
 #include "Fastavector.h"
 #include "paths/HyperBasevector.h"
 #include "paths/long/Logging.h"
-#include "paths/long/RefTrace.h"
-#include "paths/long/RefTraceControl.h"
 
 namespace DiscovarTools{
 
@@ -62,39 +60,6 @@ namespace DiscovarTools{
     const size_t MaxBAMSize=10ULL*1024*1024*1024; // Maximum allowable BAM size
     void CheckBAMSize(size_t size,const String& REGIONS); // helper function: check if 'size' is larger than MaxBAMSize if REGIONS=="all" or ""
 
-
-    //control data structure for ref trace/ variant calling
-    class DiscovarRefTraceControl: public RefTraceControl{
-    public:
-        typedef RefTraceControl base_t;
-        DiscovarRefTraceControl():bRefTraceOn(false){};
-        DiscovarRefTraceControl( const String& REF_FASTA
-                               , const String& REGIONS
-                               , const long_logging& logc
-                               , const String& sVariantOutFile_);
-
-        //ForceAssert that data size are consistent
-        void CheckConsistency() const;
-
-        bool IsRefTraceOn()const {return bRefTraceOn;}
-        const vec<fastavector>& getRefSeqsExt()const{return ref_seqs_ext;}
-        const vec<size_t>& getRefSeqsExtExt()const{return ref_seqs_ext_ext;}
-        const vec<size_t>& getRefLength()const{return ref_length;}
-        const vec<size_t>& getChromIdx()const{return RefTraceControl::getRefIndex();}
-
-        void AssertEqual(const DiscovarRefTraceControl&other);
-
-    private:
-        bool bRefTraceOn;              //if Ref Trace functionality is on or not
-
-        // one entry for each region entry, or if region is not supplied, one entry for one entry in REFERENCE file
-        vec<fastavector> ref_seqs_ext; // each entry is the sequence (trimmed according to REGION, plus up to EXT_LENGTH more bases on both ends)
-        vec<size_t> ref_seqs_ext_ext; // the start of ref_seqs relative to ref_seqs_ext
-        vec<size_t> ref_length;     // length of trimmed region in reference sequence
-
-        static const int MIN_LENGTH = 1000; // minimum allowable reference length
-        static const int EXT_LENGTH = 500; // try to expand region by EXT_LENGTH on both ends for ref_seqs_ext, for LongProto compatibility
-    };
 }//namespace DiscovarTools
 
 void SetThreads( uint& NUM_THREADS, const Bool malloc_per_thread_check = True );

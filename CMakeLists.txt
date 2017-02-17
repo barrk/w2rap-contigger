@@ -166,7 +166,6 @@ add_library(base_libs OBJECT
         src/paths/UnibaseUtils.cc
         src/paths/Unipath.cc
         src/paths/long/AssessBestAlignCore.cc
-        src/paths/long/CleanEfasta.cc
         src/paths/long/DigraphFromWords.cc
         src/paths/long/KmerCount.cc
         src/paths/long/LongHyper.cc
@@ -179,11 +178,6 @@ add_library(base_libs OBJECT
         src/paths/long/SupportedHyperBasevector5.cc
         src/paths/long/SupportedHyperBasevector6.cc
         src/paths/long/SupportedHyperBasevector7.cc
-        #src/paths/long/VariantCallTools.cc
-        #src/paths/long/VariantFilters.cc
-        #src/paths/long/VariantPostProcess.cc
-        #src/paths/long/VariantReadSupport.cc
-        #src/paths/long/Variants.cc
         src/paths/long/large/CN1PeakFinder.cc
         src/paths/long/large/GapToyTools.cc
         src/paths/long/large/GapToyTools3.cc
