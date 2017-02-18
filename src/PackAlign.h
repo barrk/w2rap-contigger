@@ -572,19 +572,6 @@ class align {
   void PerfectIntervals2( const fastavector& rd1, const fastavector& rd2,
                           vec<ho_interval>& perfs ) const;
 
-  void CreateFromMutmers( int k, shortvector<mutmer>& m, const basevector& rd1, 
-                          const basevector& rd2, int max_errors, float max_badness,
-                          int local_max_errors, int end_stretch, int local_max_errors_done, 
-                          int& errors_found );
-
-  void CreateFromMutmersAndSW( int k, shortvector<mutmer>& m, 
-                               const basevector& rd1, const basevector& rd2, int max_errors, 
-                               int end_stretch, int& errors_found, bool affine_penalties );
-
-  void CreateFromMutmersMT( int k, shortvector<mutmer>& m, const basevector& rd1, 
-                            const basevector& rd2, int max_errors, float max_badness,
-                            int local_max_errors, int end_stretch, int local_max_errors_done, 
-                            int& errors_found );
 
  private:
   int pos1_, pos2_; // TODO: potentially dangerous truncation of indices
@@ -627,11 +614,6 @@ int Bandwidth( align& a );
 
 int CorrelatePositions( const align& a, int x1 );
 
-/// Trim a basevector and an alignment on that basevector in sync.
-
-void Trim1Together(const basevector & b1, const basevector & b2, 
-		   const align & a, int startOn1, int len, 
-		   basevector & trimmedb1, align & trimmeda); 
 
 /// Class placement_mark: small-size structure to keep only the
 /// target (contig) index/start position and query sequence orientation 
@@ -724,10 +706,6 @@ class placement_mark {
 };
 
 TRIVIALLY_SERIALIZABLE(placement_mark);
-typedef SerfVec<placement_mark> PlacementMarkVec;
-typedef MasterVec<PlacementMarkVec> VecPlacementMarkVec;
-//extern template class SmallVec< placement_mark, MempoolAllocator<placement_mark> >;
-//extern template class OuterVec<PlacementMarkVec>;
 
 /**
    Type concept: BasicAlign
@@ -755,14 +733,6 @@ typedef MasterVec<PlacementMarkVec> VecPlacementMarkVec;
    >int TargetId() const;
    
  */
-
-// Semantic Type: align_id_t
-// Id of an Align (its index in a vector of alignments).
-SemanticTypeStd( int, align_id_t );
-
-// Semantic Type: nmuts_t
-// Number of substitutions when aligning query to target
-typedef int nmuts_t;
 
 
 #endif

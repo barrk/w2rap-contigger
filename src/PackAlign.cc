@@ -1919,4 +1919,3 @@ std::ostream & operator<<(std::ostream & os, const align & a) {
 #include "feudal/BinaryStream.h"
 
 template class SmallVec< placement_mark, MempoolAllocator<placement_mark> >;
-template class OuterVec<PlacementMarkVec>;

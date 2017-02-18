@@ -225,20 +225,4 @@ typedef unsigned char unsigned_char_t;
 typedef unsigned short unsigned_short_t;
 typedef unsigned int unsigned_int_t;
 
-/**
-   Macro: FOR_ALL_BUILTIN_TYPES
-
-   Call the given macro for all built-in C++ types.  Useful e.g. for creating
-   specialized versions of a function template for working with built-in types.
-*/
-#define FOR_ALL_BUILTIN_TYPES(M) \
-    M(char); \
-    M(unsigned_char_t); \
-    M(short); \
-    M(unsigned_short_t); \
-    M(int); \
-    M(unsigned_int_t); \
-    M(longlong); \
-    M(ulonglong)
-
 #endif
