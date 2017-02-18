@@ -23,12 +23,12 @@
 /// A spin-lock.
 class SpinLockedData
 {
-    std::atomic<bool> m_flag;
+    std::atomic_flag m_flag;
 
 public:
     SpinLockedData() : m_flag(false) {};
-    inline void lock()     noexcept {   while(m_flag.exchange(true)); }
-    inline void unlock()   noexcept {   m_flag=false; }
+    inline void lock()     noexcept {   while(m_flag.test_and_set(std::memory_order_acquire)); }
+    inline void unlock()   noexcept {   m_flag.clear(std::memory_order_release); }
 };
 
 /// Something that operates a spin-lock, and never forgets to unlock it.
