@@ -564,7 +564,7 @@ void SimplifyEXP(const String &fin_dir, HyperBasevector &hb, vec<int> &inv,
 
     // Improve read placements and delete funky pairs.
     OutputLog(2) << "rerouting paths and cleaning pairs" << std::endl;
-    ReroutePaths(hb, inv, paths, bases, quals);
+    //ReroutePaths(hb, inv, paths, bases, quals);
     DeleteFunkyPathPairs(hb, inv, bases, paths, False);
     /*if (IMPROVE_PATHS) {
         std::cout << Date() << ": improving paths" << std::endl;
@@ -574,6 +574,7 @@ void SimplifyEXP(const String &fin_dir, HyperBasevector &hb, vec<int> &inv,
         ImprovePaths(paths, hb, inv, bases, quals, ids, pimp, IMPROVE_PATHS_LARGE, False);
     }*/
     path_status(paths);
+
     /*OverlapValidator oval(hb,inv,paths);
     GFADumpDetail("before_ovlpval_detail",hb,inv);
     oval.compute_overlap_support();
@@ -590,15 +591,15 @@ void SimplifyEXP(const String &fin_dir, HyperBasevector &hb, vec<int> &inv,
 
 
     //Remove unsupported edges in certain situations.
-    const int min_mult=5;
-    OutputLog(2) << "removing alternative edges with input support <="<<MAX_SUPP_DEL << std::endl;
-    remove_unsupported_edges(hb,inv,paths,bases,quals,MAX_SUPP_DEL,min_mult);
+    const int min_mult = 5;
+    OutputLog(2) << "removing alternative edges with input support <=" << MAX_SUPP_DEL << std::endl;
+    remove_unsupported_edges(hb, inv, paths, bases, quals, MAX_SUPP_DEL, min_mult);
 
 
 
 
     // Clean up assembly.
-    OutputLog(2) << "removing small components"<<std::endl;
+    OutputLog(2) << "removing small components" << std::endl;
     RemoveSmallComponents3(hb);
     Cleanup(hb, inv, paths);
 
@@ -640,67 +641,60 @@ void SimplifyEXP(const String &fin_dir, HyperBasevector &hb, vec<int> &inv,
     graph_status(hb);
     path_status(paths);
 
-    // Pull apart.
+
+    //TODO: remove pull aparter once the pathfinder solves all repeats (just using distance 2 on OverlapValidator should do)
+    VecULongVec invPaths;
+    OutputLog(2) << "pulling apart canonical repeats" << std::endl;
+    invert(paths, invPaths, hb.EdgeObjectCount());
+    PullAparter pa(hb, inv, paths, invPaths, PULL_APART_TRACE, PULL_APART_VERBOSE, 5, 5.0);
+    size_t count = pa.SeparateAll();
+    OutputLog(2) << count << " repeats separated, " << pa.getRemovedReadPaths()
+                 << " read paths removed" << std::endl;
+    graph_status(hb);
+    path_status(paths);
 
 
-
-    if (RUN_PATHFINDER) {
-        //TODO: remove pull aparter once the pathfinder solves all repeats (just using distance 2 on OverlapValidator should do)
-        VecULongVec invPaths;
-        OutputLog(2) << "pulling apart canonical repeats" << std::endl;
-        invert(paths, invPaths, hb.EdgeObjectCount());
-        PullAparter pa(hb, inv, paths, invPaths, PULL_APART_TRACE, PULL_APART_VERBOSE, 5, 5.0);
-        size_t count = pa.SeparateAll();
-        OutputLog(2) << count << " repeats separated, " << pa.getRemovedReadPaths()
-                  << " read paths removed" << std::endl;
-        graph_status(hb);
-        path_status(paths);
-
-
-
-        OutputLog(2) << "running pathfinder" << std::endl;
-        invert(paths, invPaths, hb.EdgeObjectCount());
-        if (dump_pf_files) {
-            BinaryWriter::writeFile(fin_dir + "/pf_start.hbv", hb);
-            WriteReadPathVec(paths,(fin_dir + "/pf_start.paths").c_str());
-        }
-
-        PathFinder pf(hb, inv, paths, invPaths,5,VERBOSE_PATHFINDER);
-        pf.unroll_loops(800);
-        RemoveUnneededVertices2(hb, inv, paths);
-        Cleanup(hb, inv, paths);
-
-        if (dump_pf_files) {
-            BinaryWriter::writeFile(fin_dir + "/pf_unrolled_loops.hbv", hb);
-            WriteReadPathVec(paths,(fin_dir + "/pf_unrolled_loops.paths").c_str());
-        }
-        invPaths.clear();
-        invert( paths, invPaths, hb.EdgeObjectCount( ) );
-        pf.untangle_complex_in_out_choices(700);
-        RemoveUnneededVertices2(hb, inv, paths);
-        Cleanup(hb, inv, paths);
-        DeleteFunkyPathPairs(hb, inv, bases, paths, False);
-        Tamp(hb, inv, paths, 10);
-        RemoveHangs(hb, inv, paths, 700);
-        Cleanup(hb, inv, paths);
-        RemoveSmallComponents3(hb);
-        graph_status(hb);
-        path_status(paths);
-
-        if (dump_pf_files) {
-            BinaryWriter::writeFile(fin_dir + "/pf_end.hbv", hb);
-            WriteReadPathVec(paths,(fin_dir + "/pf_end.paths").c_str());
-        }
-    } else {
-        OutputLog(2) << "pulling apart canonical repeats" << std::endl;
-        VecULongVec invPaths;
-        invert(paths, invPaths, hb.EdgeObjectCount());
-        PullAparter pa(hb, inv, paths, invPaths, PULL_APART_TRACE, PULL_APART_VERBOSE, 5, 5.0);
-        size_t count = pa.SeparateAll();
-        OutputLog(2) << count << " repeats separated, " << pa.getRemovedReadPaths() << " read paths removed" << std::endl;
-        graph_status(hb);
-        path_status(paths);
+    OutputLog(2) << "running pathfinder" << std::endl;
+    invert(paths, invPaths, hb.EdgeObjectCount());
+    if (dump_pf_files) {
+//        BinaryWriter::writeFile(fin_dir + "/pf_start.hbv", hb);
+//        WriteReadPathVec(paths,(fin_dir + "/pf_start.paths").c_str());
+        GFADump(fin_dir + "/pf_start", hb, inv, paths, 50, 10, True);
     }
+    {
+        PathFinder pf1(hb, inv, paths, invPaths, 5, VERBOSE_PATHFINDER);
+        pf1.unroll_loops(800);
+    }
+    RemoveUnneededVertices2(hb, inv, paths);
+    Cleanup(hb, inv, paths);
+
+    if (dump_pf_files) {
+        //BinaryWriter::writeFile(fin_dir + "/pf_unrolled_loops.hbv", hb);
+        //WriteReadPathVec(paths,(fin_dir + "/pf_unrolled_loops.paths").c_str());
+        GFADump(fin_dir + "/pf_after_loops",hb,inv,paths,50,10,True);
+    }
+    invPaths.clear();
+    invert( paths, invPaths, hb.EdgeObjectCount( ) );
+    {
+        PathFinder pf2(hb, inv, paths, invPaths, 5, VERBOSE_PATHFINDER);
+        pf2.untangle_complex_in_out_choices(800);
+    }
+    RemoveUnneededVertices2(hb, inv, paths);
+    Cleanup(hb, inv, paths);
+    DeleteFunkyPathPairs(hb, inv, bases, paths, False);
+    Tamp(hb, inv, paths, 10);
+    RemoveHangs(hb, inv, paths, 800);
+    Cleanup(hb, inv, paths);
+    RemoveSmallComponents3(hb);
+    graph_status(hb);
+    path_status(paths);
+
+    if (dump_pf_files) {
+        GFADump(fin_dir + "/pf_after_complex",hb,inv,paths,50,10,True);
+        //BinaryWriter::writeFile(fin_dir + "/pf_end.hbv", hb);
+        //WriteReadPathVec(paths,(fin_dir + "/pf_end.paths").c_str());
+    }
+
     // Improve paths.
 
     if (IMPROVE_PATHS) {

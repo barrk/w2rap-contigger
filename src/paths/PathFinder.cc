@@ -2,6 +2,7 @@
 // Created by Bernardo Clavijo (TGAC) on 11/07/2016.
 //
 
+#include <util/OutputLog.h>
 #include "PathFinder.h"
 
 
@@ -437,7 +438,7 @@ void PathFinder::unroll_loops(uint64_t min_side_sizes) {
     if (old_edges_to_new.size()>0) {
         migrate_readpaths(old_edges_to_new);
     }
-    if (mVerbose) std::cout<<sep<<" loops unrolled, re-initing the prev and next vectors, just in case :D"<<std::endl;
+    OutputLog(2)<<sep<<" loops unrolled"<<std::endl;
     update_prev_next();
     if (mVerbose) std::cout<<"Prev and Next vectors updated"<<std::endl;
 }
@@ -584,7 +585,7 @@ void PathFinder::untangle_complex_in_out_choices(uint64_t large_frontier_size, b
             }
         }
     }
-    if (mVerbose) std::cout<<"Complex Regions solved by paths: "<<solved_frontiers.size() <<"/"<<seen_frontiers.size()<<" comprising "<<paths_to_separate.size()<<" paths to separate"<< std::endl;
+    OutputLog(2)<<"Complex Regions solved by paths: "<<solved_frontiers.size() <<"/"<<seen_frontiers.size()<<" comprising "<<paths_to_separate.size()<<" paths to separate"<< std::endl;
     //if (mVerbose) std::cout<<"Complex Regions quasi-solved by paths (not acted on): "<< qsf <<"/"<<seen_frontiers.size()<<" comprising "<<qsf_paths<<" paths to separate"<< std::endl;
     //if (mVerbose) std::cout<<"Multiple Solution Regions (not acted on): "<< msf <<"/"<<seen_frontiers.size()<<" comprising "<<msf_paths<<" paths to separate"<< std::endl;
 
@@ -609,7 +610,7 @@ void PathFinder::untangle_complex_in_out_choices(uint64_t large_frontier_size, b
     if (old_edges_to_new.size()>0) {
         migrate_readpaths(old_edges_to_new);
     }
-    if (mVerbose) std::cout<<" "<<sep<<" paths separated!"<<std::endl;
+    OutputLog(2)<<" "<<sep<<" paths separated!"<<std::endl;
 
 }
 
@@ -642,12 +643,9 @@ std::array<std::vector<uint64_t>,2> PathFinder::get_all_long_frontiers(uint64_t 
     while (to_explore.size()>0){
         std::set<uint64_t> next_to_explore;
         for (auto x:to_explore){ //to_explore: replace rather and "update" (use next_to_explore)
-
             if (!seen_edges.count(x)){
-
                 //What about reverse complements and paths that include loops that "reverse the flow"?
                 if (seen_edges.count(mInv[x])) return std::array<std::vector<uint64_t>,2>(); //just cancel for now
-
                 for (auto p:prev_edges[x]) {
                     if (mHBV.EdgeObject(p).size() >= large_frontier_size )  {
                         //What about frontiers on both sides?
@@ -664,7 +662,6 @@ std::array<std::vector<uint64_t>,2> PathFinder::get_all_long_frontiers(uint64_t 
                     }
                     else if (!seen_edges.count(p)) next_to_explore.insert(p);
                 }
-
                 for (auto n:next_edges[x]) {
                     if (mHBV.EdgeObject(n).size() >= large_frontier_size) {
                         //What about frontiers on both sides?

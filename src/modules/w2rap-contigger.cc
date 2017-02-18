@@ -342,7 +342,7 @@ void step_7EXP(HyperBasevector &hbv,
     SimplifyEXP(out_dir, hbv, hbvinv, paths, bases, quals, MAX_SUPP_DEL, TAMP_EARLY_MIN, MIN_RATIO2, MAX_DEL2,
                 ANALYZE_BRANCHES_VERBOSE2, TRACE_SEQ, DEGLOOP, EXT_FINAL, EXT_FINAL_MODE,
                 PULL_APART_VERBOSE, PULL_APART_TRACE, DEGLOOP_MODE, DEGLOOP_MIN_DIST, IMPROVE_PATHS,
-                IMPROVE_PATHS_LARGE, FINAL_TINY, UNWIND3, False, False, False);//TODO: the last 3 Falses disable pathfinder
+                IMPROVE_PATHS_LARGE, FINAL_TINY, UNWIND3, True, True, True);//TODO: the last 3 Falses disable pathfinder
 
     // For now, fix paths and write the and their inverse
     for (int i = 0; i < (int) paths.size(); i++) { //XXX TODO: change this int for uint 32
@@ -361,22 +361,15 @@ void step_7EXP(HyperBasevector &hbv,
     FindLines(hbv, hbvinv, lines, MAX_CELL_PATHS, MAX_DEPTH);
     BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".fin.lines", lines);
 
-    // XXX TODO: Solve the {} thingy, check if has any influence in the new code to run that integrated
-    {
-        vec<int> llens, npairs;
-        GetLineLengths(hbv, lines, llens);
-        GetLineNpairs(hbv, hbvinv, paths, lines, npairs);
-        BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".fin.lines.npairs", npairs);
+    vec<int> llens, npairs;
+    GetLineLengths(hbv, lines, llens);
+    GetLineNpairs(hbv, hbvinv, paths, lines, npairs);
+    BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".fin.lines.npairs", npairs);
 
-        vec<vec<covcount>> covs;
-        vec<int64_t> subsam_starts={0};
-        ComputeCoverage(hbv, hbvinv, paths, lines, subsam_starts, covs);
+    vec<vec<covcount>> covs;
+    vec<int64_t> subsam_starts={0};
+    ComputeCoverage(hbv, hbvinv, paths, lines, subsam_starts, covs);
 
-        //TODO: maybe Report some similar to CN stats ???
-        //double cn_frac_good = CNIntegerFraction(hbv, covs);
-        //std::cout << "CN fraction good = " << cn_frac_good << std::endl;
-        //PerfStatLogger::log("cn_frac_good", ToString(cn_frac_good, 2), "fraction of edges with CN near integer");
-    }
 
 }
 
