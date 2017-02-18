@@ -41,8 +41,10 @@ typedef struct __attribute__((__packed__)) KMerNodeFreq_s {
         return kdata[1]>other.kdata[1];
     }
     inline void combine(KMerNodeFreq_s const & other){
-        auto newcount=count+other.count;
-        if ( newcount>count) count=newcount;
+        uint16_t newcount=count;
+        newcount+=other.count;
+        if ( newcount>255) count=255;
+        else count=newcount;
         kc|=other.kc;
     }
     /*inline const operator=(KMerNodeFreq_s const & other) const {
