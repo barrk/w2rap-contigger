@@ -215,6 +215,7 @@ void step_7DV(HyperBasevector &hbv,
             if (paths[i][j] < 0) bad = True;
         if (bad) paths[i].resize(0);
     }
+
     VecULongVec pathsinv;
     OutputLog(2)<<"creating path-to-edge mapping"<<std::endl;
     invert(paths,pathsinv,hbv.EdgeObjectCount());
@@ -225,22 +226,14 @@ void step_7DV(HyperBasevector &hbv,
     FindLines(hbv, hbvinv, lines, MAX_CELL_PATHS, MAX_DEPTH);
     BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".fin.lines", lines);
 
-    // XXX TODO: Solve the {} thingy, check if has any influence in the new code to run that integrated
-    {
-        vec<int> llens, npairs;
-        GetLineLengths(hbv, lines, llens);
-        GetLineNpairs(hbv, hbvinv, paths, lines, npairs);
-        BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".fin.lines.npairs", npairs);
+    vec<int> llens, npairs;
+    GetLineLengths(hbv, lines, llens);
+    GetLineNpairs(hbv, hbvinv, paths, lines, npairs);
+    BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".fin.lines.npairs", npairs);
 
-        vec<vec<covcount>> covs;
-        vec<int64_t> subsam_starts={0};
-        ComputeCoverage(hbv, hbvinv, paths, lines, subsam_starts, covs);
-
-        //TODO: maybe Report some similar to CN stats ???
-        //double cn_frac_good = CNIntegerFraction(hbv, covs);
-        //std::cout << "CN fraction good = " << cn_frac_good << std::endl;
-        //PerfStatLogger::log("cn_frac_good", ToString(cn_frac_good, 2), "fraction of edges with CN near integer");
-    }
+    vec<vec<covcount>> covs;
+    vec<int64_t> subsam_starts={0};
+    ComputeCoverage(hbv, hbvinv, paths, lines, subsam_starts, covs);
 
 }
 
@@ -293,22 +286,14 @@ void step_7(HyperBasevector &hbv,
     FindLines(hbv, hbvinv, lines, MAX_CELL_PATHS, MAX_DEPTH);
     BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".fin.lines", lines);
 
-    // XXX TODO: Solve the {} thingy, check if has any influence in the new code to run that integrated
-    {
-        vec<int> llens, npairs;
-        GetLineLengths(hbv, lines, llens);
-        GetLineNpairs(hbv, hbvinv, paths, lines, npairs);
-        BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".fin.lines.npairs", npairs);
+    vec<int> llens, npairs;
+    GetLineLengths(hbv, lines, llens);
+    GetLineNpairs(hbv, hbvinv, paths, lines, npairs);
+    BinaryWriter::writeFile(out_dir + "/" + out_prefix + ".fin.lines.npairs", npairs);
 
-        vec<vec<covcount>> covs;
-        vec<int64_t> subsam_starts={0};
-        ComputeCoverage(hbv, hbvinv, paths, lines, subsam_starts, covs);
-
-        //TODO: maybe Report some similar to CN stats ???
-        //double cn_frac_good = CNIntegerFraction(hbv, covs);
-        //std::cout << "CN fraction good = " << cn_frac_good << std::endl;
-        //PerfStatLogger::log("cn_frac_good", ToString(cn_frac_good, 2), "fraction of edges with CN near integer");
-    }
+    vec<vec<covcount>> covs;
+    vec<int64_t> subsam_starts={0};
+    ComputeCoverage(hbv, hbvinv, paths, lines, subsam_starts, covs);
 
 }
 
@@ -458,7 +443,7 @@ int main(const int argc, const char * argv[]) {
                                                      "number of reads to count on each parallel iteration (default: total/(4*threads) )", false, 0, "int", cmd);
 
         TCLAP::ValueArg<std::string> tmp_dirArg("", "tmp_dir",
-                                                      "tmp dir for step2 disk batches (default: workdir)", false, "", "string", cmd);
+                                                      "tmp dir for kmer count disk batches (default: workdir)", false, "", "string", cmd);
 
         TCLAP::ValueArg<unsigned int> minQualArg("", "min_qual",
                                                  "minimum quality for small k-mers (default: 7)", false, 7, "int", cmd);
@@ -476,7 +461,7 @@ int main(const int argc, const char * argv[]) {
                                                     "max number of read pairs to use in local assemblies (default: 200)", false, 200, "int", cmd);
 
         TCLAP::ValueArg<unsigned int> minInputArg("", "min_input",
-                                                    "min number of read entering an edge at step 6(default: 3)", false, 3, "int", cmd);
+                                                    "min number of read entering an edge at step 7(default: 3)", false, 3, "int", cmd);
 
         TCLAP::ValueArg<unsigned int> logLevelArg("", "log_level",
                                                   "verbosity level (default: 3)", false, 3, "1-4", cmd);

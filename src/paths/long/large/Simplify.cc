@@ -562,9 +562,10 @@ void SimplifyEXP(const String &fin_dir, HyperBasevector &hb, vec<int> &inv,
               const Bool FINAL_TINY, const Bool UNWIND3, const bool RUN_PATHFINDER, const bool dump_pf_files, const bool VERBOSE_PATHFINDER) {
 
 
+    VecULongVec invPaths;
     // Improve read placements and delete funky pairs.
     OutputLog(2) << "rerouting paths and cleaning pairs" << std::endl;
-    //ReroutePaths(hb, inv, paths, bases, quals);
+    ReroutePaths(hb, inv, paths, bases, quals);
     DeleteFunkyPathPairs(hb, inv, bases, paths, False);
     /*if (IMPROVE_PATHS) {
         std::cout << Date() << ": improving paths" << std::endl;
@@ -574,6 +575,8 @@ void SimplifyEXP(const String &fin_dir, HyperBasevector &hb, vec<int> &inv,
         ImprovePaths(paths, hb, inv, bases, quals, ids, pimp, IMPROVE_PATHS_LARGE, False);
     }*/
     path_status(paths);
+
+
 
     /*OverlapValidator oval(hb,inv,paths);
     GFADumpDetail("before_ovlpval_detail",hb,inv);
@@ -591,7 +594,7 @@ void SimplifyEXP(const String &fin_dir, HyperBasevector &hb, vec<int> &inv,
 
 
     //Remove unsupported edges in certain situations.
-    const int min_mult = 5;
+    const int min_mult = 10;//this should be a parameter!
     OutputLog(2) << "removing alternative edges with input support <=" << MAX_SUPP_DEL << std::endl;
     remove_unsupported_edges(hb, inv, paths, bases, quals, MAX_SUPP_DEL, min_mult);
 
@@ -603,20 +606,17 @@ void SimplifyEXP(const String &fin_dir, HyperBasevector &hb, vec<int> &inv,
     RemoveSmallComponents3(hb);
     Cleanup(hb, inv, paths);
 
-
-    /*
-    if (TAMP_EARLY) {
-        std::cout << Date() << ": Tamping" << std::endl;
-        Tamp(hb, inv, paths, 0);
-    }
+    std::cout << Date() << ": Tamping" << std::endl;
+    Tamp(hb, inv, paths, 0);
 
     RemoveHangs(hb, inv, paths, 100);
-    Cleanup(hb, inv, paths);*/
+    Cleanup(hb, inv, paths);
     graph_status(hb);
     path_status(paths);
 
-    /*std::cout << Date() << ": analysing branches" << std::endl;
-
+    std::cout << Date() << ": analysing branches" << std::endl;
+    vec<int> to_right;
+    hb.ToRight(to_right);
 
     AnalyzeBranches(hb, to_right, inv, paths, True, MIN_RATIO2, ANALYZE_BRANCHES_VERBOSE2);
     Cleanup(hb, inv, paths);
@@ -626,7 +626,7 @@ void SimplifyEXP(const String &fin_dir, HyperBasevector &hb, vec<int> &inv,
     Cleanup(hb, inv, paths);
 
     graph_status(hb);
-    path_status(paths);*/
+    path_status(paths);
 
     OutputLog(2) << "popping bubbles" << std::endl;
     PopBubbles(hb, inv, bases, quals, paths);
@@ -643,7 +643,7 @@ void SimplifyEXP(const String &fin_dir, HyperBasevector &hb, vec<int> &inv,
 
 
     //TODO: remove pull aparter once the pathfinder solves all repeats (just using distance 2 on OverlapValidator should do)
-    VecULongVec invPaths;
+
     OutputLog(2) << "pulling apart canonical repeats" << std::endl;
     invert(paths, invPaths, hb.EdgeObjectCount());
     PullAparter pa(hb, inv, paths, invPaths, PULL_APART_TRACE, PULL_APART_VERBOSE, 5, 5.0);
@@ -653,6 +653,11 @@ void SimplifyEXP(const String &fin_dir, HyperBasevector &hb, vec<int> &inv,
     graph_status(hb);
     path_status(paths);
 
+    path_improver pimp;
+    vec<int64_t> ids;
+    OutputLog(2) << "improving paths" << std::endl;
+    ImprovePaths(paths, hb, inv, bases, quals, ids, pimp,IMPROVE_PATHS_LARGE, False);
+    path_status(paths);
 
     OutputLog(2) << "running pathfinder" << std::endl;
     invert(paths, invPaths, hb.EdgeObjectCount());
@@ -697,20 +702,17 @@ void SimplifyEXP(const String &fin_dir, HyperBasevector &hb, vec<int> &inv,
 
     // Improve paths.
 
-    if (IMPROVE_PATHS) {
-        path_improver pimp;
-        vec<int64_t> ids;
+//        path_improver pimp;
+//        vec<int64_t> ids;
         OutputLog(2) << "improving paths" << std::endl;
         ImprovePaths(paths, hb, inv, bases, quals, ids, pimp,IMPROVE_PATHS_LARGE, False);
         path_status(paths);
-    }
 
     // Extend paths.
 
-    if (EXT_FINAL) {
         OutputLog(2) << "extending paths" << std::endl;
         vec<int> to_left;
-        vec<int> to_right;
+        //vec<int> to_right;
 
         hb.ToLeft(to_left), hb.ToRight(to_right);
         int ext = 0;
@@ -724,31 +726,24 @@ void SimplifyEXP(const String &fin_dir, HyperBasevector &hb, vec<int> &inv,
         }
         OutputLog(2) << ext << " paths extended" << std::endl;
         path_status(paths);
-    }
 
     // Degloop.
 
-    if (DEGLOOP) {
         OutputLog(2) << "deglooping" << std::endl;
         Degloop(DEGLOOP_MODE, hb, inv, paths, bases, quals, DEGLOOP_MIN_DIST);
         RemoveHangs(hb, inv, paths, 700);
         Cleanup(hb, inv, paths);
         graph_status(hb);
         path_status(paths);
-    }
 
     // Unwind three-edge plasmids.
-
-    if (UNWIND3) {
         OutputLog(2) << "unwinding 3-edge plasmids" << std::endl;
         UnwindThreeEdgePlasmids(hb, inv, paths);
         graph_status(hb);
         path_status(paths);
-    }
 
     // Remove tiny stuff.
 
-    if (FINAL_TINY) {
         OutputLog(2) << "removing small components" << std::endl;
         RemoveSmallComponents3(hb, True);
         Cleanup(hb, inv, paths);
@@ -756,7 +751,6 @@ void SimplifyEXP(const String &fin_dir, HyperBasevector &hb, vec<int> &inv,
         RemoveUnneededVerticesGeneralizedLoops(hb, inv, paths);
         graph_status(hb);
         path_status(paths);
-    }
 }
 
 void Simplify(const String &fin_dir, HyperBasevector &hb, vec<int> &inv,
