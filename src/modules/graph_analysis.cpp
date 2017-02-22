@@ -54,13 +54,17 @@ int main(const int argc, const char * argv[]) {
 
     vec<size_t> sizes;
     vec<size_t> bases;
+    int cycles = 0;
     size_t edge_bases_running_total = 0;
     size_t sizes_running_total = 0;
     size_t bases_running_total = 0;
-    for (auto comp:components){
+    for (auto comp:components) {
         sizes.push_back(comp.size());
-        for (auto edge: comp){
+        for (auto edge: comp) {
             edge_bases_running_total += hbv.EdgeObject(edge).size();
+        }
+        if (hbv.HasCycle(comp)){
+            cycles += 1;
         }
         bases.push_back(edge_bases_running_total);
         bases_running_total += edge_bases_running_total;
@@ -70,22 +74,25 @@ int main(const int argc, const char * argv[]) {
     double mean_bases = bases_running_total/bases.size();
     double mean_sizes = sizes_running_total/sizes.size();
 
+    // ideally want to classify components properly....
+    std::cout << "number of components with cycles: " << cycles << std::endl;
     double bases_accum = 0.0;
     double sizes_accum = 0.0;
-    size_t bases_max = 0;
-    size_t sizes_max = 0;
+    std::pair< size_t, int > bases_max = std::make_pair(0,0);
+    std::pair< size_t, int>  sizes_max = std::make_pair(0,0);
     for (int i=0; i < components.size(); i++){
         bases_accum += (bases[i] - mean_bases) * (bases[i] - mean_bases);
         sizes_accum += (sizes[i] - mean_sizes) * (sizes[i] - mean_sizes);
-        bases_max = bases[i] > bases_max ? bases[i] : bases_max;
-        sizes_max = sizes[i] > sizes_max ? sizes[i] : sizes_max;
+        bases_max = bases[i] > std::get<0>(bases_max) ? std::make_pair(bases[i], i) : bases_max;
+        sizes_max = sizes[i] > std::get<0>(sizes_max) ? std::make_pair(bases[i], i) : sizes_max;
     }
 
     double bases_stdev = std::sqrt(bases_accum/(bases.size()-1));
     double sizes_stdev = std::sqrt(sizes_accum/(sizes.size()-1));
 
-    std::cout << "Stats for bases per connected component, max: " << bases_max << ", mean: " << mean_bases << ", stdev: " <<  bases_stdev << std::endl;
-    std::cout << "Stats for edges per connected component, max: " << sizes_max << ", mean: " << mean_sizes << ", stdev: " <<  sizes_stdev << std::endl;
+    std::cout << "Stats for bases per connected component, max: " << std::get<0>(bases_max) << " occurs at " << std::get<1>(bases_max) << ", mean: " << mean_bases << ", stdev: " <<  bases_stdev << std::endl;
+    std::cout << "Stats for edges per connected component, max: " << std::get<0>(sizes_max) << " occurs at " << std::get<1>(sizes_max)<< ", mean: " << mean_sizes << ", stdev: " <<  sizes_stdev << std::endl;
 
+    // the massive loopy part will be the part will be the component with the most edges, which should also be the component with the most bases, can now access this and focus analysis there..
     return 0;
 }
