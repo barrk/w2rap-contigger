@@ -249,11 +249,17 @@ add_executable(hbv2gfa src/modules/hbv2gfa.cc
         $<TARGET_OBJECTS:base_libs>
         )
 
+
+add_executable(graph_analyser src/modules/graph_analysis.cpp
+        $<TARGET_OBJECTS:base_libs>
+        )
+
 ##Zlib link
 if (ZLIB_FOUND)
   set(ZLIB libz.so)
   target_link_libraries(w2rap-contigger ${ZLIB_LIBRARIES})
   target_link_libraries(hbv2gfa ${ZLIB_LIBRARIES})
+  target_link_libraries(graph_analyser ${ZLIB_LIBRARIES})
 endif()
 
 #Have the malloc library linked at the end, for compatibility issues with gperftools/tcmalloc
