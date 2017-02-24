@@ -54,6 +54,29 @@ bool InputFileReader::get_fastq_record(std::basic_istream<char>& in, std::tuple<
      return true;
 }
 
+bool InputFileReader::get_fasta_record(std::basic_istream<char>& in, std::tuple<std::string, std::string> *record){
+     // Get a record from the fasta file
+
+     std::string nullstr;
+     std::string header;
+     std::string seq;
+
+     getline(in, header);
+     if (in.fail()) {
+          return false;
+     }
+
+     getline(in, seq);
+
+     // Skip line.
+     getline(in, nullstr);
+
+     std::get<0>(*record) = header;
+     std::get<1>(*record) = seq;
+
+     return true;
+}
+
 bool InputFileReader::get_bam_record(){
      // This is to read bam files (TODO)
 //               bool const UNIQUIFY_NAMES = true;
@@ -335,6 +358,63 @@ int MpData::read_files(std::basic_istream<char>& in1, std::basic_istream<char>& 
      << ", peak = " << PeakMemUsageGBString( )
      #endif
      << std::endl;
+     std::cout << TimeSince(lclock) << " used extracting reads" << std::endl;
+     return 0;
+}
+
+// -------------- Marker (Istraw90 probe) Data -------------
+MarkerData::MarkerData(std::string reads_filename){
+     //
+
+     this->filename_string = reads_filename;
+
+     const std::string fn1 = this->infiles_pair[0];
+
+     // check if the file is gzip
+     if (this->IsGz(fn1)){
+          std::cout << "File1 is gzipped changing stream" << std::endl;
+          igzstream in1(fn1.c_str());
+          auto ec = this->read_file(in1, &bases, &rIndexs);
+     } else {
+          std::ifstream in1(fn1);
+          auto ec = this->read_file(in1, &bases, &rIndexs);
+     }
+}
+
+int MarkerData::read_file(std::basic_istream<char>& in1, vecbvec *Reads){
+     // Read the files.
+     double lclock = WallClockTime();
+
+     vecbasevector& pReads = (*Reads);
+
+     // Buffer for quality score compression in batches.
+     const int qbmax = 10000000;
+     std::vector<qvec> qualsbuf;
+     MempoolOwner<char> alloc;
+
+     // Go through the input files.
+     std::tuple<std::string, std::string> record1;
+     basevector b1;
+
+     while (1) {
+
+          bool r1_status = this->get_fasta_record(in1, &record1);
+          if (!r1_status){
+               break;
+          }
+
+          b1.SetFromString(std::get<1>(record1));
+          pReads.push_back(b1);
+
+     }
+
+     // Report stats.
+
+     std::cout << Date() << ": data extraction complete"
+               #ifdef __linux
+               << ", peak = " << PeakMemUsageGBString( )
+               #endif
+               << std::endl;
      std::cout << TimeSince(lclock) << " used extracting reads" << std::endl;
      return 0;
 }

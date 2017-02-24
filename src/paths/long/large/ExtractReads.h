@@ -21,14 +21,15 @@ class InputFileReader{
     vecbvec bases;
     VecPQVec quals;
 
-    bool InputFileReader::get_fastq_record(std::basic_istream<char>& in, std::tuple<std::string, std::string, std::string> *record);
-    bool InputFileReader::get_bam_record();
-    int InputFileReader::read_binary(std::string workdir, std::string prefix);
-    int InputFileReader::write_binary(std::string workdir, std::string prefix);
-    bool InputFileReader::FilesExist(std::string infiles);
-    bool InputFileReader::FilesExist(std::vector<std::string> infiles);
-    bool InputFileReader::IsGz(std::string filename);
-    bool InputFileReader::ProduceValidPair(std::string rfilename_string);
+    bool get_fastq_record(std::basic_istream<char>& in, std::tuple<std::string, std::string, std::string> *record);
+    bool get_fasta_record(std::basic_istream<char>& in, std::tuple<std::string, std::string> *record);
+    bool get_bam_record();
+    int read_binary(std::string workdir, std::string prefix);
+    int write_binary(std::string workdir, std::string prefix);
+    bool FilesExist(std::string infiles);
+    bool FilesExist(std::vector<std::string> infiles);
+    bool IsGz(std::string filename);
+    bool ProduceValidPair(std::string rfilename_string);
 
     // To hold files
     std::string filename_string;
@@ -64,6 +65,18 @@ class TenXData: public InputFileReader{
 
 };
 
+class MarkerData: public InputFileReader{
+public:
+    MarkerData(std::string reads_filename);
+    vecbvec rIndexs;
+    int MarkerData::read_binary(std::string out_dir, std::string prefix);
+    int MarkerData::write_binary(std::string out_dir, std::string prefix);
+
+private:
+    int MarkerData::read_file(std::basic_istream<char>& in, vecbvec *Reads);
+
+};
+
 class PacBioData: public InputFileReader{
 public:
     PacBioData(std::string read_filename);
@@ -73,6 +86,8 @@ public:
 private:
     int PacBioData::read_file(std::basic_istream<char>& in1, vecbvec *Reads, VecPQVec *Quals);
 };
+
+
 
 void ExtractReads( String reads,
                    const String& work_dir, vecbvec* pReads, VecPQVec* quals );

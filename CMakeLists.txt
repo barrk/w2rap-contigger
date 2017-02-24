@@ -203,7 +203,7 @@ add_library(base_libs OBJECT
         src/util/TextTable.cc
         src/util/w2rap_timers.h
         src/paths/long/ReadPath.cc
-        src/lmp/lmp_mapper.cpp)
+        src/lmp/lmp_mapper.cpp )
 
 add_library(hb_base_libs OBJECT
         src/Alignment.cc
@@ -346,7 +346,9 @@ add_library(hb_base_libs OBJECT
         src/random/NormalDistribution.cc
         src/util/TextTable.cc
         src/GFADump.cc
-        src/paths/long/ReadPath.cc)
+        src/paths/long/ReadPath.cc
+        src/marker_mapping/marker_mapping.cpp
+        src/kmers/kmatch/KMatch.cc)
 
 add_library(specific_w2rap-contigger OBJECT
         src/BasevectorTools.cc
@@ -394,16 +396,20 @@ add_executable(w2rap-contigger src/modules/w2rap-contigger.cc
         )
 
 add_executable(hbv2gfa src/modules/hbv2gfa.cc
-        $<TARGET_OBJECTS:hb_base_libs>)
+        $<TARGET_OBJECTS:hb_base_libs> src/modules/map_markers.cpp)
 
 add_executable(runthis src/test_code/runthis.cpp src/system/gzstream/gzstream.C src/test_code/testcode_hbv.cpp src/test_code/testcode_2.cpp
         src/kmers/kmatch/KMatch.cc src/paths/long/large/ExtractReads.cc src/test_code/pacbio/pacbio_pather.cpp $<TARGET_OBJECTS:hb_base_libs>)
+
+add_executable(map_markers src/modules/map_markers.cpp
+        $<TARGET_OBJECTS:hb_base_libs> src/modules/map_markers.cpp)
 
 ##Zlib link
 if (ZLIB_FOUND)
   set(ZLIB libz.so)
   target_link_libraries(w2rap-contigger ${ZLIB_LIBRARIES})
   target_link_libraries(hbv2gfa ${ZLIB_LIBRARIES})
+  target_link_libraries(map_markers ${ZLIB_LIBRARIES})
 endif()
 
 #Have the malloc library linked at the end, for compatibility issues with gperftools/tcmalloc
