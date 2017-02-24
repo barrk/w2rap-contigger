@@ -54,9 +54,22 @@ void MarkerMapper::mapMarkers(){
 
 }
 
+std::vector< std::pair< std::string, ReadPath > > MarkerMapper::getMappedProbeIdsEdges(){
+    mapMarkers();
+    ReadPath matching_path;
+    std::vector< std::pair< std::string, ReadPath > > matches;
+    for (int i=0; i < marker_edge_maps.size(); i++){
+        if (marker_edge_maps[i].size() != 0) {
+            matching_path = getFullyMappedProbes(marker_edge_maps[i], marker_sequences[i].size());
+            if (matching_path.size() != 0) {
+                matches.push_back(std::make_pair(marker_ids[i], matching_path));
+            }
+        }
+    }
+    return matches;
+}
 
-ReadPath MarkerMapper::getFullyMappedProbes(std::vector<edgeKmerPosition> read_mapping, int read_length, int i, int k=31){
-    int kmer_errors_allowed = 0;
+ReadPath MarkerMapper::getFullyMappedProbes(std::vector<edgeKmerPosition> read_mapping, size_t read_length, int k=31){
     int current_edge_id = read_mapping[0].edge_id;
     int consecutive_offsets = 0;
     int last_offset = read_mapping[0].edge_offset;

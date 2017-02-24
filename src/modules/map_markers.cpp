@@ -5,6 +5,7 @@
 #include "paths/long/large/ExtractReads.h"
 #include "tclap/CmdLine.h"
 #include "paths/HyperBasevector.h"
+#include "marker_mapping/marker_mapping.h"
 
 
 int main (const int argc, const char*argv[]){
@@ -39,5 +40,18 @@ int main (const int argc, const char*argv[]){
 
     BinaryReader::readFile(hbv_file_path, &hbv);
 
+    vec<int> inv;
+    hbv.Involution(inv);
+
+    KMatch kMatch(31);
+
+    std::vector< std::pair< std::string, ReadPath > > probe_matches;
+
+    MarkerMapper marker_mapper(md.bases, md.probe_ids, hbv, inv, kMatch);
+    probe_matches = marker_mapper.getMappedProbeIdsEdges();
+    std::cout << "Number of matches: " << probe_matches.size() << std::endl;
+    for (auto match: probe_matches){
+        std::cout << std::get<0>(match) << std::endl;
+    }
         return 0;
 }
