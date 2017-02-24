@@ -4,10 +4,13 @@
 
 #include "paths/long/large/ExtractReads.h"
 #include "tclap/CmdLine.h"
+#include "paths/HyperBasevector.h"
 
 
 int main (const int argc, const char*argv[]){
     std::string fasta_file_path;
+    std::string hbv_file_path;
+    HyperBasevector hbv;
 
     try {
         TCLAP::CmdLine cmd("", ' ', "0.1");
@@ -15,10 +18,15 @@ int main (const int argc, const char*argv[]){
         // Read input fasta filename
         TCLAP::ValueArg<std::string> fasta_file_pathArg("F", "fasta_file_path",
                                                          "Input probe sequences (unpaired) files ", true, "",
-                                                         "file1.fastq,file2.fastq", cmd);
+                                                         "file.fasta", cmd);
+        // Read HBV filename
+        TCLAP::ValueArg<std::string> hbv_file_pathArg("H", "hbv_file_path",
+                                                        "HBV files ", true, "",
+                                                        "file.hbv", cmd);
         cmd.parse(argc, argv);
 
         fasta_file_path = fasta_file_pathArg.getValue();
+        hbv_file_path = hbv_file_pathArg.getValue();
 
     } catch (TCLAP::ArgException &e)  // catch any exceptions
     {
@@ -29,8 +37,7 @@ int main (const int argc, const char*argv[]){
     std::cout << fasta_file_path << std::endl;
     MarkerData md(fasta_file_path);
 
-    std::cout << "First sequence: " << md.bases[0].ToString()<< std::endl;
-    std::cout << md.probe_ids[0] << std::endl;
+    BinaryReader::readFile(hbv_file_path, &hbv);
 
         return 0;
 }
