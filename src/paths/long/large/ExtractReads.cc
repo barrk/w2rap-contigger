@@ -68,8 +68,6 @@ bool InputFileReader::get_fasta_record(std::basic_istream<char>& in, std::tuple<
 
      getline(in, seq);
 
-     // Skip line.
-     getline(in, nullstr);
 
      std::get<0>(*record) = header;
      std::get<1>(*record) = seq;
@@ -368,16 +366,14 @@ MarkerData::MarkerData(std::string reads_filename){
 
      this->filename_string = reads_filename;
 
-     const std::string fn1 = this->infiles_pair[0];
-
      // check if the file is gzip
-     if (this->IsGz(fn1)){
+     if (this->IsGz(this->filename_string)){
           std::cout << "File1 is gzipped changing stream" << std::endl;
-          igzstream in1(fn1.c_str());
-          auto ec = this->read_file(in1, &bases, &rIndexs);
+          igzstream in1(this->filename_string.c_str());
+          auto ec = this->read_file(in1, &bases);
      } else {
-          std::ifstream in1(fn1);
-          auto ec = this->read_file(in1, &bases, &rIndexs);
+          std::ifstream in1(this->filename_string);
+          auto ec = this->read_file(in1, &bases);
      }
 }
 
@@ -405,6 +401,7 @@ int MarkerData::read_file(std::basic_istream<char>& in1, vecbvec *Reads){
 
           b1.SetFromString(std::get<1>(record1));
           pReads.push_back(b1);
+         probe_ids.push_back(std::get<0>(record1).substr(1));
 
      }
 

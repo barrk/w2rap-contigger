@@ -68,12 +68,12 @@ class TenXData: public InputFileReader{
 class MarkerData: public InputFileReader{
 public:
     MarkerData(std::string reads_filename);
-    vecbvec rIndexs;
-    int MarkerData::read_binary(std::string out_dir, std::string prefix);
-    int MarkerData::write_binary(std::string out_dir, std::string prefix);
+    std::vector<std::string> probe_ids;
+    int read_binary(std::string out_dir, std::string prefix);
+    int write_binary(std::string out_dir, std::string prefix);
 
 private:
-    int MarkerData::read_file(std::basic_istream<char>& in, vecbvec *Reads);
+    int read_file(std::basic_istream<char>& in, vecbvec *Reads);
 
 };
 

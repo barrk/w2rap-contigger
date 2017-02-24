@@ -402,7 +402,8 @@ add_executable(runthis src/test_code/runthis.cpp src/system/gzstream/gzstream.C 
         src/kmers/kmatch/KMatch.cc src/paths/long/large/ExtractReads.cc src/test_code/pacbio/pacbio_pather.cpp $<TARGET_OBJECTS:hb_base_libs>)
 
 add_executable(map_markers src/modules/map_markers.cpp
-        $<TARGET_OBJECTS:hb_base_libs> src/modules/map_markers.cpp)
+        $<TARGET_OBJECTS:hb_base_libs> src/system/gzstream/gzstream.C
+        src/paths/long/large/ExtractReads.cc src/modules/map_markers.cpp)
 
 ##Zlib link
 if (ZLIB_FOUND)
