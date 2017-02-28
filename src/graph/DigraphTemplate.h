@@ -1838,11 +1838,12 @@ template<class F> int digraphE<F>::AddEdge( int v, int w, const F& e )
      return n;
 }
 
+/*
 template<class E>
 Bool digraphE<E>::EdgePaths( const vec<int>& left, const vec<int>& right,
-     const int v, const int w, vec< vec<int> >& paths, const int max_copies, 
-     const int max_paths, const int max_iterations ) const
-{    
+                             const int v, const int w, vec< vec<int> >& paths, const int max_copies,
+                             const int max_paths, const int max_iterations ) const
+{
      // Pretest to determine if the computation will explode.  This only works if
      // max_copies is not set.
 
@@ -1854,13 +1855,13 @@ Bool digraphE<E>::EdgePaths( const vec<int>& left, const vec<int>& right,
                subs.push_back(e);    }
           int iterations = 0;
           while( subs.nonempty( ) )
-          {    if ( max_iterations > 0 && ++iterations > max_iterations ) 
+          {    if ( max_iterations > 0 && ++iterations > max_iterations )
                     return False;
                int p = subs.back( );
                subs.pop_back( );
                int x = right[p];
-               if ( x == w ) 
-               {    if ( max_paths >= 0 && ++path_count > max_paths ) 
+               if ( x == w )
+               {    if ( max_paths >= 0 && ++path_count > max_paths )
                          return False;    }
                else
                {    for ( int j = 0; j < From(x).isize( ); j++ )
@@ -1882,7 +1883,7 @@ Bool digraphE<E>::EdgePaths( const vec<int>& left, const vec<int>& right,
           vec<int> p = subs.back( );
           subs.resize( subs.isize( ) - 1 );
           int x = right[ p.back( ) ];
-          if ( x == w ) 
+          if ( x == w )
           {    paths.push_back(p);
                if ( max_paths >= 0 && paths.isize( ) > max_paths ) return False;    }
           else
@@ -1903,6 +1904,84 @@ Bool digraphE<E>::EdgePaths( const vec<int>& left, const vec<int>& right,
                          if (fail) continue;    }
                     subs.push_back(pp);    }    }    }
      return True;    }
+*/
+template<class E>
+Bool digraphE<E>::EdgePaths( const vec<int>& left, const vec<int>& right,
+     const int v, const int w, vec< vec<int> >& paths, const int max_copies,
+     const int max_paths, const int max_iterations ) const
+{
+     // Pretest to determine if the computation will explode.  This only works if
+     // max_copies is not set.
+
+     if ( max_copies < 0 && ( max_paths >= 0 || max_iterations >= 0 ) )
+     {    vec<int> subs;
+          int path_count = 0;
+          for ( int i = 0; i < From(v).isize( ); i++ )
+          {    int e = EdgeObjectIndexByIndexFrom( v, i );
+               subs.push_back(e);    }
+          int iterations = 0;
+          while( subs.nonempty( ) )
+          {    if ( max_iterations > 0 && ++iterations > max_iterations )
+                    return False;
+               int p = subs.back( );
+               subs.pop_back( );
+               int x = right[p];
+               if ( x == w )
+               {    if ( max_paths >= 0 && ++path_count > max_paths )
+                         return False;    }
+               else
+               {    for ( int j = 0; j < From(x).isize( ); j++ )
+                    {    int e = EdgeObjectIndexByIndexFrom( x, j );
+                         subs.push_back(e);    }    }    }    }
+
+     // Now do the computation for real.
+
+     std::vector<std::vector<int> > subs;
+     paths.clear();
+     for (int i = 0; i < From(v).isize(); i++) {
+          int e = EdgeObjectIndexByIndexFrom(v, i);
+          std::vector<int> one;
+          one.push_back(e);
+          subs.push_back(one);
+     }
+     int iterations = 0;
+     while (!subs.empty()) {
+          if (max_iterations > 0 && ++iterations > max_iterations) return False;
+          std::vector<int> p = subs.back();
+          subs.resize(subs.size() - 1);
+          int x = right[p.back()];
+          if (x == w) {
+               paths.push_back(p);
+               if (max_paths >= 0 && paths.isize() > max_paths) return False;
+          } else {
+               for (int j = 0; j < From(x).isize(); j++) {
+                    int e = EdgeObjectIndexByIndexFrom(x, j);
+                    std::vector<int> pp(p);
+                    pp.push_back(e);
+                    if (max_copies >= 0) {
+                         std::vector<int> pps(pp);
+                         std::sort(pps.begin(),pps.end());
+                         Bool fail = False;
+                         for (int r = 0; r < pps.size(); r++) {
+                              //int s = pps.NextDiff(r);
+                              int s;
+                              for (s=r;pps[s]==pps[r];++s);
+                              if (s - r > max_copies) {
+                                   fail = True;
+                                   break;
+                              }
+                              r = s - 1;
+                         }
+                         if (fail) continue;
+                    }
+                    subs.push_back(pp);
+               }
+          }
+     }
+     return True;    }
+
+
+
 
 template<class E>
 Bool digraphE<E>::EdgePaths( const int v, const int w, vec< vec<int> >& paths,
