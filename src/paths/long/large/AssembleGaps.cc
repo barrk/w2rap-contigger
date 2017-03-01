@@ -427,7 +427,9 @@ void AssembleGaps2(HyperBasevector &hb, vec<int> &inv2, ReadPathVec &paths2,
                                 bpaths.push_back(b);
                                 if (bpaths.isize() > MAX_BPATHS) break;
                             }
+                            if (bpaths.isize() > MAX_BPATHS) break;
                         }
+                        if (bpaths.isize() > MAX_BPATHS) break;
                     }
 
                     if (bpaths.isize() <= MAX_BPATHS) {
