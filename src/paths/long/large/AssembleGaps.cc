@@ -234,23 +234,16 @@ void CreateLocalReadSet(vecbasevector &gbases,QualVecVec &gquals, PairsManager &
         size_t npairs = nreads / 2;
         for (size_t pi = 0; pi < npairs; pi++) gpairs.addPairToLib(2 * pi, 2 * pi + 1, 0);
 }
+void CreateLR(const HyperBasevector &hb, const vec<int> &inv2, const ReadPathVec &paths2,
+              const String &work_dir, const int A2V, vec<vec<std::pair<int, int> > > &xs,
+              vec<std::pair<vec<int>, vec<int>>> &LR ) {
 
-void AssembleGaps2(HyperBasevector &hb, vec<int> &inv2, ReadPathVec &paths2,
-                   const vecbasevector &bases, VecPQVec const &quals,
-                   const String &work_dir, std::vector<int> k2floor_sequence,
-                   vecbvec &new_stuff, const Bool CYCLIC_SAVE,
-                   const int A2V, const int MAX_PROX_LEFT,
-                   const int MAX_PROX_RIGHT, const int MAX_BPATHS, const int pair_sample) {
-    // Find clusters of unsatisfied links.
-
-    vec<vec<std::pair<int, int> > > xs;
     Unsat(hb, inv2, paths2, xs, work_dir, A2V);
 
     //Should print some stats about Unsats here.
-
+    LR.resize(xs.size());
     // Condense to lists of lefts and rights.
-
-    vec<std::pair<vec<int>, vec<int>>> LR(xs.size());
+    std::cout<<"Condensing lefts and rights"<<std::endl;
 #pragma omp parallel for
     for (auto i = 0; i < xs.size(); i++) {
         vec<int> lefts, rights;
@@ -261,10 +254,12 @@ void AssembleGaps2(HyperBasevector &hb, vec<int> &inv2, ReadPathVec &paths2,
         UniqueSort(lefts), UniqueSort(rights);
         LR[i] = make_pair(lefts, rights);
     }
+    std::cout<<"Sorting lefts and rights"<<std::endl;
 
     __gnu_parallel::sort(LR.begin(), LR.end());
 
     // Remove inverted copies.  Should force symmetry first.
+    std::cout<<"Removing inverted copies"<<std::endl;
 
     {
         vec<Bool> lrd(LR.size(), False);
@@ -284,6 +279,58 @@ void AssembleGaps2(HyperBasevector &hb, vec<int> &inv2, ReadPathVec &paths2,
     }
     OutputLog(2) << LR.size() << " unique clusters to be processed as blobs" << std::endl;
     OutputLog(2) << "laying out reads" << std::endl;
+
+
+}
+
+void AssembleGaps2(HyperBasevector &hb, vec<int> &inv2, ReadPathVec &paths2,
+                   const vecbasevector &bases, VecPQVec const &quals,
+                   const String &work_dir, std::vector<int> k2floor_sequence,
+                   vecbvec &new_stuff, const Bool CYCLIC_SAVE,
+                   const int A2V, const int MAX_PROX_LEFT,
+                   const int MAX_PROX_RIGHT, const int MAX_BPATHS, const int pair_sample,
+                   const std::string out_lr_dir, const std::string in_lr_dir, const bool dump_lr) {
+    // Find clusters of unsatisfied links.
+    vec<vec<std::pair<int, int> > > xs;
+    vec<std::pair<vec<int>, vec<int>>> LR;
+
+    if (in_lr_dir != ""){
+        //read
+        std::cout << "Reading lr from: " << in_lr_dir << std::endl;
+        uint64_t sizetemp,totalcount;
+        std::ifstream inf(in_lr_dir);
+        inf.read((char *) &totalcount, sizeof(sizetemp));
+
+        LR.resize(totalcount);
+        for (auto i=0; i<totalcount; ++i){
+            inf.read((char *) &sizetemp, sizeof(sizetemp));
+            LR[i].first.resize(sizetemp);
+            inf.read((char *) LR[i].first.data(), sizeof(int) * sizetemp);
+            inf.read((char *) &sizetemp, sizeof(sizetemp));
+            LR[i].second.resize(sizetemp);
+            inf.read((char *) LR[i].second.data(), sizeof(int) * sizetemp);
+        }
+        inf.close();
+    } else {
+        CreateLR(hb, inv2, paths2, work_dir, A2V, xs, LR);
+    }
+    if (dump_lr){
+        uint64_t sizetemp;
+        std::ofstream outf(out_lr_dir);
+        std::cout << "Writing lr to: " << out_lr_dir << std::endl;
+        sizetemp=LR.size();
+        outf.write((char *) &sizetemp, sizeof(sizetemp));
+        for (auto &p : LR){
+            sizetemp=p.first.size();
+            outf.write((char *) &sizetemp, sizeof(sizetemp));
+            outf.write((char *) p.first.data(), sizeof(int) * sizetemp);
+            sizetemp=p.second.size();
+            outf.write((char *) &sizetemp, sizeof(sizetemp));
+            outf.write((char *) p.second.data(), sizeof(int) * sizetemp);
+        }
+        outf.close();
+
+    }
     // Some setup stuff.
 
     int nedges = hb.EdgeObjectCount();
@@ -312,14 +359,16 @@ void AssembleGaps2(HyperBasevector &hb, vec<int> &inv2, ReadPathVec &paths2,
     //TODO: check local variable usage, should be made minimal!!!
     //Init readstacks, we'll need them!
     readstack::init_LUTs();
-    OutputLog(2) << "processing blobs" << std::endl;
+    OutputLog(2) << "processing" << LR.size() <<" blobs" << std::endl;
+
+
 #define BATCH_SIZE 5000
 
     for (uint64_t bstart = 0; bstart < nblobs; bstart += BATCH_SIZE) {
-        #pragma omp parallel
+        //#pragma omp parallel
         {
-            #pragma omp for schedule(dynamic,1)
-            for (uint64_t bl = bstart; bl < bstart + BATCH_SIZE; ++bl) {
+            //#pragma omp for schedule(dynamic,1)
+            for (uint64_t bl = bstart; bl < (bstart + BATCH_SIZE); ++bl) {
                 if (bl >= nblobs) continue;
                 //First part: create the gbases and gquals. this is locked by memory accesses and very convoluted
                 const vec<int> &lefts = LR[bl].first, &rights = LR[bl].second; //TODO: how big is this? can we copy it?

@@ -174,20 +174,21 @@ void step_6(HyperBasevector &hbv,
             vecbvec &bases,
             VecPQVec &quals,
             unsigned int pair_sample,
-            std::string out_dir){
+            std::string out_dir, std::string in_lr_file, std::string out_lr_file, bool dump_lr, int MAX_BPATHS=1000){
     vecbvec new_stuff;
     //TODO: Hardcoded parameters
     bool CYCLIC_SAVE = True;
     int A2V = 5;
     int MAX_PROX_LEFT = 400;
     int MAX_PROX_RIGHT = 400;
-    int MAX_BPATHS = 100000;
     std::vector<int> k2floor_sequence={0, 100, 128, 144, 172, 200};
     if (hbv.K()>=224) k2floor_sequence.push_back(224);
     if (hbv.K()>=240) k2floor_sequence.push_back(240);
     if (hbv.K()>=260) k2floor_sequence.push_back(260);
     AssembleGaps2(hbv, hbvinv, paths, bases, quals, out_dir, k2floor_sequence,
-                  new_stuff, CYCLIC_SAVE, A2V, MAX_PROX_LEFT, MAX_PROX_RIGHT, MAX_BPATHS, pair_sample);
+                  new_stuff, CYCLIC_SAVE, A2V, MAX_PROX_LEFT, MAX_PROX_RIGHT, MAX_BPATHS, pair_sample,
+                  out_lr_file, in_lr_file, dump_lr
+    );
     int MIN_GAIN = 5;
     int EXT_MODE = 1;
 
@@ -381,7 +382,7 @@ void step_8(HyperBasevector &hbv,
     vec<int64_t> subsam_starts={0};
     vec<String> subsam_names={"C"};
     FinalFiles(hbv, hbvinv, paths, subsam_names, subsam_starts, out_dir, out_prefix+ "_assembly", MAX_CELL_PATHS, MAX_DEPTH, G);
-    GFADump(out_prefix+ "_assembly",hbv,hbvinv,paths,MAX_CELL_PATHS,MAX_DEPTH,true);
+    GFADump(out_dir + "/" + out_prefix+ "_assembly",hbv,hbvinv,paths,MAX_CELL_PATHS,MAX_DEPTH,true);
 }
 
 
@@ -392,12 +393,14 @@ int main(const int argc, const char * argv[]) {
     std::string read_files;
     std::string out_dir;
     std::string tmp_dir;
+    std::string in_lr_file, out_lr_file;
+    bool dump_lr;
     unsigned int threads;
     unsigned int minFreq,minCount;
     unsigned int minQual;
     int max_mem;
     uint64_t count_batch_size;
-    unsigned int small_K, large_K, min_size,from_step,to_step, pair_sample, disk_batches, min_input_reads;
+    unsigned int small_K, large_K, min_size,from_step,to_step, pair_sample, disk_batches, min_input_reads, max_bpaths;
     std::vector<unsigned int> allowed_k = {60, 64, 72, 80, 84, 88, 96, 100, 108, 116, 128, 136, 144, 152, 160, 168, 172,
                                            180, 188, 192, 196, 200, 208, 216, 224, 232, 240, 260, 280, 300, 320, 368,
                                            400, 440, 460, 500, 544, 640};
@@ -456,6 +459,8 @@ int main(const int argc, const char * argv[]) {
 
         TCLAP::ValueArg<unsigned int> minSizeArg("s", "min_size",
              "Min size of disconnected elements on large_k graph (in kmers, default: 0=no min)", false, 0, "int", cmd);
+        TCLAP::ValueArg<unsigned int> maxBpathsArg("", "max_bpaths",
+                                                 "Maximum number of paths to allow between two contigs in a local asse,bly", false, 1000, "int", cmd);
 
         TCLAP::ValueArg<unsigned int> pairSampleArg("", "pair_sample",
                                                     "max number of read pairs to use in local assemblies (default: 200)", false, 200, "int", cmd);
@@ -477,6 +482,10 @@ int main(const int argc, const char * argv[]) {
         TCLAP::ValueArg<bool>         dumpDetailedGFAArg        ("","dump_detailed_gfa",
                                                          "Dump detailed GFA for every graph (default: 0)", false,false,"bool",cmd);
 
+        TCLAP::ValueArg<std::string> in_lr_Arg("", "in_lr_name", "Path to file containing LR", false, "", "string", cmd);
+        TCLAP::ValueArg<std::string> out_lr_Arg("", "out_lr_name", "Path to filename to save LR to", false, "", "string", cmd);
+        TCLAP::ValueArg<bool>         dumpLRArg        ("","dump_lr",
+                                                         "Dump contents of LR vector", false,false,"bool",cmd);
         cmd.parse(argc, argv);
         // Get the value parsed by each arg.
         out_dir = out_dirArg.getValue();
@@ -502,6 +511,10 @@ int main(const int argc, const char * argv[]) {
         OutputLogLevel=logLevelArg.getValue();
         run_dv=runDiscovarCompatibleArg.getValue();
         run_exp=runExperimentalArg.getValue();
+        in_lr_file = in_lr_Arg.getValue();
+        out_lr_file = out_lr_Arg.getValue();
+        dump_lr = dumpLRArg.getValue();
+        max_bpaths = maxBpathsArg.getValue();
 
     } catch (TCLAP::ArgException &e)  // catch any exceptions
     {
@@ -647,7 +660,7 @@ int main(const int argc, const char * argv[]) {
                 step_5(hbv, hbvinv, paths, bases, quals, min_size);
                 break;
             case 6:
-                step_6(hbv, hbvinv, paths, bases, quals, pair_sample, out_dir);
+                step_6(hbv, hbvinv, paths, bases, quals, pair_sample, out_dir, in_lr_file, out_lr_file, dump_lr, max_bpaths);
                 break;
             case 7:
                 if (run_dv) step_7DV(hbv, hbvinv, paths, bases, quals, out_dir, out_prefix);
