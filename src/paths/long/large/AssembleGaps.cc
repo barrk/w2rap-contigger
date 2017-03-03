@@ -457,7 +457,6 @@ void AssembleGaps2(HyperBasevector &hb, vec<int> &inv2, ReadPathVec &paths2,
 
                     // Make bpaths.  These are all source-sink paths through the
                     // local graph.
-
                     vec<basevector> bpaths;
                     vec<int> sources, sinks;
                     xshb.Sources(sources), xshb.Sinks(sinks);
@@ -466,7 +465,7 @@ void AssembleGaps2(HyperBasevector &hb, vec<int> &inv2, ReadPathVec &paths2,
                     for (int i1 = 0; i1 < sources.isize(); i1++) {
                         for (int i2 = 0; i2 < sinks.isize(); i2++) {
                             vec<vec<int>> p;
-                            xshb.EdgePaths(zto_left, zto_right, sources[i1], sinks[i2], p);
+                            xshb.EdgePaths(zto_left, zto_right, sources[i1], sinks[i2], p, -1, MAX_BPATHS, -1);
                             for (int l = 0; l < p.isize(); l++) {
                                 basevector b = xshb.EdgeObject(p[l][0]);
                                 for (int m = 1; m < p[l].isize(); m++) {

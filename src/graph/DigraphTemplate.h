@@ -1947,7 +1947,7 @@ Bool digraphE<E>::EdgePaths( const vec<int>& left, const vec<int>& right,
      int iterations = 0;
      while (!subs.empty()) {
           if (max_iterations > 0 && ++iterations > max_iterations) return False;
-          std::vector<int> p = subs.back();
+          std::vector<int> p = subs.back(); // why not using pop_back?
           subs.resize(subs.size() - 1);
           int x = right[p.back()];
           if (x == w) {

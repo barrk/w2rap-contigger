@@ -209,6 +209,7 @@ void step_7DV(HyperBasevector &hbv,
 
     SimplifyDV(out_dir, hbv, hbvinv, paths, bases, quals);
 
+
     // For now, fix paths and write the and their inverse
     for (int i = 0; i < (int) paths.size(); i++) { //XXX TODO: change this int for uint 32
         Bool bad = False;
