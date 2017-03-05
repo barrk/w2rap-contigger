@@ -349,7 +349,7 @@ void AssembleGaps2(HyperBasevector &hb, vec<int> &inv2, ReadPathVec &paths2,
     hb.ToLeft(to_left), hb.ToRight(to_right);
     vec<vec<basevector> > extras(LR.size());//this is accumulation, generates memory blocks
     vec<HyperBasevector> mhbp(LR.size());//this is accumulation, generates memory blocks
-    //std::cout << Date() << ": processing " << LR.size() << " blobs" << std::endl;
+//    std::cout << Date() << ": processing " << LR.size() << " blobs" << std::endl;
     double clockp1 = WallClockTime();
     int nblobs = LR.size();
     std::atomic_uint_fast64_t solved(0);
@@ -365,9 +365,9 @@ void AssembleGaps2(HyperBasevector &hb, vec<int> &inv2, ReadPathVec &paths2,
 #define BATCH_SIZE 5000
 
     for (uint64_t bstart = 0; bstart < nblobs; bstart += BATCH_SIZE) {
-        //#pragma omp parallel
+        #pragma omp parallel
         {
-            //#pragma omp for schedule(dynamic,1)
+            #pragma omp for schedule(dynamic,1)
             for (uint64_t bl = bstart; bl < (bstart + BATCH_SIZE); ++bl) {
                 if (bl >= nblobs) continue;
                 //First part: create the gbases and gquals. this is locked by memory accesses and very convoluted
@@ -465,7 +465,7 @@ void AssembleGaps2(HyperBasevector &hb, vec<int> &inv2, ReadPathVec &paths2,
                     for (int i1 = 0; i1 < sources.isize(); i1++) {
                         for (int i2 = 0; i2 < sinks.isize(); i2++) {
                             vec<vec<int>> p;
-                            xshb.EdgePaths(zto_left, zto_right, sources[i1], sinks[i2], p, -1, MAX_BPATHS, -1);
+                            xshb.EdgePaths(zto_left, zto_right, sources[i1], sinks[i2], p, 10, 10, 10);
                             for (int l = 0; l < p.isize(); l++) {
                                 basevector b = xshb.EdgeObject(p[l][0]);
                                 for (int m = 1; m < p[l].isize(); m++) {
