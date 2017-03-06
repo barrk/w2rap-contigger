@@ -288,7 +288,8 @@ void AssembleGaps2(HyperBasevector &hb, vec<int> &inv2, ReadPathVec &paths2,
                    const String &work_dir, std::vector<int> k2floor_sequence,
                    vecbvec &new_stuff, const Bool CYCLIC_SAVE,
                    const int A2V, const int MAX_PROX_LEFT,
-                   const int MAX_PROX_RIGHT, const int MAX_BPATHS, const int pair_sample,
+                   const int MAX_PROX_RIGHT, const int max_copies, const int max_bpaths, const int max_iterations,
+                   const int pair_sample,
                    const std::string out_lr_dir, const std::string in_lr_dir, const bool dump_lr) {
     // Find clusters of unsatisfied links.
     vec<vec<std::pair<int, int> > > xs;
@@ -465,7 +466,7 @@ void AssembleGaps2(HyperBasevector &hb, vec<int> &inv2, ReadPathVec &paths2,
                     for (int i1 = 0; i1 < sources.isize(); i1++) {
                         for (int i2 = 0; i2 < sinks.isize(); i2++) {
                             vec<vec<int>> p;
-                            xshb.EdgePaths(zto_left, zto_right, sources[i1], sinks[i2], p, 10, 10, 10);
+                            xshb.EdgePaths(zto_left, zto_right, sources[i1], sinks[i2], p, max_copies, max_bpaths, max_iterations);
                             for (int l = 0; l < p.isize(); l++) {
                                 basevector b = xshb.EdgeObject(p[l][0]);
                                 for (int m = 1; m < p[l].isize(); m++) {
@@ -473,14 +474,14 @@ void AssembleGaps2(HyperBasevector &hb, vec<int> &inv2, ReadPathVec &paths2,
                                     b = Cat(b, xshb.EdgeObject(p[l][m]));
                                 }
                                 bpaths.push_back(b);
-                                if (bpaths.isize() > MAX_BPATHS) break;
+                                if (bpaths.isize() > max_bpaths) break;
                             }
-                            if (bpaths.isize() > MAX_BPATHS) break;
+                            if (bpaths.isize() > max_bpaths) break;
                         }
-                        if (bpaths.isize() > MAX_BPATHS) break;
+                        if (bpaths.isize() > max_bpaths) break;
                     }
 
-                    if (bpaths.isize() <= MAX_BPATHS) {
+                    if (bpaths.isize() <= max_bpaths) {
                         // Make more bpaths.
                         for (int l = 0; l < lefts.isize(); l++) {
                             Bool ext = False;

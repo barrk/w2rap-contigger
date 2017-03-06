@@ -21,6 +21,7 @@ void AssembleGaps2( HyperBasevector& hb, vec<int>& inv2, ReadPathVec& paths2,
      const String& work_dir, std::vector<int>,
      vecbvec& new_stuff, const Bool CYCLIC_SAVE,
      const int A2V, const int MAX_PROX_LEFT,
-     const int MAX_PROX_RIGHT, const int MAX_BPATHS, const int pair_sample, const std::string out_lr_dir, const std::string in_lr_dir, const bool dump_lr );
+     const int MAX_PROX_RIGHT, const int max_copies, const int max_bpaths, const int max_iterations,
+     const int pair_sample, const std::string out_lr_dir, const std::string in_lr_dir, const bool dump_lr );
 
 #endif
