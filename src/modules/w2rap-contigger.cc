@@ -458,19 +458,19 @@ int main(const int argc, const char * argv[]) {
 
         TCLAP::ValueArg<unsigned int> minSizeArg("s", "min_size",
              "Min size of disconnected elements on large_k graph (in kmers, default: 0=no min)", false, 0, "int", cmd);
-        TCLAP::ValueArg<unsigned int> maxBpathsArg("", "max_bpaths",
-                                                   "Maximum number of paths to allow between two contigs in a local asse,bly", false, 100, "int", cmd);
-        TCLAP::ValueArg<unsigned int> maxCellpathsArg("", "max_cell_paths",
-                                                      "Maximum number of cell paths to allow between two contigs in a local asse,bly", false, 50, "int", cmd);
+        TCLAP::ValueArg<unsigned int> maxBpathsStep6Arg("", "max_bpaths_step_6",
+                                                   "Maximum number of paths to allow between two contigs in a local assembly", false, 10, "int", cmd);
+        TCLAP::ValueArg<unsigned int> maxCellPathsStep7Arg("", "max_cell_paths",
+                                                      "Maximum number of cell paths to allow during PE scaffolding", false, 50, "int", cmd);
 
-        TCLAP::ValueArg<unsigned int> maxDepthsArg("", "max_depths",
-                                                   "Maximum number of cell paths to allow between two contigs in a local asse,bly", false, 10, "int", cmd);
+        TCLAP::ValueArg<unsigned int> maxDepthsStep7Arg("", "max_depths",
+                                                   "Maximum depth during PE scaffoling", false, 10, "int", cmd);
 
-        TCLAP::ValueArg<unsigned int> maxCopiesArg("", "max_copies",
-                                                   "Maximum number of copies allowed in local asse,bly", false, 10, "int", cmd);
+        TCLAP::ValueArg<unsigned int> maxCopiesStep6Arg("", "max_copies_step_6",
+                                                   "Maximum number of copies allowed in local assembly", false, 10, "int", cmd);
 
-        TCLAP::ValueArg<unsigned int> maxIterationsArg("", "max_iterations",
-                                                      "Maximum number of iterations for local asse,bly", false, 10, "int", cmd);
+        TCLAP::ValueArg<unsigned int> maxIterationsStep6Arg("", "max_iterations_step_6",
+                                                      "Maximum number of iterations for local assembly", false, 10, "int", cmd);
 
 
         TCLAP::ValueArg<unsigned int> pairSampleArg("", "pair_sample",
@@ -525,11 +525,11 @@ int main(const int argc, const char * argv[]) {
         in_lr_file = in_lr_Arg.getValue();
         out_lr_file = out_lr_Arg.getValue();
         dump_lr = dumpLRArg.getValue();
-        max_bpaths = maxBpathsArg.getValue();
-        max_cell_paths = maxCellpathsArg.getValue();
-        max_depth = maxDepthsArg.getValue();
-        max_copies = maxCopiesArg.getValue();
-        max_iterations = maxIterationsArg.getValue();
+        max_bpaths = maxBpathsStep6Arg.getValue();
+        max_cell_paths = maxCellPathsStep7Arg.getValue();
+        max_depth = maxDepthsStep7Arg.getValue();
+        max_copies = maxCopiesStep6Arg.getValue();
+        max_iterations = maxIterationsStep6Arg.getValue();
 
 
     } catch (TCLAP::ArgException &e)  // catch any exceptions
